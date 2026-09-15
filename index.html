@@ -371,6 +371,54 @@ html,body{overflow-x:hidden;}
   #dr-app .statsbar .schedule-note{grid-row:2;}
 }
 
+
+#dr-app #dr-main{
+  --app-header-h:64px;
+  padding-top:var(--app-header-h);
+}
+#dr-app .topbar{
+  position:fixed!important;
+  top:0;
+  left:0;
+  right:0;
+  width:100%;
+  z-index:1000;
+  margin:0;
+}
+#dr-app .structure-stat{
+  margin-top:var(--space-2)!important;
+  font-size:var(--fs-body)!important;
+  line-height:1.7!important;
+  font-weight:var(--fw-regular)!important;
+  color:var(--body)!important;
+}
+#dr-app .block-order button{
+  border-radius:50%!important;
+  padding:0!important;
+  display:grid!important;
+  place-items:center!important;
+  line-height:1!important;
+}
+@media(max-width:700px){
+  #dr-app #dr-main{--app-header-h:104px;}
+}
+
+
+#dr-app .preview-panel{
+  --preview-pad:var(--space-5);
+  overflow:hidden;
+}
+#dr-app .preview h4:not(:first-child),
+#dr-app .preview .total{
+  margin-left:calc(-1 * var(--preview-pad))!important;
+  margin-right:calc(-1 * var(--preview-pad))!important;
+  padding-left:var(--preview-pad)!important;
+  padding-right:var(--preview-pad)!important;
+}
+@media(max-width:700px){
+  #dr-app .preview-panel{--preview-pad:var(--space-4);}
+}
+
 </style>
 
 </head>
@@ -509,7 +557,7 @@ function buildBadgesHTML(it){var t=typeOf(it.typeId),html="";if(t&&t.mode!=="not
 function updateLiveBits(){state.items.forEach(function(it){var card=document.querySelector('.item-card[data-item-id="'+it._id+'"]');if(!card)return;var nameEl=card.querySelector(".item-head .name");if(nameEl)nameEl.textContent=it.name||"未命名項目";var badgesEl=card.querySelector(".item-head .badges");if(badgesEl)badgesEl.innerHTML=buildBadgesHTML(it);});refreshStats();}
 function renderItems(){var wrap=$("dr-items");wrap.innerHTML="";state.items.forEach(function(it,idx){wrap.appendChild(renderItemCard(it,idx));});}
 function renderItemCard(it,idx){var card=el("div","item-card"+(it.collapsed?" collapsed":""));card.dataset.itemId=it._id;var head=el("div","item-head");head.innerHTML='<div class="idx">'+(idx+1)+'</div><div class="name">'+(it.name||"未命名項目")+'</div>';var badges=el("div","badges");badges.innerHTML=buildBadgesHTML(it);head.appendChild(badges);var caret=document.createElementNS("http://www.w3.org/2000/svg","svg");caret.setAttribute("class","toggle-caret");caret.setAttribute("viewBox","0 0 11 7");caret.innerHTML='<path d="M1 1l4.5 4.5L10 1" stroke="#111" stroke-width="1.6" fill="none"/>';head.appendChild(caret);var del=el("button","del","✕");del.type="button";del.addEventListener("click",function(e){e.stopPropagation();if(state.items.length<=1)return;state.items=state.items.filter(function(x){return x._id!==it._id;});render();saveDraft();});head.appendChild(del);head.addEventListener("click",function(){it.collapsed=!it.collapsed;renderItems();});card.appendChild(head);var body=el("div","item-body");body.appendChild(buildItemBody(it));card.appendChild(body);return card;}
-function buildItemBody(it){var frag=document.createDocumentFragment(),row1=el("div","row");row1.appendChild(fieldText("項目名稱",true,it.name,function(v){it.name=v;updateLiveBits();saveDraft();}));var typeField=el("div","field");typeField.innerHTML='<label>需求類型<span class="req">*</span></label>';var sel=el("select");sel.appendChild(el("option","","請選擇"));TYPES.forEach(function(t){var o=el("option","",t.label);o.value=t.id;if(it.typeId===t.id)o.selected=true;sel.appendChild(o);});sel.addEventListener("change",function(){it.typeId=sel.value;var t=typeOf(it.typeId);it.sizeRows=[newSizeRow()];if(t&&t.forcePrint)it.output=["print"];else it.output=[];applyDefaultSize(it);render();saveDraft();});typeField.appendChild(sel);row1.appendChild(typeField);frag.appendChild(row1);var t=typeOf(it.typeId);if(!t){var ph=document.createElement("input");ph.type="text";ph.className="setup-placeholder";ph.placeholder="選擇需求類型後顯示設定。";ph.disabled=true;frag.appendChild(ph);return frag;}if(t.mode==="notice"){frag.appendChild(el("div","notice-box",t.notice));return frag;}if(t.mode==="structure"){frag.appendChild(buildStructureBlock(it));frag.appendChild(fieldDate("交付日",false,it.useDate,function(v){it.useDate=v;updateLiveBits();checkDeliveryWarn();saveDraft();}));frag.appendChild(fieldTextarea("項目備註",false,it.note,function(v){it.note=v;saveDraft();}));return frag;}if(!t.forcePrint){var outField=el("div","field");outField.innerHTML='<label>輸出形式<span class="req">*</span></label>';var rg=el("div","chiprow");[["digital","數位"],["print","印刷"]].forEach(function(pair){var c=el("button","chip c-"+pair[0],pair[1]);c.type="button";c.setAttribute("aria-pressed",it.output.indexOf(pair[0])>=0?"true":"false");c.addEventListener("click",function(){var i=it.output.indexOf(pair[0]);if(i>=0)it.output.splice(i,1);else it.output.push(pair[0]);render();saveDraft();});rg.appendChild(c);});outField.appendChild(rg);frag.appendChild(outField);}if(t.extra&&t.extra.indexOf("page")>=0)frag.appendChild(fieldText("素材應用處",false,it.page,function(v){it.page=v;saveDraft();}));if(t.sizes&&t.sizes.length)frag.appendChild(buildSizeSection(it,t));if(itemHasPrint(it))frag.appendChild(fieldNumber("數量",true,it.printQty,function(v){it.printQty=v;updateLiveBits();saveDraft();}));var expField=el("div","field");expField.innerHTML='<label>商品曝光<span class="opt">選填</span></label>';var expRow=el("div","chiprow");[["reveal","露出商品"],["free","不限"]].forEach(function(pair){var c=el("button","chip",pair[1]);c.type="button";c.setAttribute("aria-pressed",it.exposure===pair[0]?"true":"false");c.addEventListener("click",function(){it.exposure=it.exposure===pair[0]?"":pair[0];if(it.exposure!=="reveal")it.exposureModel="";render();saveDraft();});expRow.appendChild(c);});expField.appendChild(expRow);frag.appendChild(expField);if(it.exposure==="reveal")frag.appendChild(fieldText("商品型號",false,it.exposureModel,function(v){it.exposureModel=v;saveDraft();}));var copyWrap=el("div","field");copyWrap.innerHTML='<label>文案<span class="opt">選填，留白則標記為文案待補。</span></label>';var c4=el("div","copy4");c4.appendChild(miniField("大標",it.copy.head,function(v){it.copy.head=v;updateLiveBits();saveDraft();}));c4.appendChild(miniField("副標",it.copy.sub,function(v){it.copy.sub=v;updateLiveBits();saveDraft();}));c4.appendChild(miniField("小字",it.copy.small,function(v){it.copy.small=v;updateLiveBits();saveDraft();}));c4.appendChild(miniField("其他",it.copy.other,function(v){it.copy.other=v;updateLiveBits();saveDraft();},true));copyWrap.appendChild(c4);frag.appendChild(copyWrap);var row2=el("div","row");if(t.showChannel)row2.appendChild(fieldText("使用位置",false,it.channel,function(v){it.channel=v;saveDraft();}));row2.appendChild(fieldDate("交付日",false,it.useDate,function(v){it.useDate=v;updateLiveBits();checkDeliveryWarn();saveDraft();}));frag.appendChild(row2);frag.appendChild(fieldText("CTA／連結",false,it.cta,function(v){it.cta=v;saveDraft();}));frag.appendChild(fieldTextarea("項目備註",false,it.note,function(v){it.note=v;saveDraft();}));return frag;}
+function buildItemBody(it){var frag=document.createDocumentFragment(),row1=el("div","row");row1.appendChild(fieldText("項目名稱",true,it.name,function(v){it.name=v;updateLiveBits();saveDraft();}));var typeField=el("div","field");typeField.innerHTML='<label>需求類型<span class="req">*</span></label>';var sel=el("select");sel.appendChild(el("option","","請選擇"));TYPES.forEach(function(t){var o=el("option","",t.label);o.value=t.id;if(it.typeId===t.id)o.selected=true;sel.appendChild(o);});sel.addEventListener("change",function(){it.typeId=sel.value;var t=typeOf(it.typeId);it.sizeRows=[newSizeRow()];if(t&&t.forcePrint)it.output=["print"];else it.output=[];applyDefaultSize(it);render();saveDraft();});typeField.appendChild(sel);row1.appendChild(typeField);frag.appendChild(row1);var t=typeOf(it.typeId);if(!t){return frag;}if(t.mode==="notice"){frag.appendChild(el("div","notice-box",t.notice));return frag;}if(t.mode==="structure"){frag.appendChild(buildStructureBlock(it));frag.appendChild(fieldDate("交付日",false,it.useDate,function(v){it.useDate=v;updateLiveBits();checkDeliveryWarn();saveDraft();}));frag.appendChild(fieldTextarea("項目備註",false,it.note,function(v){it.note=v;saveDraft();}));return frag;}if(!t.forcePrint){var outField=el("div","field");outField.innerHTML='<label>輸出形式<span class="req">*</span></label>';var rg=el("div","chiprow");[["digital","數位"],["print","印刷"]].forEach(function(pair){var c=el("button","chip c-"+pair[0],pair[1]);c.type="button";c.setAttribute("aria-pressed",it.output.indexOf(pair[0])>=0?"true":"false");c.addEventListener("click",function(){var i=it.output.indexOf(pair[0]);if(i>=0)it.output.splice(i,1);else it.output.push(pair[0]);render();saveDraft();});rg.appendChild(c);});outField.appendChild(rg);frag.appendChild(outField);}if(t.extra&&t.extra.indexOf("page")>=0)frag.appendChild(fieldText("素材應用處",false,it.page,function(v){it.page=v;saveDraft();}));if(t.sizes&&t.sizes.length)frag.appendChild(buildSizeSection(it,t));if(itemHasPrint(it))frag.appendChild(fieldNumber("數量",true,it.printQty,function(v){it.printQty=v;updateLiveBits();saveDraft();}));var expField=el("div","field");expField.innerHTML='<label>商品曝光<span class="opt">選填</span></label>';var expRow=el("div","chiprow");[["reveal","露出商品"],["free","不限"]].forEach(function(pair){var c=el("button","chip",pair[1]);c.type="button";c.setAttribute("aria-pressed",it.exposure===pair[0]?"true":"false");c.addEventListener("click",function(){it.exposure=it.exposure===pair[0]?"":pair[0];if(it.exposure!=="reveal")it.exposureModel="";render();saveDraft();});expRow.appendChild(c);});expField.appendChild(expRow);frag.appendChild(expField);if(it.exposure==="reveal")frag.appendChild(fieldText("商品型號",false,it.exposureModel,function(v){it.exposureModel=v;saveDraft();}));var copyWrap=el("div","field");copyWrap.innerHTML='<label>文案<span class="opt">選填，留白則標記為文案待補。</span></label>';var c4=el("div","copy4");c4.appendChild(miniField("大標",it.copy.head,function(v){it.copy.head=v;updateLiveBits();saveDraft();}));c4.appendChild(miniField("副標",it.copy.sub,function(v){it.copy.sub=v;updateLiveBits();saveDraft();}));c4.appendChild(miniField("小字",it.copy.small,function(v){it.copy.small=v;updateLiveBits();saveDraft();}));c4.appendChild(miniField("其他",it.copy.other,function(v){it.copy.other=v;updateLiveBits();saveDraft();},true));copyWrap.appendChild(c4);frag.appendChild(copyWrap);var row2=el("div","row");if(t.showChannel)row2.appendChild(fieldText("使用位置",false,it.channel,function(v){it.channel=v;saveDraft();}));row2.appendChild(fieldDate("交付日",false,it.useDate,function(v){it.useDate=v;updateLiveBits();checkDeliveryWarn();saveDraft();}));frag.appendChild(row2);frag.appendChild(fieldText("CTA／連結",false,it.cta,function(v){it.cta=v;saveDraft();}));frag.appendChild(fieldTextarea("項目備註",false,it.note,function(v){it.note=v;saveDraft();}));return frag;}
 function miniField(label,val,onChange,full){var f=el("div","field"+(full?" full":""));f.style.margin="0";var lab=el("label","",label);lab.style.fontWeight="400";lab.style.color="var(--muted)";f.appendChild(lab);var inp=document.createElement("input");inp.type="text";inp.value=val||"";inp.addEventListener("input",function(){onChange(inp.value);});f.appendChild(inp);return f;}
 function fieldText(label,req,val,onChange){var f=el("div","field");f.innerHTML='<label>'+label+(req?'<span class="req">*</span>':'<span class="opt">選填</span>')+'</label>';var inp=document.createElement("input");inp.type="text";inp.value=val||"";inp.addEventListener("input",function(){onChange(inp.value);});f.appendChild(inp);return f;}
 function fieldTextarea(label,req,val,onChange){var f=el("div","field");f.innerHTML='<label>'+label+(req?'<span class="req">*</span>':'<span class="opt">選填</span>')+'</label>';var inp=document.createElement("textarea");inp.value=val||"";inp.addEventListener("input",function(){onChange(inp.value);});f.appendChild(inp);return f;}
@@ -541,6 +589,18 @@ function buildRequestPayload(){return{department:state.dept||"",name:state.name|
 $("dr-submit-btn").addEventListener("click",async function(){if(this.disabled||submitInFlight)return;submitInFlight=true;var btn=this,container=$("dr-confirm");btn.classList.add("loading");btn.disabled=true;container.style.pointerEvents="none";Array.prototype.forEach.call(container.children,function(c){if(c!==btn.parentElement)c.style.opacity=".45";});btn.parentElement.style.pointerEvents="auto";$("dr-submit-err").style.display="none";try{if(!googleCredential&&!sessionToken)throw new Error("登入已失效，請重新登入。");var data=await apiPost("createRequest",{data:buildRequestPayload()});try{localStorage.removeItem(DRAFT_KEY);}catch(e){}$("dr-success-code").textContent=data.requestId||"";$("dr-success-msg").textContent=data.mailOk===false?"申請已建立。確認信寄送失敗："+data.mailError+"。":"確認信與 Word 附件已寄送。";$("dr-refill").onclick=function(){window.location.reload();};container.style.display="none";$("dr-success").style.display="block";}catch(error){console.error(error);submitInFlight=false;container.style.pointerEvents="auto";Array.prototype.forEach.call(container.children,function(c){c.style.opacity="1";});btn.classList.remove("loading");btn.disabled=false;$("dr-submit-err").textContent="送出失敗："+(error.message||String(error))+"。表單內容已保留。";$("dr-submit-err").style.display="block";}});
 if(state.items.length===0)state.items.push(newItem());
 function initTouchFeedback(){var selector="button,a,.chip,.add-line,.item-head,.block-head,input,select,textarea";var active=null,timer=null;function clear(){if(active){active.classList.remove("is-touching");active=null;}if(timer){clearTimeout(timer);timer=null;}}document.addEventListener("touchstart",function(e){var el=e.target.closest&&e.target.closest(selector);if(!el||!document.getElementById("dr-app").contains(el))return;clear();active=el;active.classList.add("touch-feedback","is-touching");timer=setTimeout(clear,180);},{passive:true});document.addEventListener("touchend",clear,{passive:true});document.addEventListener("touchcancel",clear,{passive:true});}initTouchFeedback();
+
+function syncAppHeaderHeight(){
+  var main=document.getElementById("dr-main"),bar=main&&main.querySelector(".topbar");
+  if(!main||!bar)return;
+  main.style.setProperty("--app-header-h",Math.ceil(bar.getBoundingClientRect().height)+"px");
+}
+if(window.ResizeObserver){
+  new ResizeObserver(syncAppHeaderHeight).observe(document.querySelector("#dr-main .topbar"));
+}
+window.addEventListener("resize",syncAppHeaderHeight,{passive:true});
+syncAppHeaderHeight();
+
 initGoogleLogin();
 })();
 </script>
