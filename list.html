@@ -11,7 +11,7 @@
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;background:#eeeeee;}
 #dr-app{
-  --brand:#f8b500; --brand-l:#fff3d1; --brand-dk:#d39a00; /* 深 15%，僅供「逾期」標記使用 */
+  --brand:#f8b500; --brand-l:#fff3d1; --brand-dk:#d39a00; 
   --ink:#111111; --body:#666666; --muted:#9fa0a0;
   --line:#bababa; --hair:#d8d6d0;
   --paper:#ffffff; --tint:#eeeeee;
@@ -31,12 +31,6 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 #dr-app *{box-sizing:border-box;}
 #dr-app .wrap{max-width:1040px;margin:0 auto;padding:0 20px 80px;}
 
-/* ---- 統一互動規則：與 index.html 同一套，勿單邊修改 ----
-   1) 線框元件 hover → 邊框品牌色；2) 已選 chip 實色、邊框透明、hover 無邊線；
-   3) 黑框按鈕 hover → 黑底白字；4) 主要操作按鈕實色品牌黃；
-   5) 大項目編號實色圓圈、子項目編號線框圓圈。 */
-
-/* ---- top bar：55% 不透明 + 15px 模糊（結構與 index.html 一致）---- */
 #dr-app .topbar{
   background:rgba(255,255,255,.55); -webkit-backdrop-filter:blur(15px); backdrop-filter:blur(15px);
   border-bottom:1.2px solid var(--hair);
@@ -49,12 +43,11 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 #dr-app .topbar-sub{font-size:12px;color:var(--muted);flex:1 1 auto;}
 #dr-app .topbar-user{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--body);flex:0 0 auto;}
 #dr-app .avatar{width:26px;height:26px;border-radius:50%;background:var(--brand);color:var(--ink);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex:0 0 auto;}
-/* 表頭動作按鈕：兩頁共用同一個樣式，只有文字不同 */
+
 #dr-app .btn-topbar{flex:0 0 auto;height:34px;padding:0 18px;border-radius:999px;border:1px solid var(--brand);background:var(--brand);color:var(--ink);font-family:inherit;font-size:13px;font-weight:700;letter-spacing:.04em;cursor:pointer;display:inline-flex;align-items:center;text-decoration:none;transition:filter var(--ease),transform var(--ease);}
 #dr-app .btn-topbar:hover{filter:brightness(.95);transform:scale(1.02);}
 #dr-app .devbadge{background:#eef2f5;border-bottom:1px solid var(--hair);text-align:center;font-size:12px;color:var(--body);padding:6px 12px;}
 
-/* ---- filter bar ---- */
 #dr-app .filterbar{background:var(--paper);border:1.2px solid var(--line);border-radius:var(--r);padding:16px;margin:16px 0;}
 #dr-app .filterrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
 #dr-app .filterrow input[type=text]{flex:1 1 220px;min-width:160px;}
@@ -69,7 +62,7 @@ html,body{margin:0;padding:0;background:#eeeeee;}
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='11' height='7'><path d='M1 1l4.5 4.5L10 1' stroke='%23111' stroke-width='1.6' fill='none'/></svg>");
   background-repeat:no-repeat;background-position:right 12px center;padding-right:30px;}
 #dr-app .chiprow{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
-/* 快篩 chip：無圓點；選中＝該語意的原色實填（逾期黃／錯誤紅），不加深 */
+
 #dr-app .statuschip{height:30px;padding:0 13px;border-radius:999px;border:1px solid var(--line);background:var(--paper);font-family:inherit;font-size:12.5px;color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;transition:background-color var(--ease),border-color var(--ease),color var(--ease);}
 #dr-app .statuschip.overdue:hover{border-color:var(--brand);}
 #dr-app .statuschip.error:hover{border-color:var(--red);}
@@ -78,19 +71,17 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 #dr-app .statuschip.overdue[aria-pressed="true"]{background:var(--brand);color:var(--ink);}
 #dr-app .statuschip.error[aria-pressed="true"]{background:var(--red);color:#ffffff;}
 
-/* ---- summary counts ---- */
 #dr-app .summarybar{display:flex;gap:18px;flex-wrap:wrap;margin:0 0 16px;font-size:13px;color:var(--body);}
 #dr-app .summarybar b{font-size:17px;color:var(--ink);}
 
-/* ---- cards ---- */
 #dr-app .groups{display:flex;flex-direction:column;gap:22px;}
 #dr-app .month-group h3{font-size:13px;font-weight:700;color:var(--body);margin:0 0 10px;padding-left:2px;}
 #dr-app .cards{display:flex;flex-direction:column;gap:12px;}
 
 #dr-app .card{border-radius:var(--r);border:1.2px solid var(--line);overflow:hidden;background:var(--paper);transition:border-color var(--ease),opacity var(--ease);}
-/* 展開後最外層不再 hover，改由內層區塊負責（與申請表一致） */
+
 #dr-app .card:not(.open):hover{border-color:var(--card-hover, var(--brand));}
-/* 展開某一張時，其餘案件淡出反白 */
+
 #dr-app .groups.has-open .card:not(.open){opacity:.35;filter:grayscale(1);}
 #dr-app .card-top{padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;flex-wrap:wrap;}
 #dr-app .card-top .idcode{font-weight:900;font-size:13.5px;flex:0 0 auto;font-family:monospace,inherit;}
@@ -100,14 +91,11 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 #dr-app .card-top .caret{flex:0 0 auto;width:11px;height:7px;transition:transform var(--ease);}
 #dr-app .card.open .caret{transform:rotate(180deg);}
 
-/* 卡片背景（僅頂端 ID 條帶色，內容區維持白）優先序：
-   錯誤／退回／取消＝紅 > 逾期＝黃 > 白。
-   逾期且結案另外加上 is-grey：整張卡飽和度歸零＝反灰；展開時移除濾鏡，顏色回來。 */
 #dr-app .card.bg-error .card-top{background:var(--red-l);}
 #dr-app .card.bg-overdue .card-top{background:var(--brand-l);}
 #dr-app .card.bg-normal .card-top{background:var(--paper);}
 #dr-app .card.is-grey:not(.open){filter:grayscale(1);}
-/* 已刪除：整條高度不變，但不可展開，整張轉灰階並在原本的資訊位置寫明誰刪除的 */
+
 #dr-app .card.is-deleted{filter:grayscale(1);}
 #dr-app .card.is-deleted .card-top{cursor:default;}
 #dr-app .card.is-deleted .caret{visibility:hidden;}
@@ -116,9 +104,8 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 #dr-app .card-detail{display:none;background:var(--paper);border-top:1.2px solid var(--hair);padding:18px 16px;}
 #dr-app .card.open .card-detail{display:block;}
 
-/* 展開內：背景白，hover 僅作用在內層區塊，不作用於外層容器 */
 #dr-app .dpanel{border:1.2px solid var(--hair);border-radius:var(--r);padding:14px;margin-bottom:14px;background:var(--paper);transition:border-color var(--ease);}
-/* 展開內部的 hover 一律跟隨該案件的狀態色 */
+
 #dr-app .dpanel:hover{border-color:var(--card-hover, var(--brand));}
 #dr-app .card-detail input:hover,
 #dr-app .card-detail textarea:hover,
@@ -134,12 +121,12 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 #dr-app .dfield:last-child{margin-bottom:0;}
 #dr-app .dfield label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:5px;}
 #dr-app .dfield input,#dr-app .dfield textarea,#dr-app .dfield select{width:100%;}
-/* 輸入框只能上下拉，上限為初始高度三倍 */
+
 #dr-app textarea{resize:vertical;}
 #dr-app .dfield textarea{min-height:56px;max-height:168px;}
 
 #dr-app .statuschips-inline{display:flex;gap:7px;flex-wrap:wrap;}
-/* 狀態膠囊：未選取為第二級外框模式、hover 帶出該狀態自己的顏色；選中為第一級純色 */
+
 #dr-app .schip{height:28px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--paper);font-family:inherit;font-size:12px;color:var(--ink);cursor:pointer;transition:background-color var(--ease),border-color var(--ease),color var(--ease);}
 #dr-app .schip:hover{border-color:var(--schip-color, var(--brand));}
 #dr-app .schip[aria-pressed="true"]{border-color:transparent;font-weight:700;}
@@ -147,17 +134,15 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 
 #dr-app .chip{height:30px;padding:0 13px;border-radius:999px;border:1px solid var(--line);background:var(--paper);font-family:inherit;font-size:12.5px;color:var(--ink);cursor:pointer;transition:background-color var(--ease),border-color var(--ease),color var(--ease);}
 #dr-app .chip:hover{border-color:var(--brand);}
-/* 有自己顏色的膠囊，hover 邊框就用它被選中後的顏色 */
+
 #dr-app .chip.c-digital:hover{border-color:var(--blue);}
 #dr-app .chip.c-print:hover{border-color:var(--brown);}
 #dr-app .chip[aria-pressed="true"]{background:var(--brand);border-color:transparent;font-weight:700;color:var(--ink);}
 #dr-app .chip[aria-pressed="true"]:hover{border-color:transparent;filter:brightness(.95);}
-/* 數位／印刷選中時用各自的色票原色，與徽章同色 */
+
 #dr-app .chip.c-digital[aria-pressed="true"]{background:var(--blue);}
 #dr-app .chip.c-print[aria-pressed="true"]{background:var(--brown);color:#ffffff;}
 
-/* 徽章（與 index.html 同一套）：第一級純色、第二級外框色。
-   總覽卡片列已有狀態膠囊這個第一級，所以那裡的文案徽章掛 .lv2 降為第二級。 */
 #dr-app .badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;border:1px solid transparent;color:var(--ink);flex:0 0 auto;}
 #dr-app .badge.pending{background:var(--body);color:#ffffff;}
 #dr-app .badge.ready{background:var(--body);color:#ffffff;}
@@ -172,7 +157,7 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 #dr-app .itemblock{border:1.2px solid var(--hair);border-radius:var(--r);padding:12px;margin-bottom:10px;background:var(--tint);transition:border-color var(--ease);}
 #dr-app .itemblock:hover{border-color:var(--card-hover, var(--brand));}
 #dr-app .itemblock:last-child{margin-bottom:0;}
-/* 子項目標題列：線框圓圈編號＋徽章，與 index.html 的 .item-head 同一套 */
+
 #dr-app .itemblock-title{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
 #dr-app .itemblock-title .idx{
   flex:0 0 auto;width:22px;height:22px;border-radius:50%;
@@ -193,7 +178,6 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 #dr-app .del-line{border:0;background:none;color:var(--muted);cursor:pointer;font-size:14px;flex:0 0 auto;}
 #dr-app .del-line:hover{color:var(--red);}
 
-/* 異動紀錄：分隔線改為橫跨整個面板的實線 */
 #dr-app .logbox{font-size:11.5px;color:var(--muted);border-top:1px solid var(--hair);padding:10px 14px 0;margin:6px -14px 0;max-height:130px;overflow-y:auto;}
 #dr-app .logbox .entry{padding:2px 0;}
 
@@ -209,7 +193,6 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 
 #dr-app .empty{text-align:center;padding:60px 20px;color:var(--muted);font-size:13px;}
 
-/* ---- 上下頁：案件量大時才出現，樣式沿用黑框按鈕那一套 ---- */
 #dr-app .pager{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:26px;}
 #dr-app .pgbtn{height:34px;padding:0 18px;border-radius:999px;border:1px solid var(--ink);background:transparent;color:var(--ink);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;transition:background-color var(--ease),border-color var(--ease),color var(--ease);}
 #dr-app .pgbtn:hover{background:var(--ink);border-color:var(--ink);color:#ffffff;}
@@ -217,10 +200,14 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 #dr-app .pgbtn[disabled]:hover{background:transparent;border-color:var(--ink);color:var(--ink);}
 #dr-app .pginfo{font-size:12.5px;color:var(--body);min-width:72px;text-align:center;}
 
-/* 新增申請按鈕：唯一固定實色按鈕 */
-
-
 [hidden]{display:none!important;}
+
+.btn-sm.is-loading{pointer-events:none;opacity:.72}
+.btn-sm .action-spinner{display:none;width:14px;height:14px;border-radius:50%;border:2px solid rgba(17,17,17,.22);border-top-color:currentColor;animation:action-spin .7s linear infinite}
+.btn-sm.is-loading .action-spinner{display:inline-block}
+.btn-sm.is-loading .action-label{display:none}
+@keyframes action-spin{to{transform:rotate(360deg)}}
+
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -383,17 +370,13 @@ function startGoogleLogin(){
   google.accounts.id.prompt();
 }
 
-/* 部門固定只有這兩個，其他來源一律不採用 */
 var DEPTS = ["BAUI","BAUII"];
 
-/* 與 index.html 同步：距交付日不足這個工作天數即為急件 */
 var URGENT_WORKING_DAYS = 5;
 
-/* 一頁顯示幾筆；總數超過才會出現上下頁 */
 var PAGE_SIZE = 20;
 var currentPage = 1;
 
-/* ===================== 設定資料（與 index.html 同步） ===================== */
 var STATUS_META = {
   "待確認": {bg:"#666666", fg:"#ffffff", dot:"#666666"},
   "已排程": {bg:"#4AACFE", fg:"#111111", dot:"#4AACFE"},
@@ -447,7 +430,6 @@ function applyDefaultSize(it){
   else if(d.note) it.sizeRows[0].px = d.note;
 }
 
-/* ===================== 工作天 ===================== */
 function parseDate(s){ if(!s) return null; var p=s.split("-"); return new Date(+p[0],+p[1]-1,+p[2]); }
 function workingDaysBetween(from, to){
   if(!from || !to) return null;
@@ -489,7 +471,6 @@ function hasError(rec){
   return rec.data.items.some(function(it){ return !it.typeId; });
 }
 
-/* ===================== 篩選狀態 ===================== */
 var activeQuick = { overdue:false, error:false };
 
 function populateFilters(){
@@ -531,10 +512,9 @@ function matchesFilter(rec){
   if(dept && rec.data.dept!==dept) return false;
   var status = document.getElementById("f-status").value;
   if(status && rec.status!==status) return false;
-  /* 快篩為聯集（OR）：同時勾逾期與錯誤時，兩者任一成立都要選出來，
-     所以「又逾期又錯誤」的案件一定會被選到，不會兩邊都漏掉。 */
+  
   if(activeQuick.overdue || activeQuick.error){
-    /* 已刪除的案件不再需要處理，不列入逾期／錯誤快篩 */
+    
     if(rec.deleted) return false;
     var hit = (activeQuick.overdue && isOverdue(rec)) || (activeQuick.error && hasError(rec));
     if(!hit) return false;
@@ -542,12 +522,8 @@ function matchesFilter(rec){
   return true;
 }
 
-/* ===================== 卡片渲染 ===================== */
-var openCardId = null; /* 追蹤展開中的卡片，重繪後恢復，避免操作後被收合 */
+var openCardId = null; 
 
-/* 底色優先序：錯誤／退回／取消（紅）> 逾期（黃）> 白。
-   「又逾期又錯誤」以錯誤的紅底為主。
-   逾期且結案再額外加 is-grey：整張卡飽和度歸零，展開時濾鏡移除、顏色回來。 */
 function cardBgClass(rec){
   var cls;
   if(hasError(rec) || rec.status==="退回" || rec.status==="取消") cls = "bg-error";
@@ -566,7 +542,7 @@ function renderAll(){
     '<div>逾期 <b>'+list.filter(function(r){return !r.deleted && isOverdue(r);}).length+'</b> 筆</div>' +
     '<div>文案待補 <b>'+list.filter(function(r){return !r.deleted && isPending(r);}).length+'</b> 筆</div>';
 
-  /* 分頁：總筆數超過 PAGE_SIZE 才啟用，否則整組控制項隱藏 */
+  
   var totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
   if(currentPage > totalPages) currentPage = totalPages;
   if(currentPage < 1) currentPage = 1;
@@ -620,7 +596,7 @@ function renderCard(rec){
     '<div class="cmeta">'+escapeHtml(rec.data.dept || (rec.submitter?rec.submitter.name:""))+' ・ '+fmtDate(new Date(rec.submittedAt))+
       (rec.deleted ? '' : (isOverdue(rec) ? '　<b style="color:var(--brand-dk);">逾期</b>' : (isUrgent(rec) ? '　<b style="color:var(--red);">急件</b>' : '')))+
     '</div>';
-  /* 這一列已經有狀態膠囊這個第一級，所以文案徽章降為第二級外框模式 */
+  
   var copyBadge = document.createElement("span");
   copyBadge.className = "badge lv2 " + (isPending(rec) ? "pending" : "ready");
   copyBadge.textContent = isPending(rec) ? "文案待補" : "文案已提供";
@@ -640,7 +616,7 @@ function renderCard(rec){
   var built = false;
 
   if(rec.deleted){
-    /* 用原本的資訊位置寫明刪除者，維持整條高度不變 */
+    
     var cmetaEl = top.querySelector(".cmeta");
     if(cmetaEl) cmetaEl.textContent = "已由 "+rec.deleted.by+" 於 "+fmtDate(new Date(rec.deleted.at))+" 刪除";
     return card;
@@ -648,7 +624,7 @@ function renderCard(rec){
 
   top.addEventListener("click", function(){
     var willOpen = !card.classList.contains("open");
-    /* 一次只展開一張：先關掉其他張，其餘卡片再依 has-open 淡出 */
+    
     if(willOpen){
       document.querySelectorAll("#dr-groups .card.open").forEach(function(x){ x.classList.remove("open"); });
     }
@@ -668,12 +644,21 @@ function syncOpenDim(){
 function fmtDate(d){ return d.getFullYear()+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+String(d.getDate()).padStart(2,"0"); }
 function escapeHtml(s){ return String(s==null?"":s).replace(/[&<>]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c]; }); }
 
-/* ===================== 詳情：working-copy + explicit save ===================== */
+function setActionLoading(btn, loading){
+  if(!btn) return;
+  btn.disabled = !!loading;
+  btn.classList.toggle("is-loading", !!loading);
+}
+function prepareActionButton(btn, text){
+  btn.innerHTML='<span class="action-label"></span><span class="action-spinner" aria-hidden="true"></span>';
+  btn.querySelector(".action-label").textContent=text;
+}
+
 function buildDetail(rec, container){
   var work = JSON.parse(JSON.stringify(rec));
   if(typeof work.meetingDate !== "string") work.meetingDate = "";
 
-  /* 用來判斷「這次儲存到底改了什麼」，好決定異動紀錄要寫哪幾行 */
+  
   var baseStatus = work.status;
   var baseData   = JSON.stringify(work.data);
   var baseMeet   = work.meetingDate;
@@ -684,7 +669,7 @@ function buildDetail(rec, container){
     return d.getFullYear()+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+String(d.getDate()).padStart(2,"0")
       +" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
   }
-  /* 格式：2026/09/15 16:37 charlie@patroni.com.tw 修改了：結案 */
+  
   function logText(entry){
     var what = entry.text || (entry.fields||[]).join("、") || "內容更新";
     return stamp(new Date(entry.time))+"　"+entry.user+"　修改了："+what;
@@ -696,7 +681,7 @@ function buildDetail(rec, container){
     if(logPanel) logPanel.hidden = false;
   }
 
-  /* 寫回真正後端：Requests Sheet + Logs + Google Doc */
+  
   async function writeBack(labels){
     labels = (labels||[]).filter(Boolean);
     if(!labels.length) labels = ["內容更新"];
@@ -730,7 +715,7 @@ function buildDetail(rec, container){
     hintEl.textContent = msg; hintEl.classList.add("show");
     setTimeout(function(){ hintEl.classList.remove("show"); }, 2200);
   }
-  /* 只原地更新這張卡自己的外觀，不動清單 */
+  
   function updateCardChrome(){
     var cardEl = container.closest(".card");
     if(!cardEl) return;
@@ -759,10 +744,10 @@ function buildDetail(rec, container){
     });
   }
 
-  /* ---------- 版面 ---------- */
+  
   var frag = document.createDocumentFragment();
 
-  /* 面板一：申請單層級欄位 */
+  
   var p1 = document.createElement("div"); p1.className="dpanel";
   p1.appendChild(dfieldText("需求名稱", work.data.name, function(v){ work.data.name=v; }));
 
@@ -803,14 +788,14 @@ function buildDetail(rec, container){
   row.appendChild(audField);
   p1.appendChild(row);
 
-  /* 備註：總覽也要看得到、也要能追加 */
+  
   var noteRow = document.createElement("div"); noteRow.className="drow";
   noteRow.appendChild(dfieldTextarea("備註 1", work.data.note1, function(v){ work.data.note1=v; }));
   noteRow.appendChild(dfieldTextarea("備註 2", work.data.note2, function(v){ work.data.note2=v; }));
   p1.appendChild(noteRow);
   frag.appendChild(p1);
 
-  /* 面板二：項目 + 會議日期 */
+  
   var p2 = document.createElement("div"); p2.className="dpanel";
   var p2title = document.createElement("div"); p2title.className="dpanel-title"; p2title.textContent="項目";
   p2.appendChild(p2title);
@@ -835,14 +820,14 @@ function buildDetail(rec, container){
   });
   p2.appendChild(addBtn);
 
-  /* 會議日期：只在總覽（送出後）填寫，申請表沒有這個欄位 */
+  
   var meetWrap = document.createElement("div");
   meetWrap.style.marginTop = "14px";
   meetWrap.appendChild(dfieldDate("會議日期", work.meetingDate, function(v){ work.meetingDate=v; }));
   p2.appendChild(meetWrap);
   frag.appendChild(p2);
 
-  /* 面板三：異動紀錄（一律建立，空的時候隱藏，之後可即時附加） */
+  
   logPanel = document.createElement("div"); logPanel.className="dpanel";
   var lt = document.createElement("div"); lt.className="dpanel-title"; lt.textContent="異動紀錄";
   logPanel.appendChild(lt);
@@ -855,14 +840,14 @@ function buildDetail(rec, container){
   logPanel.hidden = !(work.log && work.log.length);
   frag.appendChild(logPanel);
 
-  /* 動作列 */
+  
   var actions = document.createElement("div"); actions.className="detail-actions";
   hintEl = document.createElement("span"); hintEl.className="saved-hint";
 
-  var btnSave = document.createElement("button"); btnSave.type="button"; btnSave.className="btn-sm primary"; btnSave.textContent="儲存";
+  var btnSave = document.createElement("button"); btnSave.type="button"; btnSave.className="btn-sm primary"; prepareActionButton(btnSave,"儲存");
   btnSave.addEventListener("click", async function(e){
     e.stopPropagation();
-    btnSave.disabled = true;
+    setActionLoading(btnSave, true);
     try{
       var labels = [];
       if(work.status !== baseStatus) labels.push(work.status);
@@ -872,14 +857,14 @@ function buildDetail(rec, container){
     }catch(err){
       flash("儲存失敗："+err.message);
     }finally{
-      btnSave.disabled = false;
+      setActionLoading(btnSave, false);
     }
   });
 
-  var btnResend = document.createElement("button"); btnResend.type="button"; btnResend.className="btn-sm"; btnResend.textContent="重新發送需求";
+  var btnResend = document.createElement("button"); btnResend.type="button"; btnResend.className="btn-sm"; prepareActionButton(btnResend,"重新發送需求");
   btnResend.addEventListener("click", async function(e){
     e.stopPropagation();
-    btnResend.disabled = true;
+    setActionLoading(btnResend, true);
     try{
       var labels = [];
       if(work.status !== "待確認"){ setStatus("待確認"); labels.push("待確認"); }
@@ -891,11 +876,11 @@ function buildDetail(rec, container){
     }catch(err){
       flash("重新發送失敗："+err.message);
     }finally{
-      btnResend.disabled = false;
+      setActionLoading(btnResend, false);
     }
   });
 
-  var btnWord = document.createElement("button"); btnWord.type="button"; btnWord.className="btn-sm"; btnWord.textContent="寄送 Word 給申請人";
+  var btnWord = document.createElement("button"); btnWord.type="button"; btnWord.className="btn-sm"; prepareActionButton(btnWord,"寄送 Word 給申請人");
   btnWord.addEventListener("click", async function(e){
     e.stopPropagation();
     var recipient = work.submitter && work.submitter.email ? work.submitter.email : "";
@@ -905,9 +890,7 @@ function buildDetail(rec, container){
     }
     if(!confirm("確定要將目前最新版 Word 寄給申請人？\\n\\n收件人："+recipient)) return;
 
-    btnWord.disabled = true;
-    var oldText = btnWord.textContent;
-    btnWord.textContent = "寄送中…";
+    setActionLoading(btnWord, true);
     try{
       var result = await apiPost("sendWordToApplicant", {requestId:work.id});
       if(result.log) prependLogEntry(result.log);
@@ -915,25 +898,23 @@ function buildDetail(rec, container){
     }catch(err){
       flash("寄送失敗："+err.message);
     }finally{
-      btnWord.disabled = false;
-      btnWord.textContent = oldText;
+      setActionLoading(btnWord, false);
     }
   });
 
-
-  var btnDelete = document.createElement("button"); btnDelete.type="button"; btnDelete.className="btn-sm danger"; btnDelete.textContent="刪除";
+  var btnDelete = document.createElement("button"); btnDelete.type="button"; btnDelete.className="btn-sm danger"; prepareActionButton(btnDelete,"刪除");
   btnDelete.style.marginLeft="auto";
   btnDelete.addEventListener("click", async function(e){
     e.stopPropagation();
     if(!confirm("確定要刪除「"+(work.data.name||work.id)+"」？\\n\\n這會刪除 Requests 資料、Google Doc 與此案件的 Logs，無法復原。")) return;
-    btnDelete.disabled = true;
+    setActionLoading(btnDelete, true);
     try{
       await apiPost("deleteRequest", {requestId:work.id});
       REMOTE_RECORDS = REMOTE_RECORDS.filter(function(x){ return x.id!==work.id; });
       openCardId = null;
       renderAll();
     }catch(err){
-      btnDelete.disabled = false;
+      setActionLoading(btnDelete, false);
       flash("刪除失敗："+err.message);
     }
   });
@@ -949,12 +930,10 @@ function buildDetail(rec, container){
   container.appendChild(frag);
 }
 
-
 function newItemData(){
   return { _id:"it"+Date.now()+Math.random().toString(16).slice(2), name:"", typeId:"", output:[], sizeRows:[{purpose:"",customText:"",px:""}], printQty:"", exposure:"", exposureModel:"", copy:{head:"",sub:"",small:"",other:""}, channel:"", useDate:"", cta:"", note:"", page:"", platform:[], pagecount:"", blocks:[] };
 }
 
-/* 徽章內容與 index.html 的 buildBadgesHTML 保持一致 */
 function buildItemBadgesHTML(it){
   var t = typeOf(it.typeId);
   var html = "";
@@ -974,7 +953,7 @@ function buildItemBadgesHTML(it){
 function buildItemBlock(it, idx, onStructuralChange, onDelete){
   var box = document.createElement("div"); box.className="itemblock";
 
-  /* 子項目標題列：線框圓圈編號＋徽章（與申請表同一套元素） */
+  
   var titleRow = document.createElement("div"); titleRow.className="itemblock-title";
   var idxEl = document.createElement("div"); idxEl.className="idx"; idxEl.textContent = String(idx+1);
   titleRow.appendChild(idxEl);
@@ -1062,7 +1041,7 @@ function buildItemBlock(it, idx, onStructuralChange, onDelete){
           var r = document.createElement("div"); r.className="sizerow";
           var sf = document.createElement("div"); sf.className="dfield"; sf.style.margin="0";
           if(row.purpose==="__custom__"){
-            /* 自訂用途：原位換成「自訂：」＋輸入框，與 index.html 同一套 */
+            
             var cw = document.createElement("div");
             cw.style.cssText="display:flex;align-items:center;gap:6px;border:1.2px solid var(--line);border-radius:var(--r);padding:0 4px 0 12px;height:38px;background:var(--paper);";
             var pfx = document.createElement("span"); pfx.textContent="自訂：";
@@ -1154,7 +1133,7 @@ function buildItemBlock(it, idx, onStructuralChange, onDelete){
       if(t.showChannel){ box.appendChild(dfieldText("使用位置", it.channel, function(v){ it.channel=v; })); }
       box.appendChild(dfieldDate("交付日", it.useDate, function(v){ it.useDate=v; }));
     }
-    /* 項目備註：總覽也要看得到、也要能追加 */
+    
     if(t.mode!=="notice"){
       box.appendChild(dfieldTextarea("項目備註", it.note, function(v){ it.note=v; }));
     }
@@ -1168,7 +1147,6 @@ function buildItemBlock(it, idx, onStructuralChange, onDelete){
   return box;
 }
 
-/* ===================== 小欄位工具 ===================== */
 function dfieldText(label, val, onChange){
   var f = document.createElement("div"); f.className="dfield";
   f.appendChild(elh("label", label));
@@ -1206,8 +1184,6 @@ function dfieldNumber(label, val, onChange){
   return f;
 }
 
-/* ===================== 事件綁定 ===================== */
-/* 任何篩選變動都回到第一頁，避免停在一個已經不存在的頁碼上 */
 function refilter(){ currentPage = 1; openCardId = null; renderAll(); }
 document.getElementById("f-search").addEventListener("input", refilter);
 document.getElementById("f-dept").addEventListener("change", refilter);
@@ -1232,7 +1208,6 @@ document.getElementById("dr-logout").addEventListener("click", function(){
   window.location.reload();
 });
 
-/* ===================== 啟動 ===================== */
 populateFilters();
 renderAll();
 startGoogleLogin();
