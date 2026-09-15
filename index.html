@@ -43,11 +43,14 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 #dr-app .btn-topbar{flex:0 0 auto;height:34px;padding:0 18px;border-radius:999px;border:1px solid var(--brand);background:var(--brand);color:var(--ink);font-family:inherit;font-size:13px;font-weight:700;letter-spacing:.04em;cursor:pointer;display:inline-flex;align-items:center;text-decoration:none;transition:filter var(--ease),transform var(--ease);}
 #dr-app .btn-topbar:hover{filter:brightness(.95);transform:scale(1.02);}
 #dr-app .devbadge{background:#eef2f5;border-bottom:1px solid var(--hair);text-align:center;font-size:12px;color:var(--body);padding:6px 12px;}
-#dr-gate{min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;padding:40px 20px;text-align:center;}
-#dr-gate .g-title{font-size:20px;font-weight:900;}
-#dr-gate .g-sub{font-size:13px;color:var(--body);max-width:360px;}
-#dr-gate .g-note{font-size:11px;color:var(--muted);max-width:340px;}
-#dr-google-button{min-height:44px;display:flex;justify-content:center;}
+#dr-gate{box-sizing:border-box;width:100%;min-height:100dvh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:32px 20px;text-align:center;background:var(--tint);}
+#dr-gate .g-title{font-size:20px;line-height:1.4;font-weight:900;color:var(--ink);}
+#dr-gate .g-sub{max-width:380px;margin:0;font-size:13px;line-height:1.7;color:var(--body);}
+#dr-gate .g-login-label{font-size:13px;line-height:1.5;font-weight:700;color:var(--ink);}
+#dr-gate .g-note{max-width:380px;margin:0;font-size:11px;line-height:1.7;color:var(--muted);}
+#dr-gate .google-login-slot{min-height:44px;display:flex;align-items:center;justify-content:center;}
+#dr-login-status{min-height:18px;font-size:12px;line-height:1.5;color:var(--body);}
+#dr-login-status.err{color:var(--red);}
 #dr-login-status{font-size:12px;color:var(--body);min-height:20px;}
 #dr-login-status.err{color:var(--red);}
 #dr-app .draftbar{background:var(--brand-l);border:1.2px solid var(--brand);border-radius:var(--r);padding:12px 16px;margin:16px 0;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:13px;}
@@ -219,7 +222,7 @@ html,body{margin:0;padding:0;background:#eeeeee;}
   <div id="dr-gate">
     <div class="g-title">允禾發 設計需求表</div>
     <div class="g-sub">請使用 @harfunco.com Google Workspace 帳號登入。</div>
-    <button type="button" class="btn-primary" id="dr-login-action">使用允禾發 Google 帳號登入</button><div id="dr-google-button" hidden></div>
+    <div class="g-login-label">使用允禾發 Google 帳號登入</div><div class="google-login-slot" id="dr-google-button"></div>
     <div id="dr-login-status"></div>
     <div class="g-note">帳號用於身分驗證與需求表寄送。</div>
   </div>
@@ -331,8 +334,8 @@ var el=function(tag,cls,html){var e=document.createElement(tag);if(cls)e.classNa
 function initialsFromName(name){var parts=String(name||"").trim().split(/\s+/).filter(Boolean);if(parts.length>=2)return(parts[0].charAt(0)+parts[parts.length-1].charAt(0)).toUpperCase();if(parts.length===1)return parts[0].slice(0,2).toUpperCase();return"";}
 function showAuthenticatedUser(data,credential){googleCredential=credential;user={sub:data.sub||"",name:data.name||"",email:data.email||"",initials:initialsFromName(data.name)};$("dr-username").textContent=user.name;$("dr-avatar").textContent=user.initials;$("f-applicant-name").textContent=user.initials+"<"+user.email+">";$("f-applicant-email").textContent="";$("dr-gate").hidden=true;$("dr-main").hidden=false;checkDraft();render();}
 async function handleCredentialResponse(response){var status=$("dr-login-status");status.className="";status.textContent="正在驗證公司帳號…";try{if(!response||!response.credential)throw new Error("Google 未回傳登入憑證");var apiResponse=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"whoAmI",credential:response.credential})});var data=await apiResponse.json();if(!data.ok)throw new Error(data.error||"後端驗證失敗");status.textContent="";showAuthenticatedUser(data.user,response.credential);}catch(error){console.error(error);status.className="err";status.textContent="登入驗證失敗："+error.message;}}
-function initGoogleLogin(){if(!window.google||!google.accounts||!google.accounts.id){setTimeout(initGoogleLogin,100);return;}google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:handleCredentialResponse,hd:"harfunco.com",auto_select:true});google.accounts.id.renderButton($("dr-google-button"),{theme:"outline",size:"large",text:"signin_with"});google.accounts.id.prompt();}
-$("dr-logout").addEventListener("click",function(){if(user&&user.email&&window.google&&google.accounts&&google.accounts.id)google.accounts.id.disableAutoSelect();google.accounts.id.cancel();user=null;googleCredential=null;$("dr-main").hidden=true;$("dr-gate").hidden=false;$("dr-login-status").textContent="";});
+function initGoogleLogin(){if(!window.google||!google.accounts||!google.accounts.id){setTimeout(initGoogleLogin,100);return;}google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:handleCredentialResponse,hd:"harfunco.com",auto_select:true});google.accounts.id.renderButton($("dr-google-button"),{theme:"outline",size:"large",text:"signin_with",shape:"rectangular",width:300});google.accounts.id.prompt();}
+$("dr-logout").addEventListener("click",function(){if(window.google&&google.accounts&&google.accounts.id){google.accounts.id.disableAutoSelect();google.accounts.id.cancel();}user=null;googleCredential=null;$("dr-main").hidden=true;$("dr-gate").hidden=false;$("dr-login-status").textContent="";});
 function pad(n){return n<10?"0"+n:""+n;}
 function fmtDate(d){return d.getFullYear()+"/"+pad(d.getMonth()+1)+"/"+pad(d.getDate());}
 $("dr-datetime").textContent=fmtDate(new Date());
