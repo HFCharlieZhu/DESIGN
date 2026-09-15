@@ -885,7 +885,9 @@ function buildDetail(rec, container){
       if(work.status !== "待確認"){ setStatus("待確認"); labels.push("待確認"); }
       labels.push("重新發送需求");
       await writeBack(labels);
-      flash("已重新發送，狀態重置為待確認。");
+      var mailResult = await apiPost("sendRequestNotification", {requestId:work.id, mode:"resend"});
+      if(mailResult.log) prependLogEntry(mailResult.log);
+      flash("已重新發送，並寄出最新版需求表。");
     }catch(err){
       flash("重新發送失敗："+err.message);
     }finally{
@@ -894,14 +896,30 @@ function buildDetail(rec, container){
   });
 
   var btnWord = document.createElement("button"); btnWord.type="button"; btnWord.className="btn-sm"; btnWord.textContent="寄送 Word 給申請人";
-  btnWord.addEventListener("click", function(e){
+  btnWord.addEventListener("click", async function(e){
     e.stopPropagation();
-    flash("寄信功能尚未接 Gmail，這個按鈕目前不會寄出郵件。");
+    var recipient = work.submitter && work.submitter.email ? work.submitter.email : "";
+    if(!recipient){
+      flash("此案件沒有申請人信箱。");
+      return;
+    }
+    if(!confirm("確定要將目前最新版 Word 寄給申請人？\\n\\n收件人："+recipient)) return;
+
+    btnWord.disabled = true;
+    var oldText = btnWord.textContent;
+    btnWord.textContent = "寄送中…";
+    try{
+      var result = await apiPost("sendWordToApplicant", {requestId:work.id});
+      if(result.log) prependLogEntry(result.log);
+      flash("已寄送最新版 Word 至 "+result.recipient+"。");
+    }catch(err){
+      flash("寄送失敗："+err.message);
+    }finally{
+      btnWord.disabled = false;
+      btnWord.textContent = oldText;
+    }
   });
 
-  var btnDoc = document.createElement("a"); btnDoc.className="btn-sm"; btnDoc.textContent="查看完整需求";
-  btnDoc.href = work.docUrl || "#"; btnDoc.target="_blank"; btnDoc.rel="noopener";
-  if(!work.docUrl){ btnDoc.style.opacity=".4"; btnDoc.style.pointerEvents="none"; }
 
   var btnDelete = document.createElement("button"); btnDelete.type="button"; btnDelete.className="btn-sm danger"; btnDelete.textContent="刪除";
   btnDelete.style.marginLeft="auto";
@@ -923,7 +941,6 @@ function buildDetail(rec, container){
   actions.appendChild(btnSave);
   actions.appendChild(btnResend);
   actions.appendChild(btnWord);
-  actions.appendChild(btnDoc);
   actions.appendChild(hintEl);
   actions.appendChild(btnDelete);
   frag.appendChild(actions);
