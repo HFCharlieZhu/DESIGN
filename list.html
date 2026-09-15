@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>允禾發 設計需求表</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Sans:wght@400;500;700&display=swap">
+<style>
+:root{color-scheme:light;}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:#eeeeee;}
+#dr-app{
+  --brand:#f8b500; --brand-l:#fff3d1; --brand-dk:#d39a00; /* 深 15%，僅供「逾期」標記使用 */
+  --ink:#111111; --body:#666666; --muted:#9fa0a0;
+  --line:#bababa; --hair:#d8d6d0;
+  --paper:#ffffff; --tint:#eeeeee;
+  --blue:#4AACFE; --blue-l:#e5f4ff;
+  --brown:#AC6A27;
+  --green:#8CCDB8; --green-l:#e3f5ee;
+  --red:#ef8585; --red-l:#fbe3e3;
+  --yellow-l:#fff3d1;
+  --grey-inv:#d8d8d8;
+  --r:8px; --shadow:4px 4px 6px rgba(0,0,0,.15);
+  --ease:.18s;
+  font-family:'Noto Sans TC','Noto Sans',system-ui,-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif;
+  color:var(--ink); background:var(--tint);
+  min-height:100vh; line-height:1.7; letter-spacing:.02em;
+  -webkit-font-smoothing:antialiased;
+}
+#dr-app *{box-sizing:border-box;}
+#dr-app .wrap{max-width:1040px;margin:0 auto;padding:0 20px 80px;}
+
+/* ---- 統一互動規則：與 index.html 同一套，勿單邊修改 ----
+   1) 線框元件 hover → 邊框品牌色；2) 已選 chip 實色、邊框透明、hover 無邊線；
+   3) 黑框按鈕 hover → 黑底白字；4) 主要操作按鈕實色品牌黃；
+   5) 大項目編號實色圓圈、子項目編號線框圓圈。 */
+
+/* ---- top bar：55% 不透明 + 15px 模糊（結構與 index.html 一致）---- */
+#dr-app .topbar{
+  background:rgba(255,255,255,.55); -webkit-backdrop-filter:blur(15px); backdrop-filter:blur(15px);
+  border-bottom:1.2px solid var(--hair);
+  position:sticky;top:0;z-index:50;
+}
+#dr-app .topbar-in{max-width:1040px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:12px;}
+#dr-app .topbar-title{font-weight:900;font-size:16px;letter-spacing:.04em;flex:0 0 auto;}
+#dr-app .topbar-kind{font-weight:500;font-size:12px;color:var(--body);margin-left:8px;letter-spacing:.06em;}
+#dr-app .btn-link{border:0;background:none;color:var(--body);font-size:12px;cursor:pointer;text-decoration:underline;font-family:inherit;padding:0;}
+#dr-app .topbar-sub{font-size:12px;color:var(--muted);flex:1 1 auto;}
+#dr-app .topbar-user{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--body);flex:0 0 auto;}
+#dr-app .avatar{width:26px;height:26px;border-radius:50%;background:var(--brand);color:var(--ink);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex:0 0 auto;}
+/* 表頭動作按鈕：兩頁共用同一個樣式，只有文字不同 */
+#dr-app .btn-topbar{flex:0 0 auto;height:34px;padding:0 18px;border-radius:999px;border:1px solid var(--brand);background:var(--brand);color:var(--ink);font-family:inherit;font-size:13px;font-weight:700;letter-spacing:.04em;cursor:pointer;display:inline-flex;align-items:center;text-decoration:none;transition:filter var(--ease),transform var(--ease);}
+#dr-app .btn-topbar:hover{filter:brightness(.95);transform:scale(1.02);}
+#dr-app .devbadge{background:#eef2f5;border-bottom:1px solid var(--hair);text-align:center;font-size:12px;color:var(--body);padding:6px 12px;}
+
+/* ---- filter bar ---- */
+#dr-app .filterbar{background:var(--paper);border:1.2px solid var(--line);border-radius:var(--r);padding:16px;margin:16px 0;}
+#dr-app .filterrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+#dr-app .filterrow input[type=text]{flex:1 1 220px;min-width:160px;}
+#dr-app .filterrow select{flex:0 0 auto;width:auto;min-width:120px;}
+#dr-app input[type=text],#dr-app select,#dr-app textarea,#dr-app input[type=date],#dr-app input[type=number]{
+  font-family:inherit;font-size:13.5px;color:var(--ink);background:var(--paper);
+  border:1.2px solid var(--line);border-radius:var(--r);padding:9px 12px;outline:none;transition:border-color var(--ease);
+}
+#dr-app input:hover,#dr-app select:hover,#dr-app textarea:hover{border-color:var(--brand);}
+#dr-app input:focus,#dr-app select:focus,#dr-app textarea:focus{border-color:var(--brand);}
+#dr-app select{appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='11' height='7'><path d='M1 1l4.5 4.5L10 1' stroke='%23111' stroke-width='1.6' fill='none'/></svg>");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:30px;}
+#dr-app .chiprow{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+/* 快篩 chip：無圓點；選中＝該語意的原色實填（逾期黃／錯誤紅），不加深 */
+#dr-app .statuschip{height:30px;padding:0 13px;border-radius:999px;border:1px solid var(--line);background:var(--paper);font-family:inherit;font-size:12.5px;color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;transition:background-color var(--ease),border-color var(--ease),color var(--ease);}
+#dr-app .statuschip.overdue:hover{border-color:var(--brand);}
+#dr-app .statuschip.error:hover{border-color:var(--red);}
+#dr-app .statuschip[aria-pressed="true"]{border-color:transparent;font-weight:700;}
+#dr-app .statuschip[aria-pressed="true"]:hover{border-color:transparent;filter:brightness(.95);}
+#dr-app .statuschip.overdue[aria-pressed="true"]{background:var(--brand);color:var(--ink);}
+#dr-app .statuschip.error[aria-pressed="true"]{background:var(--red);color:#ffffff;}
+
+/* ---- summary counts ---- */
+#dr-app .summarybar{display:flex;gap:18px;flex-wrap:wrap;margin:0 0 16px;font-size:13px;color:var(--body);}
+#dr-app .summarybar b{font-size:17px;color:var(--ink);}
+
+/* ---- cards ---- */
+#dr-app .groups{display:flex;flex-direction:column;gap:22px;}
+#dr-app .month-group h3{font-size:13px;font-weight:700;color:var(--body);margin:0 0 10px;padding-left:2px;}
+#dr-app .cards{display:flex;flex-direction:column;gap:12px;}
+
+#dr-app .card{border-radius:var(--r);border:1.2px solid var(--line);overflow:hidden;background:var(--paper);transition:border-color var(--ease),opacity var(--ease);}
+/* 展開後最外層不再 hover，改由內層區塊負責（與申請表一致） */
+#dr-app .card:not(.open):hover{border-color:var(--card-hover, var(--brand));}
+/* 展開某一張時，其餘案件淡出反白 */
+#dr-app .groups.has-open .card:not(.open){opacity:.35;filter:grayscale(1);}
+#dr-app .card-top{padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;flex-wrap:wrap;}
+#dr-app .card-top .idcode{font-weight:900;font-size:13.5px;flex:0 0 auto;font-family:monospace,inherit;}
+#dr-app .card-top .cname{font-weight:700;font-size:14px;flex:1 1 200px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#dr-app .card-top .cmeta{font-size:12px;color:var(--body);flex:0 0 auto;}
+#dr-app .status-pill{font-size:11.5px;font-weight:700;padding:4px 11px;border-radius:999px;flex:0 0 auto;white-space:nowrap;}
+#dr-app .card-top .caret{flex:0 0 auto;width:11px;height:7px;transition:transform var(--ease);}
+#dr-app .card.open .caret{transform:rotate(180deg);}
+
+/* 卡片背景（僅頂端 ID 條帶色，內容區維持白）優先序：
+   錯誤／退回／取消＝紅 > 逾期＝黃 > 白。
+   逾期且結案另外加上 is-grey：整張卡飽和度歸零＝反灰；展開時移除濾鏡，顏色回來。 */
+#dr-app .card.bg-error .card-top{background:var(--red-l);}
+#dr-app .card.bg-overdue .card-top{background:var(--brand-l);}
+#dr-app .card.bg-normal .card-top{background:var(--paper);}
+#dr-app .card.is-grey:not(.open){filter:grayscale(1);}
+/* 已刪除：整條高度不變，但不可展開，整張轉灰階並在原本的資訊位置寫明誰刪除的 */
+#dr-app .card.is-deleted{filter:grayscale(1);}
+#dr-app .card.is-deleted .card-top{cursor:default;}
+#dr-app .card.is-deleted .caret{visibility:hidden;}
+#dr-app .card.is-deleted:hover{border-color:var(--line);}
+
+#dr-app .card-detail{display:none;background:var(--paper);border-top:1.2px solid var(--hair);padding:18px 16px;}
+#dr-app .card.open .card-detail{display:block;}
+
+/* 展開內：背景白，hover 僅作用在內層區塊，不作用於外層容器 */
+#dr-app .dpanel{border:1.2px solid var(--hair);border-radius:var(--r);padding:14px;margin-bottom:14px;background:var(--paper);transition:border-color var(--ease);}
+/* 展開內部的 hover 一律跟隨該案件的狀態色 */
+#dr-app .dpanel:hover{border-color:var(--card-hover, var(--brand));}
+#dr-app .card-detail input:hover,
+#dr-app .card-detail textarea:hover,
+#dr-app .card-detail select:hover,
+#dr-app .card-detail input:focus,
+#dr-app .card-detail textarea:focus,
+#dr-app .card-detail select:focus{border-color:var(--card-hover, var(--brand));}
+#dr-app .dpanel:last-child{margin-bottom:0;}
+#dr-app .dpanel-title{font-size:12.5px;font-weight:700;color:var(--body);margin-bottom:10px;}
+#dr-app .drow{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media (max-width:640px){#dr-app .drow{grid-template-columns:1fr;}}
+#dr-app .dfield{margin-bottom:10px;}
+#dr-app .dfield:last-child{margin-bottom:0;}
+#dr-app .dfield label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:5px;}
+#dr-app .dfield input,#dr-app .dfield textarea,#dr-app .dfield select{width:100%;}
+/* 輸入框只能上下拉，上限為初始高度三倍 */
+#dr-app textarea{resize:vertical;}
+#dr-app .dfield textarea{min-height:56px;max-height:168px;}
+
+#dr-app .statuschips-inline{display:flex;gap:7px;flex-wrap:wrap;}
+/* 狀態膠囊：未選取為第二級外框模式、hover 帶出該狀態自己的顏色；選中為第一級純色 */
+#dr-app .schip{height:28px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--paper);font-family:inherit;font-size:12px;color:var(--ink);cursor:pointer;transition:background-color var(--ease),border-color var(--ease),color var(--ease);}
+#dr-app .schip:hover{border-color:var(--schip-color, var(--brand));}
+#dr-app .schip[aria-pressed="true"]{border-color:transparent;font-weight:700;}
+#dr-app .schip[aria-pressed="true"]:hover{border-color:transparent;filter:brightness(.95);}
+
+#dr-app .chip{height:30px;padding:0 13px;border-radius:999px;border:1px solid var(--line);background:var(--paper);font-family:inherit;font-size:12.5px;color:var(--ink);cursor:pointer;transition:background-color var(--ease),border-color var(--ease),color var(--ease);}
+#dr-app .chip:hover{border-color:var(--brand);}
+/* 有自己顏色的膠囊，hover 邊框就用它被選中後的顏色 */
+#dr-app .chip.c-digital:hover{border-color:var(--blue);}
+#dr-app .chip.c-print:hover{border-color:var(--brown);}
+#dr-app .chip[aria-pressed="true"]{background:var(--brand);border-color:transparent;font-weight:700;color:var(--ink);}
+#dr-app .chip[aria-pressed="true"]:hover{border-color:transparent;filter:brightness(.95);}
+/* 數位／印刷選中時用各自的色票原色，與徽章同色 */
+#dr-app .chip.c-digital[aria-pressed="true"]{background:var(--blue);}
+#dr-app .chip.c-print[aria-pressed="true"]{background:var(--brown);color:#ffffff;}
+
+/* 徽章（與 index.html 同一套）：第一級純色、第二級外框色。
+   總覽卡片列已有狀態膠囊這個第一級，所以那裡的文案徽章掛 .lv2 降為第二級。 */
+#dr-app .badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;border:1px solid transparent;color:var(--ink);flex:0 0 auto;}
+#dr-app .badge.pending{background:var(--body);color:#ffffff;}
+#dr-app .badge.ready{background:var(--body);color:#ffffff;}
+#dr-app .badge.digital{background:var(--blue);}
+#dr-app .badge.print{background:var(--brown);color:#ffffff;}
+#dr-app .badge.lv2{background:transparent;border-color:currentColor;}
+#dr-app .badge.lv2.pending{color:var(--body);}
+#dr-app .badge.lv2.ready{color:var(--body);}
+#dr-app .badge.lv2.digital{color:var(--blue);}
+#dr-app .badge.lv2.print{color:var(--brown);}
+
+#dr-app .itemblock{border:1.2px solid var(--hair);border-radius:var(--r);padding:12px;margin-bottom:10px;background:var(--tint);transition:border-color var(--ease);}
+#dr-app .itemblock:hover{border-color:var(--card-hover, var(--brand));}
+#dr-app .itemblock:last-child{margin-bottom:0;}
+/* 子項目標題列：線框圓圈編號＋徽章，與 index.html 的 .item-head 同一套 */
+#dr-app .itemblock-title{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+#dr-app .itemblock-title .idx{
+  flex:0 0 auto;width:22px;height:22px;border-radius:50%;
+  border:1.5px solid var(--ink);background:transparent;color:var(--ink);
+  font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;
+}
+#dr-app .itemblock-title .badges{display:flex;gap:6px;flex-wrap:wrap;}
+#dr-app .itemblock-head{display:flex;gap:10px;margin-bottom:10px;}
+#dr-app .itemblock-head .dfield{flex:1 1 auto;margin:0;}
+#dr-app .notice-box{padding:12px;background:var(--tint);border:1.2px dashed var(--hair);border-radius:var(--r);font-size:12.5px;color:var(--body);}
+#dr-app .copy4{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media (max-width:640px){#dr-app .copy4{grid-template-columns:1fr;}}
+#dr-app .sizerow{display:grid;grid-template-columns:1.2fr 1fr;gap:8px;margin-bottom:8px;}
+#dr-app .readonly{background:var(--tint);color:var(--body);border-color:var(--hair);}
+
+#dr-app .add-line{display:inline-flex;align-items:center;gap:6px;border:1px dashed var(--line);background:transparent;color:var(--ink);font-family:inherit;font-size:12.5px;font-weight:700;border-radius:999px;height:30px;padding:0 13px;cursor:pointer;transition:border-color var(--ease);}
+#dr-app .add-line:hover{border-color:var(--brand);}
+#dr-app .del-line{border:0;background:none;color:var(--muted);cursor:pointer;font-size:14px;flex:0 0 auto;}
+#dr-app .del-line:hover{color:var(--red);}
+
+/* 異動紀錄：分隔線改為橫跨整個面板的實線 */
+#dr-app .logbox{font-size:11.5px;color:var(--muted);border-top:1px solid var(--hair);padding:10px 14px 0;margin:6px -14px 0;max-height:130px;overflow-y:auto;}
+#dr-app .logbox .entry{padding:2px 0;}
+
+#dr-app .detail-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
+#dr-app .btn-sm{height:36px;padding:0 16px;border-radius:999px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;border:1px solid var(--ink);background:transparent;color:var(--ink);transition:background-color var(--ease),border-color var(--ease),color var(--ease);}
+#dr-app .btn-sm:hover{background:var(--ink);border-color:var(--ink);color:#ffffff;}
+#dr-app .btn-sm.danger{border-color:var(--red);color:var(--ink);}
+#dr-app .btn-sm.danger:hover{background:var(--red);border-color:var(--red);color:var(--ink);}
+#dr-app .btn-sm.primary{background:var(--brand);border-color:var(--brand);color:var(--ink);}
+#dr-app .btn-sm.primary:hover{background:var(--brand);border-color:var(--brand);color:var(--ink);filter:brightness(.95);}
+#dr-app .saved-hint{font-size:12px;color:var(--body);opacity:0;transition:opacity var(--ease);align-self:center;}
+#dr-app .saved-hint.show{opacity:1;}
+
+#dr-app .empty{text-align:center;padding:60px 20px;color:var(--muted);font-size:13px;}
+
+/* ---- 上下頁：案件量大時才出現，樣式沿用黑框按鈕那一套 ---- */
+#dr-app .pager{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:26px;}
+#dr-app .pgbtn{height:34px;padding:0 18px;border-radius:999px;border:1px solid var(--ink);background:transparent;color:var(--ink);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;transition:background-color var(--ease),border-color var(--ease),color var(--ease);}
+#dr-app .pgbtn:hover{background:var(--ink);border-color:var(--ink);color:#ffffff;}
+#dr-app .pgbtn[disabled]{opacity:.3;cursor:not-allowed;}
+#dr-app .pgbtn[disabled]:hover{background:transparent;border-color:var(--ink);color:var(--ink);}
+#dr-app .pginfo{font-size:12.5px;color:var(--body);min-width:72px;text-align:center;}
+
+/* 新增申請按鈕：唯一固定實色按鈕 */
+
+
+[hidden]{display:none!important;}
+</style>
+</head>
+<body>
+<div id="dr-app">
+
+  <div class="devbadge">介面預覽版本，資料儲存於本機瀏覽器，尚未串接後端。</div>
+
+  <div class="topbar">
+    <div class="topbar-in">
+      <div class="topbar-title">允禾發 設計需求表<span class="topbar-kind">總覽</span></div>
+      <div class="topbar-sub" id="dr-datetime"></div>
+      <div class="topbar-user">
+        <div class="avatar" id="dr-avatar">朱</div>
+        <span id="dr-username">朱昱丞</span>
+        <button class="btn-link" id="dr-logout">登出</button>
+      </div>
+      <a class="btn-topbar" href="index.html" target="_blank" rel="noopener">＋ 新增申請</a>
+    </div>
+  </div>
+
+  <div class="wrap">
+
+    <div class="filterbar">
+      <div class="filterrow">
+        <input type="text" id="f-search" placeholder="搜尋需求名稱、申請人、編號…">
+        <select id="f-dept"><option value="">全部部門</option></select>
+        <select id="f-status"><option value="">全部狀態</option></select>
+      </div>
+      <div class="chiprow" id="dr-quickchips"></div>
+    </div>
+
+    <div class="summarybar" id="dr-summary"></div>
+
+    <div class="groups" id="dr-groups"></div>
+    <div class="empty" id="dr-empty" hidden>目前沒有符合條件的申請單。</div>
+
+    <div class="pager" id="dr-pager" hidden>
+      <button type="button" class="pgbtn" id="dr-prev">上一頁</button>
+      <span class="pginfo" id="dr-pginfo"></span>
+      <button type="button" class="pgbtn" id="dr-next">下一頁</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var CURRENT_USER = { name:"朱昱丞", email:"charlie@patroni.com.tw", initials:"CZ" };
+document.getElementById("dr-username").textContent = CURRENT_USER.name;
+document.getElementById("dr-avatar").textContent = CURRENT_USER.name.charAt(0);
+document.getElementById("dr-datetime").textContent = (function(){
+  var d = new Date();
+  return d.getFullYear()+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+String(d.getDate()).padStart(2,"0");
+})();
+
+/* 部門固定只有這兩個，其他來源一律不採用 */
+var DEPTS = ["BAUI","BAUII"];
+
+/* 與 index.html 同步：距交付日不足這個工作天數即為急件 */
+var URGENT_WORKING_DAYS = 5;
+
+/* 一頁顯示幾筆；總數超過才會出現上下頁 */
+var PAGE_SIZE = 20;
+var currentPage = 1;
+
+/* ===================== 設定資料（與 index.html 同步） ===================== */
+/* 狀態膠囊為第一級：純色底＝色票原色，不變淺、不加深；字一律黑，僅「待確認」為白。
+   完稿與設計中同色。dot 與 bg 現在同值，保留兩欄是為了取 hover／邊框色時語意清楚。 */
+var STATUS_META = {
+  "待確認": {bg:"#666666", fg:"#ffffff", dot:"#666666"},
+  "已排程": {bg:"#4AACFE", fg:"#111111", dot:"#4AACFE"},
+  "設計中": {bg:"#f8b500", fg:"#111111", dot:"#f8b500"},
+  "完稿":   {bg:"#f8b500", fg:"#111111", dot:"#f8b500"},
+  "結案":   {bg:"#8CCDB8", fg:"#111111", dot:"#8CCDB8"},
+  "退回":   {bg:"#ef8585", fg:"#111111", dot:"#ef8585"},
+  "取消":   {bg:"#ef8585", fg:"#111111", dot:"#ef8585"}
+};
+var STATUSES = Object.keys(STATUS_META);
+
+var PRINT_SIZE_DEFS = [
+  {label:"A4", note:"21×29.7cm"},
+  {label:"A3", note:"29.7×42cm"},
+  {label:"A2", note:"42×59.4cm"},
+  {label:"A5", note:"14.8×21cm"},
+  {label:"自訂尺寸", custom:true}
+];
+var TYPES = [
+  {id:"web_banner", label:"官網 Banner", mode:"normal", sizes:[{label:"電腦版"},{label:"手機版"}], extra:["page"]},
+  {id:"web_subbanner", label:"官網分頁 Banner", mode:"normal", sizes:[{label:"電腦版"},{label:"手機版"}], extra:["page"]},
+  {id:"blog", label:"部落格用圖", mode:"normal", sizes:[{label:"部落格用圖", w:800, h:385, unit:"px"}]},
+  {id:"thumb", label:"網頁縮圖", mode:"normal", sizes:[{label:"網頁縮圖", w:1020, h:600, unit:"px"}]},
+  {id:"social", label:"社群圖", mode:"normal", sizes:[
+    {label:"IG 4:5", w:1080, h:1350, unit:"px"},
+    {label:"FB 4:5", w:1080, h:1350, unit:"px"},
+    {label:"FB 1:1", w:1080, h:1080, unit:"px"},
+    {label:"Line 多頁訊息", w:2300, h:1500, unit:"px"},
+    {label:"Line 圖文訊息", w:1040, h:1040, unit:"px"}
+  ]},
+  {id:"gads", label:"Google 廣告", mode:"normal", sizes:[
+    {label:"正方形", w:1200, h:1200, unit:"px"},
+    {label:"橫幅", w:1200, h:628, unit:"px"},
+    {label:"直式", w:960, h:1200, unit:"px"}
+  ]},
+  {id:"edm", label:"EDM", mode:"structure"},
+  {id:"landing", label:"活動頁", mode:"structure"},
+  {id:"product", label:"商品頁", mode:"notice", notice:"文案請前往《長條圖參考分配》填寫。"},
+  {id:"print", label:"印刷品", mode:"normal", forcePrint:true, sizes:[{label:"A4"},{label:"A3"},{label:"A2"},{label:"A5"},{label:"自訂尺寸", custom:true}]},
+  {id:"booth", label:"展場", mode:"notice", notice:"本項目請另約會議討論。"},
+  {id:"other", label:"其他", mode:"normal", sizes:[{label:"自訂尺寸", custom:true}], showChannel:true}
+];
+function typeOf(id){ for (var i=0;i<TYPES.length;i++){ if(TYPES[i].id===id) return TYPES[i]; } return null; }
+/* 類型只有單一既定尺寸時自動帶入並鎖定（與 index.html 同一套） */
+function applyDefaultSize(it){
+  var t = typeOf(it.typeId);
+  if(!t || !t.sizes || t.sizes.length!==1) return;
+  var d = t.sizes[0];
+  if(d.custom) return;
+  it.sizeRows[0].purpose = d.label;
+  if(d.w && d.h) it.sizeRows[0].px = d.w+"×"+d.h+(d.unit||"px");
+  else if(d.note) it.sizeRows[0].px = d.note;
+}
+
+/* ===================== localStorage ===================== */
+var STORE_KEY = "dr_requests_v2";
+function loadRecords(){
+  var list;
+  try{ list = JSON.parse(localStorage.getItem(STORE_KEY)||"[]"); }catch(e){ list=[]; }
+  var changed = false;
+  list.forEach(function(r){
+    if(!r.status){ r.status="待確認"; changed=true; }
+    if(!r.log){ r.log=[]; changed=true; }
+    if(!r.wordLink){ r.wordLink="https://drive.google.com/drive/folders/設計需求申請/"+r.id; changed=true; }
+  });
+  if(changed) saveRecords(list);
+  return list;
+}
+function saveRecords(list){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(list)); }catch(e){}
+}
+/* 示範資料：涵蓋每一種底色狀態，否則畫面上看不出配色規則有沒有生效。
+   逾期＝黃底、逾期且結案＝反灰、退回與取消＝紅底、資料不完整＝紅底、正常＝白底。 */
+function seedIfEmpty(){
+  var list = loadRecords();
+  if(list.length) return;
+  var now = new Date();
+  function iso(d){ var x=new Date(now); x.setDate(x.getDate()+d); return x.toISOString(); }
+  function dstr(d){ var x=new Date(now); x.setDate(x.getDate()+d); return x.toISOString().slice(0,10); }
+
+  function item(typeId, copyHead, output){
+    return {_id:"it"+Math.random().toString(16).slice(2), name:"主視覺", typeId:typeId,
+      output:output||["digital"], sizeRows:[{purpose:"",customText:"",px:""}], printQty:"",
+      exposure:"", exposureModel:"", copy:{head:copyHead||"",sub:"",small:"",other:""},
+      channel:"", useDate:"", cta:"", note:"", page:"", platform:[], pagecount:"", blocks:[]};
+  }
+  function mk(id, dept, who, ini, name, status, submitOffset, deliveryOffset, items){
+    return {
+      id:id, submittedAt: iso(submitOffset),
+      submitter:{name:who, email:ini.toLowerCase()+"@patroni.com.tw", initials:ini},
+      status:status, log:[], meetingDate:"",
+      wordLink:"https://drive.google.com/drive/folders/設計需求申請/"+id,
+      data:{dept:dept, name:name, purpose:"（示範資料）", message:"", audience:"2C",
+        note1:"", note2:"", deliveryDate: dstr(deliveryOffset), scheduleNote:"",
+        refLinks:[], refNote:"", items:items}
+    };
+  }
+
+  saveRecords([
+    mk("BAUI-CH-0001","BAUI","陳小華","CH","2026 中秋檔期主視覺","設計中",-12,-6,
+       [item("web_banner","中秋團圓 好禮相送")]),
+    mk("BAUI-CH-0002","BAUI","陳小華","CH","春季鞋款上架素材","已排程",-9,-3,
+       [item("social","")]),
+    mk("BAUII-LM-0001","BAUII","林大明","LM","年度型錄印刷","結案",-20,-8,
+       [item("print","型錄封面",["print"])]),
+    mk("BAUII-LM-0002","BAUII","林大明","LM","通路聯名活動頁","退回",-5,4,
+       [item("landing","")]),
+    mk("BAUI-CZ-0001","BAUI","朱昱丞","CZ","展場視覺提案","取消",-4,6,
+       [item("booth","")]),
+    mk("BAUII-LM-0003","BAUII","林大明","LM","缺類型的測試單","設計中",-2,10,
+       [item("","")]),
+    mk("BAUI-CZ-0002","BAUI","朱昱丞","CZ","秋季新品社群宣傳","待確認",-1,12,
+       [item("social","新品上市")])
+  ]);
+}
+
+/* ===================== 工作天 ===================== */
+function parseDate(s){ if(!s) return null; var p=s.split("-"); return new Date(+p[0],+p[1]-1,+p[2]); }
+function workingDaysBetween(from, to){
+  if(!from || !to) return null;
+  var count=0; var d=new Date(from.getFullYear(),from.getMonth(),from.getDate());
+  var end=new Date(to.getFullYear(),to.getMonth(),to.getDate());
+  if(end<=d) return 0;
+  while(d<end){ d.setDate(d.getDate()+1); var wd=d.getDay(); if(wd!==0 && wd!==6) count++; }
+  return count;
+}
+function isOverdue(rec){
+  var d = parseDate(rec.data.deliveryDate);
+  if(!d) return false;
+  var today = new Date(); today.setHours(0,0,0,0);
+  return d < today;
+}
+function isUrgent(rec){
+  var d = parseDate(rec.data.deliveryDate);
+  if(!d) return false;
+  var today = new Date(); today.setHours(0,0,0,0);
+  var wd = workingDaysBetween(today, d);
+  return wd!==null && wd<URGENT_WORKING_DAYS && d>=today;
+}
+function itemHasCopy(it){
+  var t = typeOf(it.typeId);
+  if(t && t.mode==="structure"){
+    return (it.blocks||[]).some(function(b){ return (b.head||"").trim()||(b.sub||"").trim()||(b.small||"").trim()||(b.other||"").trim(); });
+  }
+  var c = it.copy||{};
+  return (c.head||"").trim()||(c.sub||"").trim()||(c.small||"").trim()||(c.other||"").trim();
+}
+function isPending(rec){
+  return (rec.data.items||[]).some(function(it){
+    var t = typeOf(it.typeId);
+    return t && t.mode!=="notice" && !itemHasCopy(it);
+  });
+}
+function hasError(rec){
+  if(!rec.data.items || rec.data.items.length===0) return true;
+  return rec.data.items.some(function(it){ return !it.typeId; });
+}
+
+/* ===================== 篩選狀態 ===================== */
+var activeQuick = { overdue:false, error:false };
+
+function populateFilters(){
+  var deptSel = document.getElementById("f-dept");
+  DEPTS.forEach(function(d){
+    var o = document.createElement("option"); o.value=d; o.textContent=d; deptSel.appendChild(o);
+  });
+  var statusSel = document.getElementById("f-status");
+  STATUSES.forEach(function(s){
+    var o = document.createElement("option"); o.value=s; o.textContent=s; statusSel.appendChild(o);
+  });
+
+  var quick = document.getElementById("dr-quickchips");
+  quick.innerHTML = "";
+  function mkChip(label, key){
+    var c = document.createElement("button");
+    c.type="button"; c.className="statuschip "+key;
+    c.setAttribute("aria-pressed", activeQuick[key] ? "true":"false");
+    c.appendChild(document.createTextNode(label));
+    c.addEventListener("click", function(){
+      activeQuick[key] = !activeQuick[key];
+      c.setAttribute("aria-pressed", activeQuick[key] ? "true":"false");
+      currentPage = 1; openCardId = null;
+      renderAll();
+    });
+    return c;
+  }
+  quick.appendChild(mkChip("逾期", "overdue"));
+  quick.appendChild(mkChip("錯誤", "error"));
+}
+
+function matchesFilter(rec){
+  var q = document.getElementById("f-search").value.trim().toLowerCase();
+  if(q){
+    var hay = (rec.id+" "+rec.data.name+" "+(rec.submitter?rec.submitter.name+rec.submitter.email:"")).toLowerCase();
+    if(hay.indexOf(q)===-1) return false;
+  }
+  var dept = document.getElementById("f-dept").value;
+  if(dept && rec.data.dept!==dept) return false;
+  var status = document.getElementById("f-status").value;
+  if(status && rec.status!==status) return false;
+  /* 快篩為聯集（OR）：同時勾逾期與錯誤時，兩者任一成立都要選出來，
+     所以「又逾期又錯誤」的案件一定會被選到，不會兩邊都漏掉。 */
+  if(activeQuick.overdue || activeQuick.error){
+    /* 已刪除的案件不再需要處理，不列入逾期／錯誤快篩 */
+    if(rec.deleted) return false;
+    var hit = (activeQuick.overdue && isOverdue(rec)) || (activeQuick.error && hasError(rec));
+    if(!hit) return false;
+  }
+  return true;
+}
+
+/* ===================== 卡片渲染 ===================== */
+var openCardId = null; /* 追蹤展開中的卡片，重繪後恢復，避免操作後被收合 */
+
+/* 底色優先序：錯誤／退回／取消（紅）> 逾期（黃）> 白。
+   「又逾期又錯誤」以錯誤的紅底為主。
+   逾期且結案再額外加 is-grey：整張卡飽和度歸零，展開時濾鏡移除、顏色回來。 */
+function cardBgClass(rec){
+  var cls;
+  if(hasError(rec) || rec.status==="退回" || rec.status==="取消") cls = "bg-error";
+  else if(isOverdue(rec)) cls = "bg-overdue";
+  else cls = "bg-normal";
+  if((isOverdue(rec) && rec.status==="結案") || rec.status==="取消") cls += " is-grey";
+  return cls;
+}
+
+function renderAll(){
+  var list = loadRecords().filter(matchesFilter);
+  list.sort(function(a,b){ return new Date(b.submittedAt) - new Date(a.submittedAt); });
+
+  document.getElementById("dr-summary").innerHTML =
+    '<div>共 <b>'+list.length+'</b> 筆</div>' +
+    '<div>逾期 <b>'+list.filter(function(r){return !r.deleted && isOverdue(r);}).length+'</b> 筆</div>' +
+    '<div>文案待補 <b>'+list.filter(function(r){return !r.deleted && isPending(r);}).length+'</b> 筆</div>';
+
+  /* 分頁：總筆數超過 PAGE_SIZE 才啟用，否則整組控制項隱藏 */
+  var totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+  if(currentPage > totalPages) currentPage = totalPages;
+  if(currentPage < 1) currentPage = 1;
+  var pager = document.getElementById("dr-pager");
+  pager.hidden = list.length <= PAGE_SIZE;
+  document.getElementById("dr-pginfo").textContent = currentPage+" / "+totalPages;
+  document.getElementById("dr-prev").disabled = currentPage<=1;
+  document.getElementById("dr-next").disabled = currentPage>=totalPages;
+  var pageList = list.slice((currentPage-1)*PAGE_SIZE, currentPage*PAGE_SIZE);
+
+  var groupsEl = document.getElementById("dr-groups");
+  groupsEl.innerHTML = "";
+  document.getElementById("dr-empty").hidden = list.length>0;
+  if(pageList.length===0){ syncOpenDim(); return; }
+
+  var groups = {};
+  var order = [];
+  pageList.forEach(function(r){
+    var d = new Date(r.submittedAt);
+    var key = d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+    if(!groups[key]){ groups[key]=[]; order.push(key); }
+    groups[key].push(r);
+  });
+
+  order.forEach(function(key){
+    var g = document.createElement("div"); g.className="month-group";
+    var parts = key.split("-");
+    g.appendChild(elh("h3", parts[0]+" 年 "+parts[1]+" 月"));
+    var cardsEl = document.createElement("div"); cardsEl.className="cards";
+    groups[key].forEach(function(rec){ cardsEl.appendChild(renderCard(rec)); });
+    g.appendChild(cardsEl);
+    groupsEl.appendChild(g);
+  });
+  syncOpenDim();
+}
+function elh(tag, text){ var e=document.createElement(tag); e.textContent=text; return e; }
+
+function renderCard(rec){
+  var meta = STATUS_META[rec.status] || STATUS_META["待確認"];
+  var card = document.createElement("div");
+  card.className = "card "+cardBgClass(rec)+(rec.deleted ? " is-deleted" : "");
+  card.style.setProperty("--card-hover", meta.dot);
+  card.dataset.id = rec.id;
+  var isOpen = openCardId === rec.id;
+  if(isOpen) card.classList.add("open");
+
+  var top = document.createElement("div"); top.className="card-top";
+  top.innerHTML =
+    '<div class="idcode">'+rec.id+'</div>' +
+    '<div class="cname">'+escapeHtml(rec.data.name||"未命名")+'</div>' +
+    '<div class="cmeta">'+escapeHtml(rec.data.dept || (rec.submitter?rec.submitter.name:""))+' ・ '+fmtDate(new Date(rec.submittedAt))+
+      (rec.deleted ? '' : (isOverdue(rec) ? '　<b style="color:var(--brand-dk);">逾期</b>' : (isUrgent(rec) ? '　<b style="color:var(--red);">急件</b>' : '')))+
+    '</div>';
+  /* 這一列已經有狀態膠囊這個第一級，所以文案徽章降為第二級外框模式 */
+  var copyBadge = document.createElement("span");
+  copyBadge.className = "badge lv2 " + (isPending(rec) ? "pending" : "ready");
+  copyBadge.textContent = isPending(rec) ? "文案待補" : "文案已提供";
+  top.appendChild(copyBadge);
+  var pill = document.createElement("span"); pill.className="status-pill";
+  pill.style.background = meta.bg; pill.style.color = meta.fg;
+  pill.textContent = rec.status;
+  top.appendChild(pill);
+  var caret = document.createElementNS("http://www.w3.org/2000/svg","svg");
+  caret.setAttribute("class","caret"); caret.setAttribute("viewBox","0 0 11 7");
+  caret.innerHTML = '<path d="M1 1l4.5 4.5L10 1" stroke="#111" stroke-width="1.6" fill="none"/>';
+  top.appendChild(caret);
+  card.appendChild(top);
+
+  var detail = document.createElement("div"); detail.className="card-detail";
+  card.appendChild(detail);
+  var built = false;
+
+  if(rec.deleted){
+    /* 用原本的資訊位置寫明刪除者，維持整條高度不變 */
+    var cmetaEl = top.querySelector(".cmeta");
+    if(cmetaEl) cmetaEl.textContent = "已由 "+rec.deleted.by+" 於 "+fmtDate(new Date(rec.deleted.at))+" 刪除";
+    return card;
+  }
+
+  top.addEventListener("click", function(){
+    var willOpen = !card.classList.contains("open");
+    /* 一次只展開一張：先關掉其他張，其餘卡片再依 has-open 淡出 */
+    if(willOpen){
+      document.querySelectorAll("#dr-groups .card.open").forEach(function(x){ x.classList.remove("open"); });
+    }
+    card.classList.toggle("open", willOpen);
+    openCardId = willOpen ? rec.id : null;
+    if(willOpen && !built){ buildDetail(rec, detail); built=true; }
+    syncOpenDim();
+  });
+  if(isOpen){ buildDetail(rec, detail); built=true; }
+
+  return card;
+}
+function syncOpenDim(){
+  var groupsEl = document.getElementById("dr-groups");
+  groupsEl.classList.toggle("has-open", !!groupsEl.querySelector(".card.open"));
+}
+function fmtDate(d){ return d.getFullYear()+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+String(d.getDate()).padStart(2,"0"); }
+function escapeHtml(s){ return String(s==null?"":s).replace(/[&<>]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c]; }); }
+
+/* ===================== 詳情：working-copy + explicit save ===================== */
+function buildDetail(rec, container){
+  var work = JSON.parse(JSON.stringify(rec));
+  if(typeof work.meetingDate !== "string") work.meetingDate = "";
+
+  /* 用來判斷「這次儲存到底改了什麼」，好決定異動紀錄要寫哪幾行 */
+  var baseStatus = work.status;
+  var baseData   = JSON.stringify(work.data);
+  var baseMeet   = work.meetingDate;
+
+  var logBox = null, logPanel = null, schipsEl = null, hintEl = null;
+
+  function stamp(d){
+    return d.getFullYear()+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+String(d.getDate()).padStart(2,"0")
+      +" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+  }
+  /* 格式：2026/09/15 16:37 charlie@patroni.com.tw 修改了：結案 */
+  function logText(entry){
+    var what = entry.text || (entry.fields||[]).join("、") || "內容更新";
+    return stamp(new Date(entry.time))+"　"+entry.user+"　修改了："+what;
+  }
+  function prependLogEntry(entry){
+    if(!logBox) return;
+    var e = document.createElement("div"); e.className="entry"; e.textContent = logText(entry);
+    if(logBox.firstChild) logBox.insertBefore(e, logBox.firstChild); else logBox.appendChild(e);
+    if(logPanel) logPanel.hidden = false;
+  }
+
+  /* 寫回 localStorage，並把異動即時補進紀錄區。
+     全程不重繪清單、不重建詳情 DOM，所以展開狀態與輸入中的欄位都不會被打斷。 */
+  function writeBack(labels){
+    labels = (labels||[]).filter(Boolean);
+    if(!labels.length) labels = ["內容更新"];
+    work.log = work.log || [];
+    labels.forEach(function(lb){
+      var entry = { time:new Date().toISOString(), user:CURRENT_USER.email, text:lb };
+      work.log.push(entry);
+      prependLogEntry(entry);
+    });
+    var list = loadRecords();
+    var idx = list.findIndex(function(x){ return x.id===work.id; });
+    var snap = JSON.parse(JSON.stringify(work));
+    if(idx>=0) list[idx]=snap; else list.push(snap);
+    saveRecords(list);
+    baseStatus = work.status;
+    baseData   = JSON.stringify(work.data);
+    baseMeet   = work.meetingDate;
+    updateCardChrome();
+  }
+  function flash(msg){
+    if(!hintEl) return;
+    hintEl.textContent = msg; hintEl.classList.add("show");
+    setTimeout(function(){ hintEl.classList.remove("show"); }, 2200);
+  }
+  /* 只原地更新這張卡自己的外觀，不動清單 */
+  function updateCardChrome(){
+    var cardEl = container.closest(".card");
+    if(!cardEl) return;
+    cardEl.className = "card open " + cardBgClass(work);
+    var meta = STATUS_META[work.status] || STATUS_META["待確認"];
+    cardEl.style.setProperty("--card-hover", meta.dot);
+    var pill = cardEl.querySelector(".status-pill");
+    if(pill){ pill.style.background=meta.bg; pill.style.color=meta.fg; pill.textContent=work.status; }
+    var cname = cardEl.querySelector(".cname");
+    if(cname) cname.textContent = work.data.name||"未命名";
+    var cbadge = cardEl.querySelector(".card-top .badge");
+    if(cbadge){
+      var pend = isPending(work);
+      cbadge.className = "badge lv2 " + (pend ? "pending" : "ready");
+      cbadge.textContent = pend ? "文案待補" : "文案已提供";
+    }
+  }
+  function setStatus(s){
+    work.status = s;
+    if(!schipsEl) return;
+    schipsEl.querySelectorAll(".schip").forEach(function(x){
+      var on = x.dataset.status === s;
+      x.setAttribute("aria-pressed", on ? "true":"false");
+      x.style.background = on ? (STATUS_META[s]||{}).bg : "";
+      x.style.color = on ? (STATUS_META[s]||{}).fg : "";
+    });
+  }
+
+  /* ---------- 版面 ---------- */
+  var frag = document.createDocumentFragment();
+
+  /* 面板一：申請單層級欄位 */
+  var p1 = document.createElement("div"); p1.className="dpanel";
+  p1.appendChild(dfieldText("需求名稱", work.data.name, function(v){ work.data.name=v; }));
+
+  var statusField = document.createElement("div"); statusField.className="dfield";
+  statusField.appendChild(elh("label","狀態"));
+  schipsEl = document.createElement("div"); schipsEl.className="statuschips-inline";
+  STATUSES.forEach(function(s){
+    var c = document.createElement("button"); c.type="button"; c.className="schip";
+    c.textContent = s; c.dataset.status = s;
+    c.setAttribute("aria-pressed", work.status===s ? "true":"false");
+    c.style.setProperty("--schip-color", STATUS_META[s].dot);
+    if(work.status===s){ c.style.background = STATUS_META[s].bg; c.style.color = STATUS_META[s].fg; }
+    c.addEventListener("click", function(e){ e.stopPropagation(); setStatus(s); });
+    schipsEl.appendChild(c);
+  });
+  statusField.appendChild(schipsEl);
+  p1.appendChild(statusField);
+
+  p1.appendChild(dfieldTextarea("需求背景/說明", work.data.purpose, function(v){ work.data.purpose=v; }));
+
+  var row = document.createElement("div"); row.className="drow";
+  row.appendChild(dfieldDate("總交付日", work.data.deliveryDate, function(v){ work.data.deliveryDate=v; }));
+  var audField = document.createElement("div"); audField.className="dfield";
+  audField.appendChild(elh("label","目標對象"));
+  var ar = document.createElement("div"); ar.className="statuschips-inline";
+  ["2B","2C"].forEach(function(v){
+    var c = document.createElement("button"); c.type="button"; c.className="chip"; c.textContent=v;
+    c.setAttribute("aria-pressed", work.data.audience===v ? "true":"false");
+    c.addEventListener("click", function(e){
+      e.stopPropagation();
+      work.data.audience = (work.data.audience===v) ? "" : v;
+      ar.querySelectorAll(".chip").forEach(function(x){ x.setAttribute("aria-pressed","false"); });
+      if(work.data.audience===v) c.setAttribute("aria-pressed","true");
+    });
+    ar.appendChild(c);
+  });
+  audField.appendChild(ar);
+  row.appendChild(audField);
+  p1.appendChild(row);
+
+  /* 備註：總覽也要看得到、也要能追加 */
+  var noteRow = document.createElement("div"); noteRow.className="drow";
+  noteRow.appendChild(dfieldTextarea("備註 1", work.data.note1, function(v){ work.data.note1=v; }));
+  noteRow.appendChild(dfieldTextarea("備註 2", work.data.note2, function(v){ work.data.note2=v; }));
+  p1.appendChild(noteRow);
+  frag.appendChild(p1);
+
+  /* 面板二：項目 + 會議日期 */
+  var p2 = document.createElement("div"); p2.className="dpanel";
+  var p2title = document.createElement("div"); p2title.className="dpanel-title"; p2title.textContent="項目";
+  p2.appendChild(p2title);
+  var itemsWrap = document.createElement("div");
+  p2.appendChild(itemsWrap);
+  function renderItemsWrap(){
+    itemsWrap.innerHTML = "";
+    work.data.items.forEach(function(it, idx){
+      itemsWrap.appendChild(buildItemBlock(it, idx, renderItemsWrap, function(){
+        work.data.items = work.data.items.filter(function(x){ return x!==it; });
+        renderItemsWrap();
+      }));
+    });
+  }
+  renderItemsWrap();
+  var addBtn = document.createElement("button"); addBtn.type="button"; addBtn.className="add-line"; addBtn.textContent="＋ 新增項目";
+  addBtn.style.marginTop="6px";
+  addBtn.addEventListener("click", function(e){
+    e.stopPropagation();
+    work.data.items.push(newItemData());
+    renderItemsWrap();
+  });
+  p2.appendChild(addBtn);
+
+  /* 會議日期：只在總覽（送出後）填寫，申請表沒有這個欄位 */
+  var meetWrap = document.createElement("div");
+  meetWrap.style.marginTop = "14px";
+  meetWrap.appendChild(dfieldDate("會議日期", work.meetingDate, function(v){ work.meetingDate=v; }));
+  p2.appendChild(meetWrap);
+  frag.appendChild(p2);
+
+  /* 面板三：異動紀錄（一律建立，空的時候隱藏，之後可即時附加） */
+  logPanel = document.createElement("div"); logPanel.className="dpanel";
+  var lt = document.createElement("div"); lt.className="dpanel-title"; lt.textContent="異動紀錄";
+  logPanel.appendChild(lt);
+  logBox = document.createElement("div"); logBox.className="logbox";
+  (work.log||[]).slice().reverse().forEach(function(l){
+    var e = document.createElement("div"); e.className="entry"; e.textContent = logText(l);
+    logBox.appendChild(e);
+  });
+  logPanel.appendChild(logBox);
+  logPanel.hidden = !(work.log && work.log.length);
+  frag.appendChild(logPanel);
+
+  /* 動作列 */
+  var actions = document.createElement("div"); actions.className="detail-actions";
+  hintEl = document.createElement("span"); hintEl.className="saved-hint";
+
+  var btnSave = document.createElement("button"); btnSave.type="button"; btnSave.className="btn-sm primary"; btnSave.textContent="儲存";
+  btnSave.addEventListener("click", function(e){
+    e.stopPropagation();
+    var labels = [];
+    if(work.status !== baseStatus) labels.push(work.status);
+    if(JSON.stringify(work.data)!==baseData || work.meetingDate!==baseMeet) labels.push("內容更新");
+    writeBack(labels);
+    flash("已儲存。");
+  });
+
+  var btnResend = document.createElement("button"); btnResend.type="button"; btnResend.className="btn-sm"; btnResend.textContent="重新發送需求";
+  btnResend.addEventListener("click", function(e){
+    e.stopPropagation();
+    var labels = [];
+    if(work.status !== "待確認"){ setStatus("待確認"); labels.push("待確認"); }
+    labels.push("重新發送需求");
+    writeBack(labels);
+    flash("已重新發送，狀態重置為待確認。");
+  });
+
+  var btnWord = document.createElement("button"); btnWord.type="button"; btnWord.className="btn-sm"; btnWord.textContent="寄送 Word 給申請人";
+  btnWord.addEventListener("click", function(e){
+    e.stopPropagation();
+    writeBack(["寄送 Word 給申請人"]);
+    flash("已寄送最新版 Word 至 "+(work.submitter?work.submitter.email:"申請人信箱")+"。");
+  });
+
+  var btnDelete = document.createElement("button"); btnDelete.type="button"; btnDelete.className="btn-sm danger"; btnDelete.textContent="刪除";
+  btnDelete.style.marginLeft="auto";
+  btnDelete.addEventListener("click", function(e){
+    e.stopPropagation();
+    work.deleted = { by: CURRENT_USER.email, at: new Date().toISOString() };
+    writeBack(["刪除此設計需求"]);
+    openCardId = null;
+    renderAll();
+  });
+
+  actions.appendChild(btnSave);
+  actions.appendChild(btnResend);
+  actions.appendChild(btnWord);
+  actions.appendChild(hintEl);
+  actions.appendChild(btnDelete);
+  frag.appendChild(actions);
+
+  container.innerHTML = "";
+  container.appendChild(frag);
+}
+
+function newItemData(){
+  return { _id:"it"+Date.now()+Math.random().toString(16).slice(2), name:"", typeId:"", output:[], sizeRows:[{purpose:"",customText:"",px:""}], printQty:"", exposure:"", exposureModel:"", copy:{head:"",sub:"",small:"",other:""}, channel:"", useDate:"", cta:"", note:"", page:"", platform:[], pagecount:"", blocks:[] };
+}
+
+/* 徽章內容與 index.html 的 buildBadgesHTML 保持一致 */
+function buildItemBadgesHTML(it){
+  var t = typeOf(it.typeId);
+  var html = "";
+  if(!t) return html;
+  if(t.forcePrint){
+    html += '<span class="badge lv2 print">印刷</span>';
+  } else if(t.mode!=="notice" && t.mode!=="structure"){
+    if((it.output||[]).indexOf("digital")>=0) html += '<span class="badge lv2 digital">數位</span>';
+    if((it.output||[]).indexOf("print")>=0) html += '<span class="badge lv2 print">印刷</span>';
+  }
+  if(t.mode!=="notice"){
+    html += itemHasCopy(it) ? '<span class="badge lv2 ready">文案已提供</span>' : '<span class="badge lv2 pending">文案待補</span>';
+  }
+  return html;
+}
+
+function buildItemBlock(it, idx, onStructuralChange, onDelete){
+  var box = document.createElement("div"); box.className="itemblock";
+
+  /* 子項目標題列：線框圓圈編號＋徽章（與申請表同一套元素） */
+  var titleRow = document.createElement("div"); titleRow.className="itemblock-title";
+  var idxEl = document.createElement("div"); idxEl.className="idx"; idxEl.textContent = String(idx+1);
+  titleRow.appendChild(idxEl);
+  var badgesEl = document.createElement("div"); badgesEl.className="badges";
+  badgesEl.innerHTML = buildItemBadgesHTML(it);
+  titleRow.appendChild(badgesEl);
+  box.appendChild(titleRow);
+
+  var head = document.createElement("div"); head.className="itemblock-head";
+  head.appendChild(dfieldText("項目名稱", it.name, function(v){ it.name=v; }));
+  var typeField = document.createElement("div"); typeField.className="dfield";
+  typeField.innerHTML = "<label>需求類型</label>";
+  var sel = document.createElement("select");
+  var opt0 = document.createElement("option"); opt0.value=""; opt0.textContent="請選擇"; sel.appendChild(opt0);
+  TYPES.forEach(function(t){ var o=document.createElement("option"); o.value=t.id; o.textContent=t.label; if(it.typeId===t.id) o.selected=true; sel.appendChild(o); });
+  sel.addEventListener("click", function(e){ e.stopPropagation(); });
+  sel.addEventListener("change", function(e){
+    e.stopPropagation();
+    it.typeId = sel.value;
+    var t = typeOf(it.typeId);
+    it.sizeRows = [{purpose:"",customText:"",px:""}];
+    if(t && t.forcePrint) it.output=["print"]; else it.output=[];
+    applyDefaultSize(it);
+    onStructuralChange();
+  });
+  typeField.appendChild(sel);
+  head.appendChild(typeField);
+  box.appendChild(head);
+
+  var t = typeOf(it.typeId);
+  if(t){
+    if(t.mode==="notice"){
+      var nb = document.createElement("div"); nb.className="notice-box"; nb.textContent=t.notice;
+      box.appendChild(nb);
+    } else if(t.mode==="structure"){
+      (it.blocks||[]).forEach(function(bk, bi){
+        var bwrap = document.createElement("div"); bwrap.style.cssText="border:1px solid var(--hair);border-radius:8px;padding:10px;margin-bottom:8px;background:var(--paper);";
+        var c4 = document.createElement("div"); c4.className="copy4";
+        c4.appendChild(dfieldText("大標", bk.head, function(v){ bk.head=v; }));
+        c4.appendChild(dfieldText("副標", bk.sub, function(v){ bk.sub=v; }));
+        c4.appendChild(dfieldText("小字", bk.small, function(v){ bk.small=v; }));
+        c4.appendChild(dfieldText("其他", bk.other, function(v){ bk.other=v; }));
+        bwrap.appendChild(c4);
+        var delB = document.createElement("button"); delB.type="button"; delB.className="del-line"; delB.textContent="刪除區塊";
+        delB.addEventListener("click", function(e){
+          e.stopPropagation();
+          it.blocks = it.blocks.filter(function(x){ return x!==bk; });
+          onStructuralChange();
+        });
+        bwrap.appendChild(delB);
+        box.appendChild(bwrap);
+      });
+      var addBlk = document.createElement("button"); addBlk.type="button"; addBlk.className="add-line"; addBlk.textContent="＋ 新增區塊";
+      addBlk.addEventListener("click", function(e){
+        e.stopPropagation();
+        it.blocks = it.blocks || [];
+        it.blocks.push({_id:"bk"+Date.now(), head:"",sub:"",small:"",other:"", imgNote:"", link:""});
+        onStructuralChange();
+      });
+      box.appendChild(addBlk);
+    } else {
+      if(!t.forcePrint){
+        var outField = document.createElement("div"); outField.className="dfield";
+        outField.innerHTML = "<label>輸出形式</label>";
+        var outRow = document.createElement("div"); outRow.className="statuschips-inline";
+        [["digital","數位"],["print","印刷"]].forEach(function(pair){
+          var c = document.createElement("button"); c.type="button"; c.className="chip c-"+pair[0]; c.textContent=pair[1];
+          c.setAttribute("aria-pressed", it.output.indexOf(pair[0])>=0 ? "true":"false");
+          c.addEventListener("click", function(e){
+            e.stopPropagation();
+            var i = it.output.indexOf(pair[0]);
+            if(i>=0) it.output.splice(i,1); else it.output.push(pair[0]);
+            onStructuralChange();
+          });
+          outRow.appendChild(c);
+        });
+        outField.appendChild(outRow);
+        box.appendChild(outField);
+      }
+
+      var options = (t.sizes||[]).slice();
+      if(!t.forcePrint && it.output.indexOf("print")>=0){ options = options.concat(PRINT_SIZE_DEFS); }
+      if(options.length){
+        (it.sizeRows||[]).forEach(function(row){
+          var r = document.createElement("div"); r.className="sizerow";
+          var sf = document.createElement("div"); sf.className="dfield"; sf.style.margin="0";
+          if(row.purpose==="__custom__"){
+            /* 自訂用途：原位換成「自訂：」＋輸入框，與 index.html 同一套 */
+            var cw = document.createElement("div");
+            cw.style.cssText="display:flex;align-items:center;gap:6px;border:1.2px solid var(--line);border-radius:var(--r);padding:0 4px 0 12px;height:38px;background:var(--paper);";
+            var pfx = document.createElement("span"); pfx.textContent="自訂：";
+            pfx.style.cssText="font-size:12.5px;color:var(--body);flex:0 0 auto;white-space:nowrap;";
+            cw.appendChild(pfx);
+            var ci = document.createElement("input"); ci.type="text"; ci.placeholder="輸入用途名稱"; ci.value=row.customText||"";
+            ci.style.cssText="border:0;padding:6px 4px;height:100%;flex:1 1 auto;background:transparent;";
+            ci.addEventListener("click", function(e){ e.stopPropagation(); });
+            ci.addEventListener("input", function(){ row.customText=ci.value; });
+            cw.appendChild(ci);
+            var back = document.createElement("button"); back.type="button"; back.textContent="✕";
+            back.style.cssText="border:0;background:none;cursor:pointer;color:var(--muted);flex:0 0 auto;font-size:13px;";
+            back.addEventListener("click", function(e){
+              e.stopPropagation();
+              row.purpose=""; row.customText=""; row.px="";
+              onStructuralChange();
+            });
+            cw.appendChild(back);
+            sf.appendChild(cw);
+            r.appendChild(sf);
+          } else {
+          var s = document.createElement("select");
+          var o0 = document.createElement("option"); o0.value=""; o0.textContent="用途／版位"; s.appendChild(o0);
+          options.forEach(function(opt){
+            var o = document.createElement("option"); o.value=opt.custom?"__custom__":opt.label; o.textContent=opt.label;
+            if(row.purpose===o.value) o.selected=true;
+            s.appendChild(o);
+          });
+          s.addEventListener("click", function(e){ e.stopPropagation(); });
+          s.addEventListener("change", function(e){
+            e.stopPropagation();
+            row.purpose = s.value;
+            var def=null;
+            for(var i=0;i<options.length;i++){ if(options[i].label===row.purpose){ def=options[i]; break; } }
+            if(def && def.w && def.h) row.px = def.w+"×"+def.h+(def.unit||"px");
+            else if(def && def.note) row.px = def.note;
+            else if(row.purpose!=="__custom__") row.px="";
+            onStructuralChange();
+          });
+          sf.appendChild(s);
+          r.appendChild(sf);
+          }
+
+          var pf = document.createElement("div"); pf.className="dfield"; pf.style.margin="0";
+          var pxi = document.createElement("input"); pxi.type="text"; pxi.placeholder="實際尺寸"; pxi.value=row.px||"";
+          var frozen = false;
+          if(row.purpose && row.purpose!=="__custom__"){
+            var d=null; for(var j=0;j<options.length;j++){ if(options[j].label===row.purpose){ d=options[j]; break; } }
+            if(d && (d.w||d.note)) frozen=true;
+          }
+          if(frozen){ pxi.disabled=true; pxi.classList.add("readonly"); }
+          else { pxi.addEventListener("click", function(e){e.stopPropagation();}); pxi.addEventListener("input", function(){ row.px=pxi.value; }); }
+          pf.appendChild(pxi);
+          r.appendChild(pf);
+          box.appendChild(r);
+        });
+      }
+      if(it.output.indexOf("print")>=0){
+        box.appendChild(dfieldNumber("數量", it.printQty, function(v){ it.printQty=v; }));
+      }
+
+      var expField = document.createElement("div"); expField.className="dfield";
+      expField.innerHTML = "<label>商品曝光</label>";
+      var expRow = document.createElement("div"); expRow.className="statuschips-inline";
+      [["reveal","露出商品"],["free","不限"]].forEach(function(pair){
+        var c = document.createElement("button"); c.type="button"; c.className="chip"; c.textContent=pair[1];
+        c.setAttribute("aria-pressed", it.exposure===pair[0] ? "true":"false");
+        c.addEventListener("click", function(e){
+          e.stopPropagation();
+          it.exposure = (it.exposure===pair[0]) ? "" : pair[0];
+          if(it.exposure!=="reveal") it.exposureModel="";
+          onStructuralChange();
+        });
+        expRow.appendChild(c);
+      });
+      expField.appendChild(expRow);
+      box.appendChild(expField);
+      if(it.exposure==="reveal"){
+        box.appendChild(dfieldText("商品型號", it.exposureModel, function(v){ it.exposureModel=v; }));
+      }
+
+      var c4b = document.createElement("div"); c4b.className="copy4";
+      c4b.appendChild(dfieldText("大標", it.copy.head, function(v){ it.copy.head=v; }));
+      c4b.appendChild(dfieldText("副標", it.copy.sub, function(v){ it.copy.sub=v; }));
+      c4b.appendChild(dfieldText("小字", it.copy.small, function(v){ it.copy.small=v; }));
+      c4b.appendChild(dfieldText("其他", it.copy.other, function(v){ it.copy.other=v; }));
+      box.appendChild(c4b);
+
+      if(t.showChannel){ box.appendChild(dfieldText("使用位置", it.channel, function(v){ it.channel=v; })); }
+      box.appendChild(dfieldDate("交付日", it.useDate, function(v){ it.useDate=v; }));
+    }
+    /* 項目備註：總覽也要看得到、也要能追加 */
+    if(t.mode!=="notice"){
+      box.appendChild(dfieldTextarea("項目備註", it.note, function(v){ it.note=v; }));
+    }
+  }
+
+  var delItemB = document.createElement("button"); delItemB.type="button"; delItemB.className="del-line"; delItemB.textContent="刪除此項目";
+  delItemB.style.marginTop="8px";
+  delItemB.addEventListener("click", function(e){ e.stopPropagation(); onDelete(); });
+  box.appendChild(delItemB);
+
+  return box;
+}
+
+/* ===================== 小欄位工具 ===================== */
+function dfieldText(label, val, onChange){
+  var f = document.createElement("div"); f.className="dfield";
+  f.appendChild(elh("label", label));
+  var i = document.createElement("input"); i.type="text"; i.value=val||"";
+  i.addEventListener("click", function(e){e.stopPropagation();});
+  i.addEventListener("input", function(){ onChange(i.value); });
+  f.appendChild(i);
+  return f;
+}
+function dfieldTextarea(label, val, onChange){
+  var f = document.createElement("div"); f.className="dfield";
+  f.appendChild(elh("label", label));
+  var i = document.createElement("textarea"); i.value=val||"";
+  i.addEventListener("click", function(e){e.stopPropagation();});
+  i.addEventListener("input", function(){ onChange(i.value); });
+  f.appendChild(i);
+  return f;
+}
+function dfieldDate(label, val, onChange){
+  var f = document.createElement("div"); f.className="dfield";
+  f.appendChild(elh("label", label));
+  var i = document.createElement("input"); i.type="date"; i.value=val||"";
+  i.addEventListener("click", function(e){e.stopPropagation();});
+  i.addEventListener("input", function(){ onChange(i.value); });
+  f.appendChild(i);
+  return f;
+}
+function dfieldNumber(label, val, onChange){
+  var f = document.createElement("div"); f.className="dfield";
+  f.appendChild(elh("label", label));
+  var i = document.createElement("input"); i.type="number"; i.min="0"; i.value=val||"";
+  i.addEventListener("click", function(e){e.stopPropagation();});
+  i.addEventListener("input", function(){ onChange(i.value); });
+  f.appendChild(i);
+  return f;
+}
+
+/* ===================== 事件綁定 ===================== */
+/* 任何篩選變動都回到第一頁，避免停在一個已經不存在的頁碼上 */
+function refilter(){ currentPage = 1; openCardId = null; renderAll(); }
+document.getElementById("f-search").addEventListener("input", refilter);
+document.getElementById("f-dept").addEventListener("change", refilter);
+document.getElementById("f-status").addEventListener("change", refilter);
+
+document.getElementById("dr-prev").addEventListener("click", function(){
+  if(currentPage<=1) return;
+  currentPage--; openCardId = null; renderAll();
+  window.scrollTo({top:0, behavior:"smooth"});
+});
+document.getElementById("dr-next").addEventListener("click", function(){
+  currentPage++; openCardId = null; renderAll();
+  window.scrollTo({top:0, behavior:"smooth"});
+});
+
+document.getElementById("dr-logout").addEventListener("click", function(){
+  /* 介面預覽階段沒有真實登入流程，串接 Google 登入後這裡改為清除憑證並導回登入閘門 */
+  window.location.href = "index.html";
+});
+
+/* ===================== 啟動 ===================== */
+seedIfEmpty();
+populateFilters();
+renderAll();
+
+})();
+</script>
+</body>
+</html>
