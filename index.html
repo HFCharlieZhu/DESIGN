@@ -683,6 +683,68 @@ html,body{overflow-x:hidden;}
   }
 }
 
+
+
+#dr-app .size-spec-row{
+  --size-gap:var(--space-4);
+  display:grid!important;
+  grid-template-columns:
+    minmax(0,calc((100% - var(--size-gap))/2))
+    minmax(0,calc((100% - var(--size-gap))/2))!important;
+  column-gap:var(--size-gap)!important;
+  row-gap:var(--size-gap)!important;
+  align-items:end!important;
+  width:100%!important;
+  max-width:100%!important;
+  margin:0 0 var(--space-4)!important;
+}
+#dr-app .size-spec-row>.field{
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  margin:0!important;
+}
+#dr-app .size-value-group{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 44px!important;
+  column-gap:var(--size-gap)!important;
+  align-items:end!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  margin:0!important;
+}
+#dr-app .size-value-group>.field{
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  margin:0!important;
+}
+#dr-app .size-value-group input,
+#dr-app .size-spec-row> .field select,
+#dr-app .size-spec-row> .field input{
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+}
+#dr-app .size-value-group>.rm{
+  width:44px!important;
+  min-width:44px!important;
+  max-width:44px!important;
+  height:44px!important;
+  margin:0!important;
+}
+@media(max-width:700px){
+  #dr-app .size-spec-row{
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:var(--space-4)!important;
+  }
+  #dr-app .size-value-group{
+    grid-template-columns:minmax(0,1fr) 44px!important;
+    gap:var(--space-4)!important;
+  }
+}
+
 </style>
 
 </head>
