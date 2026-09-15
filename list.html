@@ -907,9 +907,7 @@ function buildDetail(rec, container){
   btnDelete.style.marginLeft="auto";
   btnDelete.addEventListener("click", async function(e){
     e.stopPropagation();
-    if(!confirm("確定要刪除「"+(work.data.name||work.id)+"」？
-
-這會刪除 Requests 資料、Google Doc 與此案件的 Logs，無法復原。")) return;
+    if(!confirm("確定要刪除「"+(work.data.name||work.id)+"」？\\n\\n這會刪除 Requests 資料、Google Doc 與此案件的 Logs，無法復原。")) return;
     btnDelete.disabled = true;
     try{
       await apiPost("deleteRequest", {requestId:work.id});
