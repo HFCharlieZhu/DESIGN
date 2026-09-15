@@ -341,16 +341,24 @@ function loadRemoteRequests(){
 }
 
 function handleCredentialResponse(response){
-  GOOGLE_CREDENTIAL = response.credential || "";
-  if(!GOOGLE_CREDENTIAL) return;
+  GOOGLE_CREDENTIAL = response && response.credential ? response.credential : "";
+  if(!GOOGLE_CREDENTIAL){
+    showSystemMessage("Google 未回傳登入憑證，請重新登入。", true);
+    return;
+  }
 
   showSystemMessage("正在驗證公司帳號…", false);
   apiPost("whoAmI").then(function(json){
     setCurrentUser(json.user || {});
-    return loadRemoteRequests();
+    showSystemMessage("登入成功，正在載入案件…", false);
+    return loadRemoteRequests().catch(function(err){
+      showSystemMessage("登入成功，但案件載入失敗："+err.message, true);
+      throw err;
+    });
   }).catch(function(err){
+    if(String(err.message||"").indexOf("案件載入失敗")>=0) return;
     GOOGLE_CREDENTIAL = "";
-    showSystemMessage("登入失敗："+err.message, true);
+    showSystemMessage("登入驗證失敗："+err.message, true);
   });
 }
 
@@ -367,15 +375,12 @@ function startGoogleLogin(){
     auto_select: true
   });
 
-  google.accounts.id.prompt(function(notification){
-    if(notification.isNotDisplayed && notification.isNotDisplayed()){
-      showSystemMessage("請使用 @harfunco.com 公司 Google 帳號登入", false);
-      google.accounts.id.renderButton(
-        document.getElementById("dr-login-slot"),
-        {theme:"outline", size:"medium", text:"signin_with"}
-      );
-    }
-  });
+  google.accounts.id.renderButton(
+    document.getElementById("dr-login-slot"),
+    {theme:"outline", size:"medium", text:"signin_with"}
+  );
+
+  google.accounts.id.prompt();
 }
 
 /* 部門固定只有這兩個，其他來源一律不採用 */
