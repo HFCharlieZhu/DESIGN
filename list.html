@@ -222,17 +222,19 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 
 [hidden]{display:none!important;}
 </style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 <div id="dr-app">
 
-  <div class="devbadge">介面預覽版本，資料儲存於本機瀏覽器，尚未串接後端。</div>
+  <div class="devbadge" id="dr-systemmsg">正在驗證公司帳號並載入案件…</div>
 
   <div class="topbar">
     <div class="topbar-in">
       <div class="topbar-title">允禾發 設計需求表<span class="topbar-kind">總覽</span></div>
       <div class="topbar-sub" id="dr-datetime"></div>
       <div class="topbar-user">
+        <div id="dr-login-slot"></div>
         <div class="avatar" id="dr-avatar">朱</div>
         <span id="dr-username">朱昱丞</span>
         <button class="btn-link" id="dr-logout">登出</button>
@@ -270,13 +272,111 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 (function(){
 "use strict";
 
-var CURRENT_USER = { name:"朱昱丞", email:"charlie@patroni.com.tw", initials:"CZ" };
-document.getElementById("dr-username").textContent = CURRENT_USER.name;
-document.getElementById("dr-avatar").textContent = CURRENT_USER.name.charAt(0);
+var API_URL = "https://script.google.com/a/macros/harfunco.com/s/AKfycbyZgxQNyQuQCX_Vmp5tlrgQ6p_-pEugmehm9StOCbp3IC32WeDjYoST1iqiCuM7VZDN/exec";
+var GOOGLE_CLIENT_ID = "610204517549-khmef2c4ejmeg0jrceg53385ptu2ns03.apps.googleusercontent.com";
+var GOOGLE_CREDENTIAL = "";
+var CURRENT_USER = { name:"", email:"", initials:"" };
+var REMOTE_RECORDS = [];
+
 document.getElementById("dr-datetime").textContent = (function(){
   var d = new Date();
   return d.getFullYear()+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+String(d.getDate()).padStart(2,"0");
 })();
+
+function initialsOf(name){
+  var parts = String(name||"").trim().split(/\s+/).filter(Boolean);
+  if(parts.length>=2) return (parts[0].charAt(0)+parts[parts.length-1].charAt(0)).toUpperCase();
+  return String(name||"").replace(/\s+/g,"").slice(0,2).toUpperCase();
+}
+
+function setCurrentUser(user){
+  CURRENT_USER = {
+    name: user.name || user.email || "",
+    email: user.email || "",
+    initials: initialsOf(user.name || user.email || "")
+  };
+  document.getElementById("dr-username").textContent = CURRENT_USER.name;
+  document.getElementById("dr-avatar").textContent = CURRENT_USER.name.charAt(0) || "・";
+}
+
+function apiPost(action, data){
+  return fetch(API_URL, {
+    method:"POST",
+    headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body:JSON.stringify(Object.assign({
+      action:action,
+      credential:GOOGLE_CREDENTIAL
+    }, data||{}))
+  }).then(function(res){
+    return res.json();
+  }).then(function(json){
+    if(!json.ok) throw new Error(json.error || "API 發生錯誤");
+    return json;
+  });
+}
+
+function loadRecords(){
+  return REMOTE_RECORDS;
+}
+
+function saveRecords(){
+  throw new Error("目前總覽為唯讀模式，尚未開放修改。");
+}
+
+function showSystemMessage(text, isError){
+  var el = document.getElementById("dr-systemmsg");
+  el.textContent = text;
+  el.style.color = isError ? "#b42318" : "";
+}
+
+function loadRemoteRequests(){
+  showSystemMessage("正在載入案件…", false);
+  return apiPost("listRequests").then(function(json){
+    REMOTE_RECORDS = Array.isArray(json.requests) ? json.requests : [];
+    showSystemMessage("已連線至設計需求系統", false);
+    currentPage = 1;
+    openCardId = null;
+    renderAll();
+  });
+}
+
+function handleCredentialResponse(response){
+  GOOGLE_CREDENTIAL = response.credential || "";
+  if(!GOOGLE_CREDENTIAL) return;
+
+  showSystemMessage("正在驗證公司帳號…", false);
+  apiPost("whoAmI").then(function(json){
+    setCurrentUser(json.user || {});
+    return loadRemoteRequests();
+  }).catch(function(err){
+    GOOGLE_CREDENTIAL = "";
+    showSystemMessage("登入失敗："+err.message, true);
+  });
+}
+
+function startGoogleLogin(){
+  if(!window.google || !google.accounts || !google.accounts.id){
+    setTimeout(startGoogleLogin, 150);
+    return;
+  }
+
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleCredentialResponse,
+    hd: "harfunco.com",
+    auto_select: true
+  });
+
+  google.accounts.id.prompt(function(notification){
+    if(notification.isNotDisplayed && notification.isNotDisplayed()){
+      showSystemMessage("請使用 @harfunco.com 公司 Google 帳號登入", false);
+      google.accounts.id.renderButton(
+        document.getElementById("dr-login-slot"),
+        {theme:"outline", size:"medium", text:"signin_with"}
+      );
+    }
+  });
+}
 
 /* 部門固定只有這兩個，其他來源一律不採用 */
 var DEPTS = ["BAUI","BAUII"];
@@ -289,8 +389,6 @@ var PAGE_SIZE = 20;
 var currentPage = 1;
 
 /* ===================== 設定資料（與 index.html 同步） ===================== */
-/* 狀態膠囊為第一級：純色底＝色票原色，不變淺、不加深；字一律黑，僅「待確認」為白。
-   完稿與設計中同色。dot 與 bg 現在同值，保留兩欄是為了取 hover／邊框色時語意清楚。 */
 var STATUS_META = {
   "待確認": {bg:"#666666", fg:"#ffffff", dot:"#666666"},
   "已排程": {bg:"#4AACFE", fg:"#111111", dot:"#4AACFE"},
@@ -334,7 +432,6 @@ var TYPES = [
   {id:"other", label:"其他", mode:"normal", sizes:[{label:"自訂尺寸", custom:true}], showChannel:true}
 ];
 function typeOf(id){ for (var i=0;i<TYPES.length;i++){ if(TYPES[i].id===id) return TYPES[i]; } return null; }
-/* 類型只有單一既定尺寸時自動帶入並鎖定（與 index.html 同一套） */
 function applyDefaultSize(it){
   var t = typeOf(it.typeId);
   if(!t || !t.sizes || t.sizes.length!==1) return;
@@ -343,68 +440,6 @@ function applyDefaultSize(it){
   it.sizeRows[0].purpose = d.label;
   if(d.w && d.h) it.sizeRows[0].px = d.w+"×"+d.h+(d.unit||"px");
   else if(d.note) it.sizeRows[0].px = d.note;
-}
-
-/* ===================== localStorage ===================== */
-var STORE_KEY = "dr_requests_v2";
-function loadRecords(){
-  var list;
-  try{ list = JSON.parse(localStorage.getItem(STORE_KEY)||"[]"); }catch(e){ list=[]; }
-  var changed = false;
-  list.forEach(function(r){
-    if(!r.status){ r.status="待確認"; changed=true; }
-    if(!r.log){ r.log=[]; changed=true; }
-    if(!r.wordLink){ r.wordLink="https://drive.google.com/drive/folders/設計需求申請/"+r.id; changed=true; }
-  });
-  if(changed) saveRecords(list);
-  return list;
-}
-function saveRecords(list){
-  try{ localStorage.setItem(STORE_KEY, JSON.stringify(list)); }catch(e){}
-}
-/* 示範資料：涵蓋每一種底色狀態，否則畫面上看不出配色規則有沒有生效。
-   逾期＝黃底、逾期且結案＝反灰、退回與取消＝紅底、資料不完整＝紅底、正常＝白底。 */
-function seedIfEmpty(){
-  var list = loadRecords();
-  if(list.length) return;
-  var now = new Date();
-  function iso(d){ var x=new Date(now); x.setDate(x.getDate()+d); return x.toISOString(); }
-  function dstr(d){ var x=new Date(now); x.setDate(x.getDate()+d); return x.toISOString().slice(0,10); }
-
-  function item(typeId, copyHead, output){
-    return {_id:"it"+Math.random().toString(16).slice(2), name:"主視覺", typeId:typeId,
-      output:output||["digital"], sizeRows:[{purpose:"",customText:"",px:""}], printQty:"",
-      exposure:"", exposureModel:"", copy:{head:copyHead||"",sub:"",small:"",other:""},
-      channel:"", useDate:"", cta:"", note:"", page:"", platform:[], pagecount:"", blocks:[]};
-  }
-  function mk(id, dept, who, ini, name, status, submitOffset, deliveryOffset, items){
-    return {
-      id:id, submittedAt: iso(submitOffset),
-      submitter:{name:who, email:ini.toLowerCase()+"@patroni.com.tw", initials:ini},
-      status:status, log:[], meetingDate:"",
-      wordLink:"https://drive.google.com/drive/folders/設計需求申請/"+id,
-      data:{dept:dept, name:name, purpose:"（示範資料）", message:"", audience:"2C",
-        note1:"", note2:"", deliveryDate: dstr(deliveryOffset), scheduleNote:"",
-        refLinks:[], refNote:"", items:items}
-    };
-  }
-
-  saveRecords([
-    mk("BAUI-CH-0001","BAUI","陳小華","CH","2026 中秋檔期主視覺","設計中",-12,-6,
-       [item("web_banner","中秋團圓 好禮相送")]),
-    mk("BAUI-CH-0002","BAUI","陳小華","CH","春季鞋款上架素材","已排程",-9,-3,
-       [item("social","")]),
-    mk("BAUII-LM-0001","BAUII","林大明","LM","年度型錄印刷","結案",-20,-8,
-       [item("print","型錄封面",["print"])]),
-    mk("BAUII-LM-0002","BAUII","林大明","LM","通路聯名活動頁","退回",-5,4,
-       [item("landing","")]),
-    mk("BAUI-CZ-0001","BAUI","朱昱丞","CZ","展場視覺提案","取消",-4,6,
-       [item("booth","")]),
-    mk("BAUII-LM-0003","BAUII","林大明","LM","缺類型的測試單","設計中",-2,10,
-       [item("","")]),
-    mk("BAUI-CZ-0002","BAUI","朱昱丞","CZ","秋季新品社群宣傳","待確認",-1,12,
-       [item("social","新品上市")])
-  ]);
 }
 
 /* ===================== 工作天 ===================== */
@@ -807,56 +842,26 @@ function buildDetail(rec, container){
   logPanel.hidden = !(work.log && work.log.length);
   frag.appendChild(logPanel);
 
-  /* 動作列 */
+  /* 動作列：第一階段只讀 Sheet，完整內容開 Google Doc */
   var actions = document.createElement("div"); actions.className="detail-actions";
-  hintEl = document.createElement("span"); hintEl.className="saved-hint";
-
-  var btnSave = document.createElement("button"); btnSave.type="button"; btnSave.className="btn-sm primary"; btnSave.textContent="儲存";
-  btnSave.addEventListener("click", function(e){
-    e.stopPropagation();
-    var labels = [];
-    if(work.status !== baseStatus) labels.push(work.status);
-    if(JSON.stringify(work.data)!==baseData || work.meetingDate!==baseMeet) labels.push("內容更新");
-    writeBack(labels);
-    flash("已儲存。");
-  });
-
-  var btnResend = document.createElement("button"); btnResend.type="button"; btnResend.className="btn-sm"; btnResend.textContent="重新發送需求";
-  btnResend.addEventListener("click", function(e){
-    e.stopPropagation();
-    var labels = [];
-    if(work.status !== "待確認"){ setStatus("待確認"); labels.push("待確認"); }
-    labels.push("重新發送需求");
-    writeBack(labels);
-    flash("已重新發送，狀態重置為待確認。");
-  });
-
-  var btnWord = document.createElement("button"); btnWord.type="button"; btnWord.className="btn-sm"; btnWord.textContent="寄送 Word 給申請人";
-  btnWord.addEventListener("click", function(e){
-    e.stopPropagation();
-    writeBack(["寄送 Word 給申請人"]);
-    flash("已寄送最新版 Word 至 "+(work.submitter?work.submitter.email:"申請人信箱")+"。");
-  });
-
-  var btnDelete = document.createElement("button"); btnDelete.type="button"; btnDelete.className="btn-sm danger"; btnDelete.textContent="刪除";
-  btnDelete.style.marginLeft="auto";
-  btnDelete.addEventListener("click", function(e){
-    e.stopPropagation();
-    work.deleted = { by: CURRENT_USER.email, at: new Date().toISOString() };
-    writeBack(["刪除此設計需求"]);
-    openCardId = null;
-    renderAll();
-  });
-
-  actions.appendChild(btnSave);
-  actions.appendChild(btnResend);
-  actions.appendChild(btnWord);
-  actions.appendChild(hintEl);
-  actions.appendChild(btnDelete);
+  var btnDoc = document.createElement("a");
+  btnDoc.className = "btn-sm primary";
+  btnDoc.textContent = "查看完整需求";
+  btnDoc.href = work.docUrl || "#";
+  btnDoc.target = "_blank";
+  btnDoc.rel = "noopener";
+  if(!work.docUrl){
+    btnDoc.style.opacity = ".4";
+    btnDoc.style.pointerEvents = "none";
+  }
+  actions.appendChild(btnDoc);
   frag.appendChild(actions);
 
   container.innerHTML = "";
   container.appendChild(frag);
+  container.querySelectorAll("input, textarea, select, button").forEach(function(el){
+    el.disabled = true;
+  });
 }
 
 function newItemData(){
@@ -1133,14 +1138,18 @@ document.getElementById("dr-next").addEventListener("click", function(){
 });
 
 document.getElementById("dr-logout").addEventListener("click", function(){
-  /* 介面預覽階段沒有真實登入流程，串接 Google 登入後這裡改為清除憑證並導回登入閘門 */
-  window.location.href = "index.html";
+  GOOGLE_CREDENTIAL = "";
+  REMOTE_RECORDS = [];
+  if(window.google && google.accounts && google.accounts.id){
+    google.accounts.id.disableAutoSelect();
+  }
+  window.location.reload();
 });
 
 /* ===================== 啟動 ===================== */
-seedIfEmpty();
 populateFilters();
 renderAll();
+startGoogleLogin();
 
 })();
 </script>
