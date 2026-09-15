@@ -319,6 +319,7 @@ function showSystemMessage(text, isError){
 function loadRemoteRequests(){
   showSystemMessage("正在載入案件…", false);
   return apiPost("listRequests").then(function(json){
+    if(json.user) setCurrentUser(json.user);
     REMOTE_RECORDS = Array.isArray(json.requests) ? json.requests : [];
     showSystemMessage("已連線至設計需求系統", false);
     currentPage = 1;
@@ -334,18 +335,10 @@ function handleCredentialResponse(response){
     return;
   }
 
-  showSystemMessage("正在驗證公司帳號…", false);
-  apiPost("whoAmI").then(function(json){
-    setCurrentUser(json.user || {});
-    showSystemMessage("登入成功，正在載入案件…", false);
-    return loadRemoteRequests().catch(function(err){
-      showSystemMessage("登入成功，但案件載入失敗："+err.message, true);
-      throw err;
-    });
-  }).catch(function(err){
-    if(String(err.message||"").indexOf("案件載入失敗")>=0) return;
+  showSystemMessage("正在登入並載入案件…", false);
+  loadRemoteRequests().catch(function(err){
     GOOGLE_CREDENTIAL = "";
-    showSystemMessage("登入驗證失敗："+err.message, true);
+    showSystemMessage("登入或案件載入失敗："+err.message, true);
   });
 }
 
