@@ -531,6 +531,25 @@ html,body{overflow-x:clip!important;}
   }
 }
 
+
+
+#dr-app .size-spec-row{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:var(--space-4)!important;
+  margin-bottom:var(--space-4)!important;
+}
+#dr-app .size-spec-row>.dfield{
+  min-width:0;
+  margin:0!important;
+}
+@media(max-width:700px){
+  #dr-app .size-spec-row{
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:var(--space-4)!important;
+  }
+}
+
 </style>
 <script async="" defer="" src="https://accounts.google.com/gsi/client"></script>
 
@@ -1414,7 +1433,7 @@ function buildItemBlock(it, idx, onStructuralChange, onDelete){
       if(!t.forcePrint && it.output.indexOf("print")>=0){ options = options.concat(PRINT_SIZE_DEFS); }
       if(options.length){
         (it.sizeRows||[]).forEach(function(row){
-          var r = document.createElement("div"); r.className="sizerow";
+          var r = document.createElement("div"); r.className="sizerow size-spec-row";
           var sf = document.createElement("div"); sf.className="dfield"; sf.style.margin="0";
           if(row.purpose==="__custom__"){
             
