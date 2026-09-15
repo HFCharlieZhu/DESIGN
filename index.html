@@ -572,6 +572,76 @@ html,body{overflow-x:hidden;}
   }
 }
 
+
+
+#dr-app #dr-confirm-errbox>.panel-title,
+#dr-app #dr-confirm-warnbox>.panel-title{
+  margin-left:calc(-1 * var(--space-5))!important;
+  margin-right:calc(-1 * var(--space-5))!important;
+  margin-bottom:var(--space-2)!important;
+  padding-left:var(--space-5)!important;
+  padding-right:var(--space-5)!important;
+  padding-bottom:var(--space-3)!important;
+  border-bottom:1px solid var(--hair)!important;
+}
+#dr-app #dr-confirm-errbox .checklist,
+#dr-app #dr-confirm-warnbox .checklist{
+  margin-left:calc(-1 * var(--space-5))!important;
+  margin-right:calc(-1 * var(--space-5))!important;
+  width:auto!important;
+}
+#dr-app #dr-confirm-errbox .checklist li,
+#dr-app #dr-confirm-warnbox .checklist li{
+  padding-left:var(--space-5)!important;
+  padding-right:var(--space-5)!important;
+}
+@media(max-width:700px){
+  #dr-app #dr-confirm-errbox>.panel-title,
+  #dr-app #dr-confirm-warnbox>.panel-title{
+    margin-left:calc(-1 * var(--space-4))!important;
+    margin-right:calc(-1 * var(--space-4))!important;
+    padding-left:var(--space-4)!important;
+    padding-right:var(--space-4)!important;
+  }
+  #dr-app #dr-confirm-errbox .checklist,
+  #dr-app #dr-confirm-warnbox .checklist{
+    margin-left:calc(-1 * var(--space-4))!important;
+    margin-right:calc(-1 * var(--space-4))!important;
+  }
+  #dr-app #dr-confirm-errbox .checklist li,
+  #dr-app #dr-confirm-warnbox .checklist li{
+    padding-left:var(--space-4)!important;
+    padding-right:var(--space-4)!important;
+  }
+}
+
+
+
+/* Equal two-field rows: true paired form fields use a 50/50 grid.
+   Purposefully asymmetric layouts such as size rows, headers, filters and action bars are untouched. */
+#dr-app .row,
+#dr-app .drow{
+  grid-template-columns:minmax(0,1fr);
+}
+#dr-app .row:has(> :nth-child(2):last-child),
+#dr-app .drow:has(> :nth-child(2):last-child){
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+#dr-app .copy4,
+#dr-app .block-body{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+@media(max-width:700px){
+  #dr-app .row,
+  #dr-app .drow,
+  #dr-app .row:has(> :nth-child(2):last-child),
+  #dr-app .drow:has(> :nth-child(2):last-child),
+  #dr-app .copy4,
+  #dr-app .block-body{
+    grid-template-columns:minmax(0,1fr);
+  }
+}
+
 </style>
 
 </head>
