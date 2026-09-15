@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
+<meta name="googlebot" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
+<meta name="bingbot" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex">
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
 <title>允禾發 設計需求表</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Sans:wght@400;500;700&display=swap">
 <style>
@@ -95,11 +97,6 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 #dr-app .card.bg-overdue .card-top{background:var(--brand-l);}
 #dr-app .card.bg-normal .card-top{background:var(--paper);}
 #dr-app .card.is-grey:not(.open){filter:grayscale(1);}
-
-#dr-app .card.is-deleted{filter:grayscale(1);}
-#dr-app .card.is-deleted .card-top{cursor:default;}
-#dr-app .card.is-deleted .caret{visibility:hidden;}
-#dr-app .card.is-deleted:hover{border-color:var(--line);}
 
 #dr-app .card-detail{display:none;background:var(--paper);border-top:1.2px solid var(--hair);padding:18px 16px;}
 #dr-app .card.open .card-detail{display:block;}
@@ -208,22 +205,71 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 .btn-sm.is-loading .action-label{display:none}
 @keyframes action-spin{to{transform:rotate(360deg)}}
 
+#dr-gate{min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;padding:40px 20px;text-align:center;background:var(--tint);}
+#dr-gate .g-title{font-size:20px;font-weight:900;}
+#dr-gate .g-sub{font-size:13px;color:var(--body);max-width:420px;}
+#dr-gate .g-note{font-size:11px;color:var(--muted);max-width:360px;}
+#dr-gate .g-login-label{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:-10px;}
+#dr-app button,#dr-app a,#dr-app input,#dr-app select,#dr-app textarea{touch-action:manipulation;}
+#dr-app input,#dr-app select,#dr-app textarea{max-width:100%;min-width:0;}
+#dr-app .dfield,#dr-app .drow>*{min-width:0;}
+#dr-app .devbadge{overflow:hidden;max-height:40px;opacity:1;transition:max-height .28s ease,opacity .28s ease,padding .28s ease,border-width .28s ease;}
+#dr-app .devbadge.is-hiding{max-height:0;opacity:0;padding-top:0;padding-bottom:0;border-width:0;}
+#dr-app .mobile-user{display:none;}
+@media (hover:none) and (pointer:coarse){
+  #dr-app button:active,#dr-app a:active,#dr-app .statuschip:active,#dr-app .schip:active,#dr-app .chip:active,#dr-app .card-top:active,#dr-app .btn-topbar:active{filter:brightness(.94);}
+}
+@media (max-width:640px){
+  #dr-app .wrap{padding-left:12px;padding-right:12px;padding-bottom:110px;}
+  #dr-app .topbar-in{padding:12px;gap:8px;}
+  #dr-app .topbar-sub,#dr-app .topbar-user{display:none;}
+  #dr-app .topbar-title{flex:1 1 auto;}
+  #dr-app .btn-topbar{padding:0 14px;}
+  #dr-app .filterbar{padding:12px;margin:12px 0;}
+  #dr-app .filterrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  #dr-app .filterrow input[type=text]{grid-column:1/-1;width:100%;min-width:0;}
+  #dr-app .filterrow select{width:100%;min-width:0;}
+  #dr-app .summarybar{gap:12px;margin-bottom:12px;}
+  #dr-app .card-top{padding:12px;display:grid;grid-template-columns:auto 1fr auto;gap:6px 8px;align-items:center;}
+  #dr-app .card-top .idcode{grid-column:1/2;}
+  #dr-app .card-top .cname{grid-column:2/4;min-width:0;}
+  #dr-app .card-top .cmeta{grid-column:1/2;justify-self:start;font-size:12px;}
+  #dr-app .card-top .cmeta .meta-dept{display:none;}
+  #dr-app .card-top .mobile-right{grid-column:2/4;grid-row:2;justify-self:end;display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+  #dr-app .card-top>.badge,#dr-app .card-top>.status-pill,#dr-app .card-top>.caret{display:none;}
+  #dr-app .card-detail{padding:12px;}
+  #dr-app .dpanel{padding:12px;}
+  #dr-app input[type=date]{width:100%;min-width:0;}
+  #dr-app .detail-actions{gap:8px;align-items:stretch;}
+  #dr-app .detail-actions .btn-sm{flex:1 1 calc(50% - 8px);justify-content:center;}
+  #dr-app .detail-actions .danger{margin-left:0!important;}
+  #dr-app .mobile-user{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:24px 12px 30px;color:var(--body);font-size:13px;}
+  #dr-app .mobile-user .identity{display:flex;align-items:center;gap:8px;}
+}
+
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 <div id="dr-app">
-
-  <div class="devbadge" id="dr-systemmsg">正在驗證公司帳號並載入案件…</div>
+  <div id="dr-gate">
+    <div class="g-title">允禾發 設計需求表</div>
+    <div class="g-sub">請使用 @harfunco.com Google Workspace 帳號登入。</div>
+    <button type="button" class="btn-topbar" id="dr-login-action">使用允禾發 Google 帳號登入</button>
+    <div id="dr-login-slot" hidden></div>
+    <div id="dr-login-status"></div>
+    <div class="g-note">帳號用於身分驗證與需求表寄送。</div>
+  </div>
+  <div id="dr-main" hidden>
+  <div class="devbadge" id="dr-systemmsg">正在載入案件…</div>
 
   <div class="topbar">
     <div class="topbar-in">
       <div class="topbar-title">允禾發 設計需求表<span class="topbar-kind">總覽</span></div>
       <div class="topbar-sub" id="dr-datetime"></div>
       <div class="topbar-user">
-        <div id="dr-login-slot"></div>
-        <div class="avatar" id="dr-avatar">朱</div>
-        <span id="dr-username">朱昱丞</span>
+        <div class="avatar" id="dr-avatar"></div>
+        <span id="dr-username"></span>
         <button class="btn-link" id="dr-logout">登出</button>
       </div>
       <a class="btn-topbar" href="index.html" target="_blank" rel="noopener">＋ 新增申請</a>
@@ -244,7 +290,7 @@ html,body{margin:0;padding:0;background:#eeeeee;}
     <div class="summarybar" id="dr-summary"></div>
 
     <div class="groups" id="dr-groups"></div>
-    <div class="empty" id="dr-empty" hidden>目前沒有符合條件的申請單。</div>
+    <div class="empty" id="dr-empty" hidden>無符合條件的申請單。</div>
 
     <div class="pager" id="dr-pager" hidden>
       <button type="button" class="pgbtn" id="dr-prev">上一頁</button>
@@ -252,6 +298,8 @@ html,body{margin:0;padding:0;background:#eeeeee;}
       <button type="button" class="pgbtn" id="dr-next">下一頁</button>
     </div>
 
+  </div>
+  <div class="mobile-user"><div class="identity"><div class="avatar" id="dr-mobile-avatar"></div><span id="dr-mobile-username"></span></div><button class="btn-link" id="dr-mobile-logout">登出</button></div>
   </div>
 </div>
 
@@ -264,6 +312,7 @@ var GOOGLE_CLIENT_ID = "610204517549-khmef2c4ejmeg0jrceg53385ptu2ns03.apps.googl
 var GOOGLE_CREDENTIAL = "";
 var CURRENT_USER = { name:"", email:"", initials:"" };
 var REMOTE_RECORDS = [];
+var SERVER_NOW = new Date();
 
 document.getElementById("dr-datetime").textContent = (function(){
   var d = new Date();
@@ -283,7 +332,9 @@ function setCurrentUser(user){
     initials: initialsOf(user.name || user.email || "")
   };
   document.getElementById("dr-username").textContent = CURRENT_USER.name;
-  document.getElementById("dr-avatar").textContent = CURRENT_USER.name.charAt(0) || "・";
+  document.getElementById("dr-avatar").textContent = CURRENT_USER.initials || "・";
+  document.getElementById("dr-mobile-username").textContent = CURRENT_USER.name;
+  document.getElementById("dr-mobile-avatar").textContent = CURRENT_USER.initials || "・";
 }
 
 function apiPost(action, data){
@@ -306,22 +357,27 @@ function loadRecords(){
   return REMOTE_RECORDS;
 }
 
-function saveRecords(){
-  throw new Error("目前總覽為唯讀模式，尚未開放修改。");
-}
-
-function showSystemMessage(text, isError){
+var systemMessageTimer = 0;
+function showSystemMessage(text, isError, autoHide){
   var el = document.getElementById("dr-systemmsg");
+  clearTimeout(systemMessageTimer);
+  el.classList.remove("is-hiding");
   el.textContent = text;
   el.style.color = isError ? "#b42318" : "";
+  if(autoHide){
+    systemMessageTimer = setTimeout(function(){ el.classList.add("is-hiding"); }, 5000);
+  }
 }
 
 function loadRemoteRequests(){
   showSystemMessage("正在載入案件…", false);
   return apiPost("listRequests").then(function(json){
     if(json.user) setCurrentUser(json.user);
+    SERVER_NOW = json.serverNow ? new Date(json.serverNow) : new Date();
     REMOTE_RECORDS = Array.isArray(json.requests) ? json.requests : [];
-    showSystemMessage("已連線至設計需求系統", false);
+    document.getElementById("dr-gate").hidden = true;
+    document.getElementById("dr-main").hidden = false;
+    showSystemMessage("已連線至平面設計需求系統。", false, true);
     currentPage = 1;
     openCardId = null;
     renderAll();
@@ -331,14 +387,14 @@ function loadRemoteRequests(){
 function handleCredentialResponse(response){
   GOOGLE_CREDENTIAL = response && response.credential ? response.credential : "";
   if(!GOOGLE_CREDENTIAL){
-    showSystemMessage("Google 未回傳登入憑證，請重新登入。", true);
+    showSystemMessage("未取得 Google 登入憑證。請重新登入。", true);
     return;
   }
 
-  showSystemMessage("正在登入並載入案件…", false);
+  document.getElementById("dr-login-status").textContent="正在登入並載入案件…";
   loadRemoteRequests().catch(function(err){
     GOOGLE_CREDENTIAL = "";
-    showSystemMessage("登入或案件載入失敗："+err.message, true);
+    document.getElementById("dr-login-status").textContent="登入或案件載入失敗："+err.message+"。";
   });
 }
 
@@ -357,7 +413,7 @@ function startGoogleLogin(){
 
   google.accounts.id.renderButton(
     document.getElementById("dr-login-slot"),
-    {theme:"outline", size:"medium", text:"signin_with"}
+    {theme:"outline", size:"large", text:"signin_with"}
   );
 
   google.accounts.id.prompt();
@@ -409,7 +465,7 @@ var TYPES = [
   {id:"landing", label:"活動頁", mode:"structure"},
   {id:"product", label:"商品頁", mode:"notice", notice:"文案請前往《長條圖參考分配》填寫。"},
   {id:"print", label:"印刷品", mode:"normal", forcePrint:true, sizes:[{label:"A4"},{label:"A3"},{label:"A2"},{label:"A5"},{label:"自訂尺寸", custom:true}]},
-  {id:"booth", label:"展場", mode:"notice", notice:"本項目請另約會議討論。"},
+  {id:"booth", label:"展場", mode:"notice", notice:"本項目需另行安排會議。"},
   {id:"other", label:"其他", mode:"normal", sizes:[{label:"自訂尺寸", custom:true}], showChannel:true}
 ];
 function typeOf(id){ for (var i=0;i<TYPES.length;i++){ if(TYPES[i].id===id) return TYPES[i]; } return null; }
@@ -432,16 +488,25 @@ function workingDaysBetween(from, to){
   while(d<end){ d.setDate(d.getDate()+1); var wd=d.getDay(); if(wd!==0 && wd!==6) count++; }
   return count;
 }
+function todayFromServer(){
+  var d = new Date(SERVER_NOW.getTime());
+  d.setHours(0,0,0,0);
+  return d;
+}
+function isClosedStatus(status){
+  return status==="完稿" || status==="結案" || status==="取消" || status==="退回";
+}
 function isOverdue(rec){
+  if(isClosedStatus(rec.status)) return false;
   var d = parseDate(rec.data.deliveryDate);
   if(!d) return false;
-  var today = new Date(); today.setHours(0,0,0,0);
-  return d < today;
+  return d < todayFromServer();
 }
 function isUrgent(rec){
+  if(isClosedStatus(rec.status)) return false;
   var d = parseDate(rec.data.deliveryDate);
   if(!d) return false;
-  var today = new Date(); today.setHours(0,0,0,0);
+  var today = todayFromServer();
   var wd = workingDaysBetween(today, d);
   return wd!==null && wd<URGENT_WORKING_DAYS && d>=today;
 }
@@ -460,8 +525,16 @@ function isPending(rec){
   });
 }
 function hasError(rec){
-  if(!rec.data.items || rec.data.items.length===0) return true;
-  return rec.data.items.some(function(it){ return !it.typeId; });
+  var d = rec.data || {};
+  if(!String(d.name||"").trim() || !String(d.purpose||"").trim() || !d.deliveryDate) return true;
+  if(!Array.isArray(d.items) || d.items.length===0) return true;
+  return d.items.some(function(it){
+    if(!it || !it.typeId || !typeOf(it.typeId)) return true;
+    var t = typeOf(it.typeId);
+    if(t.mode==="normal" && !t.forcePrint && (!Array.isArray(it.output) || it.output.length===0)) return true;
+    if(itemHasPrint(it) && !String(it.printQty||"").trim()) return true;
+    return false;
+  });
 }
 
 var activeQuick = { overdue:false, error:false };
@@ -506,12 +579,8 @@ function matchesFilter(rec){
   var status = document.getElementById("f-status").value;
   if(status && rec.status!==status) return false;
   
-  if(activeQuick.overdue || activeQuick.error){
-    
-    if(rec.deleted) return false;
-    var hit = (activeQuick.overdue && isOverdue(rec)) || (activeQuick.error && hasError(rec));
-    if(!hit) return false;
-  }
+  if(activeQuick.overdue && !isOverdue(rec)) return false;
+  if(activeQuick.error && !hasError(rec)) return false;
   return true;
 }
 
@@ -532,8 +601,8 @@ function renderAll(){
 
   document.getElementById("dr-summary").innerHTML =
     '<div>共 <b>'+list.length+'</b> 筆</div>' +
-    '<div>逾期 <b>'+list.filter(function(r){return !r.deleted && isOverdue(r);}).length+'</b> 筆</div>' +
-    '<div>文案待補 <b>'+list.filter(function(r){return !r.deleted && isPending(r);}).length+'</b> 筆</div>';
+    '<div>逾期 <b>'+list.filter(function(r){return isOverdue(r);}).length+'</b> 筆</div>' +
+    '<div>文案待補 <b>'+list.filter(function(r){return isPending(r);}).length+'</b> 筆</div>';
 
   
   var totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
@@ -541,7 +610,7 @@ function renderAll(){
   if(currentPage < 1) currentPage = 1;
   var pager = document.getElementById("dr-pager");
   pager.hidden = list.length <= PAGE_SIZE;
-  document.getElementById("dr-pginfo").textContent = currentPage+" / "+totalPages;
+  document.getElementById("dr-pginfo").textContent = "第 "+currentPage+" / "+totalPages+" 頁";
   document.getElementById("dr-prev").disabled = currentPage<=1;
   document.getElementById("dr-next").disabled = currentPage>=totalPages;
   var pageList = list.slice((currentPage-1)*PAGE_SIZE, currentPage*PAGE_SIZE);
@@ -576,7 +645,7 @@ function elh(tag, text){ var e=document.createElement(tag); e.textContent=text; 
 function renderCard(rec){
   var meta = STATUS_META[rec.status] || STATUS_META["待確認"];
   var card = document.createElement("div");
-  card.className = "card "+cardBgClass(rec)+(rec.deleted ? " is-deleted" : "");
+  card.className = "card "+cardBgClass(rec);
   card.style.setProperty("--card-hover", meta.dot);
   card.dataset.id = rec.id;
   var isOpen = openCardId === rec.id;
@@ -586,9 +655,7 @@ function renderCard(rec){
   top.innerHTML =
     '<div class="idcode">'+rec.id+'</div>' +
     '<div class="cname">'+escapeHtml(rec.data.name||"未命名")+'</div>' +
-    '<div class="cmeta">'+escapeHtml(rec.data.dept || (rec.submitter?rec.submitter.name:""))+' ・ '+fmtDate(new Date(rec.submittedAt))+
-      (rec.deleted ? '' : (isOverdue(rec) ? '　<b style="color:var(--brand-dk);">逾期</b>' : (isUrgent(rec) ? '　<b style="color:var(--red);">急件</b>' : '')))+
-    '</div>';
+    '<div class="cmeta"><span class="meta-dept">'+escapeHtml(rec.data.dept || (rec.submitter?rec.submitter.name:""))+' ・ </span>'+fmtDate(new Date(rec.submittedAt))+'</div>';
   
   var copyBadge = document.createElement("span");
   copyBadge.className = "badge lv2 " + (isPending(rec) ? "pending" : "ready");
@@ -602,18 +669,17 @@ function renderCard(rec){
   caret.setAttribute("class","caret"); caret.setAttribute("viewBox","0 0 11 7");
   caret.innerHTML = '<path d="M1 1l4.5 4.5L10 1" stroke="#111" stroke-width="1.6" fill="none"/>';
   top.appendChild(caret);
+  var mobileRight = document.createElement("div"); mobileRight.className="mobile-right";
+  if(isOverdue(rec)){ var ob=document.createElement("span"); ob.className="badge"; ob.style.background="var(--brand)"; ob.textContent="逾期"; mobileRight.appendChild(ob); }
+  else if(isUrgent(rec)){ var ub=document.createElement("span"); ub.className="badge"; ub.style.background="var(--red)"; ub.textContent="急件"; mobileRight.appendChild(ub); }
+  var mbCopy=copyBadge.cloneNode(true); mobileRight.appendChild(mbCopy);
+  var mbPill=pill.cloneNode(true); mobileRight.appendChild(mbPill);
+  top.appendChild(mobileRight);
   card.appendChild(top);
 
   var detail = document.createElement("div"); detail.className="card-detail";
   card.appendChild(detail);
   var built = false;
-
-  if(rec.deleted){
-    
-    var cmetaEl = top.querySelector(".cmeta");
-    if(cmetaEl) cmetaEl.textContent = "已由 "+rec.deleted.by+" 於 "+fmtDate(new Date(rec.deleted.at))+" 刪除";
-    return card;
-  }
 
   top.addEventListener("click", function(){
     var willOpen = !card.classList.contains("open");
@@ -637,9 +703,9 @@ function syncOpenDim(){
 function fmtDate(d){ return d.getFullYear()+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+String(d.getDate()).padStart(2,"0"); }
 function escapeHtml(s){ return String(s==null?"":s).replace(/[&<>]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c]; }); }
 
-function setActionLoading(btn, loading){
+function setActionLoading(btn, loading, group){
   if(!btn) return;
-  btn.disabled = !!loading;
+  (group||[btn]).forEach(function(x){ x.disabled=!!loading; });
   btn.classList.toggle("is-loading", !!loading);
 }
 function prepareActionButton(btn, text){
@@ -656,7 +722,7 @@ function buildDetail(rec, container){
   var baseData   = JSON.stringify(work.data);
   var baseMeet   = work.meetingDate;
 
-  var logBox = null, logPanel = null, schipsEl = null, hintEl = null;
+  var logBox = null, logPanel = null, schipsEl = null, hintEl = null, actionBusy = false, actionButtons = [];
 
   function stamp(d){
     return d.getFullYear()+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+String(d.getDate()).padStart(2,"0")
@@ -665,7 +731,7 @@ function buildDetail(rec, container){
   
   function logText(entry){
     var what = entry.text || (entry.fields||[]).join("、") || "內容更新";
-    return stamp(new Date(entry.time))+"　"+entry.user+"　修改了："+what;
+    return stamp(new Date(entry.time))+"　"+initialsOf((entry.user||"").split("@")[0].replace(/[._-]+/g," "))+"<"+entry.user+">　修改了："+what;
   }
   function prependLogEntry(entry){
     if(!logBox) return;
@@ -715,16 +781,16 @@ function buildDetail(rec, container){
     cardEl.className = "card open " + cardBgClass(work);
     var meta = STATUS_META[work.status] || STATUS_META["待確認"];
     cardEl.style.setProperty("--card-hover", meta.dot);
-    var pill = cardEl.querySelector(".status-pill");
-    if(pill){ pill.style.background=meta.bg; pill.style.color=meta.fg; pill.textContent=work.status; }
+    cardEl.querySelectorAll(".status-pill").forEach(function(pill){
+      pill.style.background=meta.bg; pill.style.color=meta.fg; pill.textContent=work.status;
+    });
     var cname = cardEl.querySelector(".cname");
     if(cname) cname.textContent = work.data.name||"未命名";
-    var cbadge = cardEl.querySelector(".card-top .badge");
-    if(cbadge){
-      var pend = isPending(work);
+    var pend = isPending(work);
+    cardEl.querySelectorAll(".badge.lv2").forEach(function(cbadge){
       cbadge.className = "badge lv2 " + (pend ? "pending" : "ready");
       cbadge.textContent = pend ? "文案待補" : "文案已提供";
-    }
+    });
   }
   function setStatus(s){
     work.status = s;
@@ -805,7 +871,7 @@ function buildDetail(rec, container){
   }
   renderItemsWrap();
   var addBtn = document.createElement("button"); addBtn.type="button"; addBtn.className="add-line"; addBtn.textContent="＋ 新增項目";
-  addBtn.style.marginTop="6px";
+  addBtn.style.marginTop="12px";
   addBtn.addEventListener("click", function(e){
     e.stopPropagation();
     work.data.items.push(newItemData());
@@ -840,7 +906,7 @@ function buildDetail(rec, container){
   var btnSave = document.createElement("button"); btnSave.type="button"; btnSave.className="btn-sm primary"; prepareActionButton(btnSave,"儲存");
   btnSave.addEventListener("click", async function(e){
     e.stopPropagation();
-    setActionLoading(btnSave, true);
+    if(actionBusy)return;actionBusy=true;setActionLoading(btnSave,true,actionButtons);
     try{
       var labels = [];
       if(work.status !== baseStatus) labels.push(work.status);
@@ -850,14 +916,14 @@ function buildDetail(rec, container){
     }catch(err){
       flash("儲存失敗："+err.message);
     }finally{
-      setActionLoading(btnSave, false);
+      actionBusy=false;setActionLoading(btnSave,false,actionButtons);
     }
   });
 
   var btnResend = document.createElement("button"); btnResend.type="button"; btnResend.className="btn-sm"; prepareActionButton(btnResend,"重新發送需求");
   btnResend.addEventListener("click", async function(e){
     e.stopPropagation();
-    setActionLoading(btnResend, true);
+    if(actionBusy)return;actionBusy=true;setActionLoading(btnResend,true,actionButtons);
     try{
       var labels = [];
       if(work.status !== "待確認"){ setStatus("待確認"); labels.push("待確認"); }
@@ -865,11 +931,11 @@ function buildDetail(rec, container){
       await writeBack(labels);
       var mailResult = await apiPost("sendRequestNotification", {requestId:work.id, mode:"resend"});
       if(mailResult.log) prependLogEntry(mailResult.log);
-      flash("已重新發送，並寄出最新版需求表。");
+      flash("需求已重新發送。");
     }catch(err){
       flash("重新發送失敗："+err.message);
     }finally{
-      setActionLoading(btnResend, false);
+      actionBusy=false;setActionLoading(btnResend,false,actionButtons);
     }
   });
 
@@ -878,20 +944,20 @@ function buildDetail(rec, container){
     e.stopPropagation();
     var recipient = work.submitter && work.submitter.email ? work.submitter.email : "";
     if(!recipient){
-      flash("此案件沒有申請人信箱。");
+      flash("未設定申請人信箱。");
       return;
     }
-    if(!confirm("確定要將目前最新版 Word 寄給申請人？\\n\\n收件人："+recipient)) return;
+    if(!confirm("確認寄送最新版 Word 給申請人？\\n\\n收件人："+recipient)) return;
 
-    setActionLoading(btnWord, true);
+    if(actionBusy)return;actionBusy=true;setActionLoading(btnWord,true,actionButtons);
     try{
       var result = await apiPost("sendWordToApplicant", {requestId:work.id});
       if(result.log) prependLogEntry(result.log);
-      flash("已寄送最新版 Word 至 "+result.recipient+"。");
+      flash("Word 附件已寄送至 "+result.recipient+"。");
     }catch(err){
       flash("寄送失敗："+err.message);
     }finally{
-      setActionLoading(btnWord, false);
+      actionBusy=false;setActionLoading(btnWord,false,actionButtons);
     }
   });
 
@@ -899,19 +965,20 @@ function buildDetail(rec, container){
   btnDelete.style.marginLeft="auto";
   btnDelete.addEventListener("click", async function(e){
     e.stopPropagation();
-    if(!confirm("確定要刪除「"+(work.data.name||work.id)+"」？\\n\\n這會刪除 Requests 資料、Google Doc 與此案件的 Logs，無法復原。")) return;
-    setActionLoading(btnDelete, true);
+    if(!confirm("確定要刪除「"+(work.data.name||work.id)+"」？\\n\\n將刪除案件資料、Google Doc 與異動紀錄，且無法復原。")) return;
+    if(actionBusy)return;actionBusy=true;setActionLoading(btnDelete,true,actionButtons);
     try{
       await apiPost("deleteRequest", {requestId:work.id});
       REMOTE_RECORDS = REMOTE_RECORDS.filter(function(x){ return x.id!==work.id; });
       openCardId = null;
       renderAll();
     }catch(err){
-      setActionLoading(btnDelete, false);
+      actionBusy=false;setActionLoading(btnDelete,false,actionButtons);
       flash("刪除失敗："+err.message);
     }
   });
 
+  actionButtons=[btnSave,btnResend,btnWord,btnDelete];
   actions.appendChild(btnSave);
   actions.appendChild(btnResend);
   actions.appendChild(btnWord);
@@ -1192,14 +1259,23 @@ document.getElementById("dr-next").addEventListener("click", function(){
   window.scrollTo({top:0, behavior:"smooth"});
 });
 
-document.getElementById("dr-logout").addEventListener("click", function(){
-  GOOGLE_CREDENTIAL = "";
-  REMOTE_RECORDS = [];
-  if(window.google && google.accounts && google.accounts.id){
-    google.accounts.id.disableAutoSelect();
+function logout(){
+  GOOGLE_CREDENTIAL="";
+  REMOTE_RECORDS=[];
+  CURRENT_USER={name:"",email:"",initials:""};
+  document.getElementById("dr-main").hidden=true;
+  document.getElementById("dr-gate").hidden=false;
+  document.getElementById("dr-username").textContent="";
+  document.getElementById("dr-avatar").textContent="";
+  document.getElementById("dr-mobile-username").textContent="";
+  document.getElementById("dr-mobile-avatar").textContent="";
+  if(window.google&&google.accounts&&google.accounts.id){
+    google.accounts.id.disableAutoSelect();google.accounts.id.cancel();
+    google.accounts.id.renderButton(document.getElementById("dr-login-slot"),{theme:"outline",size:"large",text:"signin_with"});document.getElementById("dr-login-action").onclick=function(){google.accounts.id.prompt();};
   }
-  window.location.reload();
-});
+}
+document.getElementById("dr-logout").addEventListener("click",logout);
+document.getElementById("dr-mobile-logout").addEventListener("click",logout);
 
 populateFilters();
 renderAll();
