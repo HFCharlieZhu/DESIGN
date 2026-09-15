@@ -419,6 +419,159 @@ html,body{overflow-x:hidden;}
   #dr-app .preview-panel{--preview-pad:var(--space-4);}
 }
 
+
+#dr-app .preview .warn,
+#dr-app .preview .error,
+#dr-app .preview .validation,
+#dr-app .preview .incomplete{
+  margin-left:calc(-1 * var(--preview-pad))!important;
+  margin-right:calc(-1 * var(--preview-pad))!important;
+  padding-left:var(--preview-pad)!important;
+  padding-right:var(--preview-pad)!important;
+}
+
+#dr-app .structure-stat{
+  margin-top:var(--space-2)!important;
+  margin-bottom:var(--space-4)!important;
+}
+#dr-app .notice-box + .field,
+#dr-app .hint + .field,
+#dr-app .structure-stat + .field,
+#dr-app .structure-stat + .grid2,
+#dr-app .notice-box + .grid2{
+  margin-top:var(--space-4)!important;
+}
+
+#dr-app .item-head .status-badge,
+#dr-app .item-head .copy-badge,
+#dr-app .item-head .pending-copy,
+#dr-app .item-head .pill{
+  margin-left:auto!important;
+  justify-self:end!important;
+}
+
+
+#dr-app #dr-confirm-errbox,
+#dr-app #dr-confirm-warnbox{
+  overflow:hidden;
+}
+#dr-app #dr-confirm-errbox .checklist,
+#dr-app #dr-confirm-warnbox .checklist{
+  margin-left:calc(-1 * var(--space-5))!important;
+  margin-right:calc(-1 * var(--space-5))!important;
+}
+#dr-app #dr-confirm-errbox .checklist li,
+#dr-app #dr-confirm-warnbox .checklist li{
+  padding-left:var(--space-5)!important;
+  padding-right:var(--space-5)!important;
+}
+#dr-app .structure-stat{
+  margin-top:var(--space-2)!important;
+  margin-bottom:var(--space-5)!important;
+}
+#dr-app .notice-box + .field,
+#dr-app .notice-box + .row,
+#dr-app .hint + .field,
+#dr-app .hint + .row,
+#dr-app .structure-stat + .field,
+#dr-app .structure-stat + .row,
+#dr-app .structure-stat + .grid2,
+#dr-app .notice-box + .grid2{
+  margin-top:var(--space-5)!important;
+}
+#dr-app .item-head .badges{
+  margin-left:auto!important;
+  justify-self:end!important;
+  justify-content:flex-end!important;
+}
+@media(max-width:700px){
+  #dr-app #dr-confirm-errbox .checklist,
+  #dr-app #dr-confirm-warnbox .checklist{
+    margin-left:calc(-1 * var(--space-4))!important;
+    margin-right:calc(-1 * var(--space-4))!important;
+  }
+  #dr-app #dr-confirm-errbox .checklist li,
+  #dr-app #dr-confirm-warnbox .checklist li{
+    padding-left:var(--space-4)!important;
+    padding-right:var(--space-4)!important;
+  }
+  #dr-app .item-head .badges{
+    grid-column:2/5!important;
+    grid-row:2!important;
+    width:100%!important;
+    justify-content:flex-end!important;
+  }
+}
+
+
+
+/* Final mobile date-field containment */
+#dr-app,#dr-app *{box-sizing:border-box;}
+#dr-app .field,
+#dr-app .dfield,
+#dr-app .row>*,
+#dr-app .drow>*,
+#dr-app .grid2>*,
+#dr-app .block-body>*,
+#dr-app .item-body>*,
+#dr-app .panel>*,
+#dr-app .dpanel>*{
+  min-width:0;
+  max-width:100%;
+}
+#dr-app .date-wrap{
+  display:block;
+  position:relative;
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  overflow:hidden;
+  contain:inline-size;
+}
+#dr-app .date-wrap>input[type=date]{
+  -webkit-appearance:none;
+  appearance:none;
+  display:block;
+  box-sizing:border-box;
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  inline-size:100%!important;
+  min-inline-size:0!important;
+  max-inline-size:100%!important;
+  overflow:hidden!important;
+  margin:0!important;
+}
+#dr-app .date-wrap>input[type=date]::-webkit-date-and-time-value{
+  min-width:0;
+  width:100%;
+  text-align:left;
+}
+#dr-app .date-wrap>input[type=date]::-webkit-datetime-edit{
+  min-width:0;
+  overflow:hidden;
+  padding:0;
+}
+#dr-app .date-wrap>input[type=date]::-webkit-calendar-picker-indicator{
+  flex:0 0 auto;
+  margin:0 0 0 auto;
+  padding:0;
+}
+@media(max-width:700px){
+  #dr-app .date-wrap{
+    width:100%!important;
+    max-width:100%!important;
+  }
+  #dr-app .date-wrap>input[type=date]{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    font-size:16px!important;
+    padding-left:12px!important;
+    padding-right:12px!important;
+  }
+}
+
 </style>
 
 </head>
@@ -600,6 +753,45 @@ if(window.ResizeObserver){
 }
 window.addEventListener("resize",syncAppHeaderHeight,{passive:true});
 syncAppHeaderHeight();
+
+
+function fitMobileDateInputs(){
+  if(!window.matchMedia("(max-width:700px)").matches)return;
+  document.querySelectorAll("#dr-app .date-wrap").forEach(function(wrap){
+    var input=wrap.querySelector('input[type="date"]');
+    if(!input||wrap.offsetParent===null)return;
+    var width=Math.floor(wrap.getBoundingClientRect().width);
+    if(width>0){
+      input.style.setProperty("width",width+"px","important");
+      input.style.setProperty("max-width",width+"px","important");
+      input.style.setProperty("min-width","0","important");
+    }
+  });
+}
+(function initDateContainment(){
+  var raf=0;
+  function queue(){
+    cancelAnimationFrame(raf);
+    raf=requestAnimationFrame(function(){
+      fitMobileDateInputs();
+      setTimeout(fitMobileDateInputs,60);
+    });
+  }
+  window.addEventListener("resize",queue,{passive:true});
+  window.addEventListener("orientationchange",queue,{passive:true});
+  document.addEventListener("click",queue,{passive:true});
+  document.addEventListener("change",queue,{passive:true});
+  if(window.ResizeObserver){
+    var ro=new ResizeObserver(queue);
+    var app=document.getElementById("dr-app");
+    if(app)ro.observe(app);
+  }
+  if(window.MutationObserver){
+    var app2=document.getElementById("dr-app");
+    if(app2)new MutationObserver(queue).observe(app2,{subtree:true,childList:true,attributes:true,attributeFilter:["hidden","class","style"]});
+  }
+  queue();
+})();
 
 initGoogleLogin();
 })();
