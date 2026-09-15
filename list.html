@@ -696,22 +696,30 @@ function buildDetail(rec, container){
     if(logPanel) logPanel.hidden = false;
   }
 
-  /* 寫回 localStorage，並把異動即時補進紀錄區。
-     全程不重繪清單、不重建詳情 DOM，所以展開狀態與輸入中的欄位都不會被打斷。 */
-  function writeBack(labels){
+  /* 寫回真正後端：Requests Sheet + Logs + Google Doc */
+  async function writeBack(labels){
     labels = (labels||[]).filter(Boolean);
     if(!labels.length) labels = ["內容更新"];
-    work.log = work.log || [];
-    labels.forEach(function(lb){
-      var entry = { time:new Date().toISOString(), user:CURRENT_USER.email, text:lb };
-      work.log.push(entry);
+
+    var result = await apiPost("updateRequest", {
+      requestId: work.id,
+      status: work.status,
+      meetingDate: work.meetingDate || "",
+      data: work.data,
+      labels: labels
+    });
+
+    if(result.request){
+      work = JSON.parse(JSON.stringify(result.request));
+    }
+
+    (result.logs || []).forEach(function(entry){
       prependLogEntry(entry);
     });
-    var list = loadRecords();
-    var idx = list.findIndex(function(x){ return x.id===work.id; });
-    var snap = JSON.parse(JSON.stringify(work));
-    if(idx>=0) list[idx]=snap; else list.push(snap);
-    saveRecords(list);
+
+    var idx = REMOTE_RECORDS.findIndex(function(x){ return x.id===work.id; });
+    if(idx>=0) REMOTE_RECORDS[idx] = JSON.parse(JSON.stringify(work));
+
     baseStatus = work.status;
     baseData   = JSON.stringify(work.data);
     baseMeet   = work.meetingDate;
@@ -847,27 +855,85 @@ function buildDetail(rec, container){
   logPanel.hidden = !(work.log && work.log.length);
   frag.appendChild(logPanel);
 
-  /* 動作列：第一階段只讀 Sheet，完整內容開 Google Doc */
+  /* 動作列 */
   var actions = document.createElement("div"); actions.className="detail-actions";
-  var btnDoc = document.createElement("a");
-  btnDoc.className = "btn-sm primary";
-  btnDoc.textContent = "查看完整需求";
-  btnDoc.href = work.docUrl || "#";
-  btnDoc.target = "_blank";
-  btnDoc.rel = "noopener";
-  if(!work.docUrl){
-    btnDoc.style.opacity = ".4";
-    btnDoc.style.pointerEvents = "none";
-  }
+  hintEl = document.createElement("span"); hintEl.className="saved-hint";
+
+  var btnSave = document.createElement("button"); btnSave.type="button"; btnSave.className="btn-sm primary"; btnSave.textContent="儲存";
+  btnSave.addEventListener("click", async function(e){
+    e.stopPropagation();
+    btnSave.disabled = true;
+    try{
+      var labels = [];
+      if(work.status !== baseStatus) labels.push(work.status);
+      if(JSON.stringify(work.data)!==baseData || work.meetingDate!==baseMeet) labels.push("內容更新");
+      await writeBack(labels);
+      flash("已儲存。");
+    }catch(err){
+      flash("儲存失敗："+err.message);
+    }finally{
+      btnSave.disabled = false;
+    }
+  });
+
+  var btnResend = document.createElement("button"); btnResend.type="button"; btnResend.className="btn-sm"; btnResend.textContent="重新發送需求";
+  btnResend.addEventListener("click", async function(e){
+    e.stopPropagation();
+    btnResend.disabled = true;
+    try{
+      var labels = [];
+      if(work.status !== "待確認"){ setStatus("待確認"); labels.push("待確認"); }
+      labels.push("重新發送需求");
+      await writeBack(labels);
+      flash("已重新發送，狀態重置為待確認。");
+    }catch(err){
+      flash("重新發送失敗："+err.message);
+    }finally{
+      btnResend.disabled = false;
+    }
+  });
+
+  var btnWord = document.createElement("button"); btnWord.type="button"; btnWord.className="btn-sm"; btnWord.textContent="寄送 Word 給申請人";
+  btnWord.addEventListener("click", function(e){
+    e.stopPropagation();
+    flash("寄信功能尚未接 Gmail，這個按鈕目前不會寄出郵件。");
+  });
+
+  var btnDoc = document.createElement("a"); btnDoc.className="btn-sm"; btnDoc.textContent="查看完整需求";
+  btnDoc.href = work.docUrl || "#"; btnDoc.target="_blank"; btnDoc.rel="noopener";
+  if(!work.docUrl){ btnDoc.style.opacity=".4"; btnDoc.style.pointerEvents="none"; }
+
+  var btnDelete = document.createElement("button"); btnDelete.type="button"; btnDelete.className="btn-sm danger"; btnDelete.textContent="刪除";
+  btnDelete.style.marginLeft="auto";
+  btnDelete.addEventListener("click", async function(e){
+    e.stopPropagation();
+    if(!confirm("確定要刪除「"+(work.data.name||work.id)+"」？
+
+這會刪除 Requests 資料、Google Doc 與此案件的 Logs，無法復原。")) return;
+    btnDelete.disabled = true;
+    try{
+      await apiPost("deleteRequest", {requestId:work.id});
+      REMOTE_RECORDS = REMOTE_RECORDS.filter(function(x){ return x.id!==work.id; });
+      openCardId = null;
+      renderAll();
+    }catch(err){
+      btnDelete.disabled = false;
+      flash("刪除失敗："+err.message);
+    }
+  });
+
+  actions.appendChild(btnSave);
+  actions.appendChild(btnResend);
+  actions.appendChild(btnWord);
   actions.appendChild(btnDoc);
+  actions.appendChild(hintEl);
+  actions.appendChild(btnDelete);
   frag.appendChild(actions);
 
   container.innerHTML = "";
   container.appendChild(frag);
-  container.querySelectorAll("input, textarea, select, button").forEach(function(el){
-    el.disabled = true;
-  });
 }
+
 
 function newItemData(){
   return { _id:"it"+Date.now()+Math.random().toString(16).slice(2), name:"", typeId:"", output:[], sizeRows:[{purpose:"",customText:"",px:""}], printQty:"", exposure:"", exposureModel:"", copy:{head:"",sub:"",small:"",other:""}, channel:"", useDate:"", cta:"", note:"", page:"", platform:[], pagecount:"", blocks:[] };
