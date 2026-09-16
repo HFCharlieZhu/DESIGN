@@ -30,6 +30,7 @@
 html,body{margin:0;padding:0;background:#eeeeee;}
 #dr-app{
   --brand:#f8b500; --brand-l:#fff3d1; --brand-dk:#d39a00;
+  --control-accent:var(--brand);
   --ink:#111111; --body:#666666; --muted:#9fa0a0;
   --line:#bababa; --hair:#d8d6d0;
   --paper:#ffffff; --tint:#eeeeee;
@@ -1256,6 +1257,62 @@ html,body{overflow-x:hidden;}
   #dr-app .compact-x.is-touch-hover{
     border-color:var(--control-accent)!important;
     color:var(--control-accent)!important;
+  }
+}
+
+/* v1.0.25 — square-X final state contract */
+#dr-app button.rm,
+#dr-app .compact-x{
+  border-color:var(--hair)!important;
+  color:var(--body)!important;
+  background:var(--paper)!important;
+}
+@media(hover:hover) and (pointer:fine){
+  #dr-app .sizerow button.rm:hover,
+  #dr-app .size-value-group>button.rm:hover,
+  #dr-app .ref-link-row>button.rm:hover,
+  #dr-app button.rm:hover,
+  #dr-app .compact-x:hover{
+    border-color:var(--control-accent)!important;
+    color:var(--control-accent)!important;
+  }
+}
+@media(hover:none) and (pointer:coarse){
+  #dr-app .sizerow button.rm.is-touch-hover,
+  #dr-app .size-value-group>button.rm.is-touch-hover,
+  #dr-app .ref-link-row>button.rm.is-touch-hover,
+  #dr-app button.rm.is-touch-hover,
+  #dr-app .compact-x.is-touch-hover{
+    border-color:var(--control-accent)!important;
+    color:var(--control-accent)!important;
+  }
+}
+
+/* v1.0.26 — square-X: border follows hover accent, glyph stays dark gray */
+#dr-app button.rm,
+#dr-app .compact-x{
+  border-color:var(--hair)!important;
+  color:var(--body)!important;
+  background:var(--paper)!important;
+}
+@media(hover:hover) and (pointer:fine){
+  #dr-app .sizerow button.rm:hover,
+  #dr-app .size-value-group>button.rm:hover,
+  #dr-app .ref-link-row>button.rm:hover,
+  #dr-app button.rm:hover,
+  #dr-app .compact-x:hover{
+    border-color:var(--control-accent)!important;
+    color:var(--body)!important;
+  }
+}
+@media(hover:none) and (pointer:coarse){
+  #dr-app .sizerow button.rm.is-touch-hover,
+  #dr-app .size-value-group>button.rm.is-touch-hover,
+  #dr-app .ref-link-row>button.rm.is-touch-hover,
+  #dr-app button.rm.is-touch-hover,
+  #dr-app .compact-x.is-touch-hover{
+    border-color:var(--control-accent)!important;
+    color:var(--body)!important;
   }
 }
 </style>

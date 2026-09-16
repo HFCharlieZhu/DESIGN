@@ -1475,6 +1475,62 @@ html,body{overflow-x:clip!important;}
     color:var(--control-accent)!important;
   }
 }
+
+/* v1.0.25 — square-X final state contract */
+#dr-app button.rm,
+#dr-app .compact-x{
+  border-color:var(--hair)!important;
+  color:var(--body)!important;
+  background:var(--paper)!important;
+}
+@media(hover:hover) and (pointer:fine){
+  #dr-app .sizerow button.rm:hover,
+  #dr-app .size-value-group>button.rm:hover,
+  #dr-app .ref-link-row>button.rm:hover,
+  #dr-app button.rm:hover,
+  #dr-app .compact-x:hover{
+    border-color:var(--control-accent)!important;
+    color:var(--control-accent)!important;
+  }
+}
+@media(hover:none) and (pointer:coarse){
+  #dr-app .sizerow button.rm.is-touch-hover,
+  #dr-app .size-value-group>button.rm.is-touch-hover,
+  #dr-app .ref-link-row>button.rm.is-touch-hover,
+  #dr-app button.rm.is-touch-hover,
+  #dr-app .compact-x.is-touch-hover{
+    border-color:var(--control-accent)!important;
+    color:var(--control-accent)!important;
+  }
+}
+
+/* v1.0.26 — square-X: border follows hover accent, glyph stays dark gray */
+#dr-app button.rm,
+#dr-app .compact-x{
+  border-color:var(--hair)!important;
+  color:var(--body)!important;
+  background:var(--paper)!important;
+}
+@media(hover:hover) and (pointer:fine){
+  #dr-app .sizerow button.rm:hover,
+  #dr-app .size-value-group>button.rm:hover,
+  #dr-app .ref-link-row>button.rm:hover,
+  #dr-app button.rm:hover,
+  #dr-app .compact-x:hover{
+    border-color:var(--control-accent)!important;
+    color:var(--body)!important;
+  }
+}
+@media(hover:none) and (pointer:coarse){
+  #dr-app .sizerow button.rm.is-touch-hover,
+  #dr-app .size-value-group>button.rm.is-touch-hover,
+  #dr-app .ref-link-row>button.rm.is-touch-hover,
+  #dr-app button.rm.is-touch-hover,
+  #dr-app .compact-x.is-touch-hover{
+    border-color:var(--control-accent)!important;
+    color:var(--body)!important;
+  }
+}
 </style>
 <script id="dr-gsi-bootstrap" async defer src="https://accounts.google.com/gsi/client"></script>
 </head>
