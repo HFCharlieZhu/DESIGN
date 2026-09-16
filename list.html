@@ -1421,6 +1421,51 @@ html,body{overflow-x:clip!important;}
   }
   #dr-app .date-wrap>input[type=date]{font-size:16px!important;}
 }
+
+/* v1.0.23 — structure field rhythm + unified square-remove accent */
+#dr-app .structure-block .copy4{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  column-gap:var(--space-4)!important;
+  row-gap:var(--space-3)!important;
+  margin:0 0 var(--space-3)!important;
+}
+#dr-app .structure-block .copy4>.dfield{
+  margin:0!important;
+  min-width:0!important;
+  width:100%!important;
+  max-width:100%!important;
+}
+#dr-app .structure-block>.dfield{
+  margin:0 0 var(--space-3)!important;
+}
+#dr-app .structure-block>.dfield:last-of-type{
+  margin-bottom:0!important;
+}
+@media(max-width:700px){
+  #dr-app .structure-block .copy4{
+    grid-template-columns:minmax(0,1fr)!important;
+    column-gap:0!important;
+    row-gap:var(--space-3)!important;
+  }
+}
+
+/* Square X uses the exact same accent source as inputs and panel borders. */
+#dr-app button.rm,#dr-app .compact-x{
+  --remove-accent:var(--control-accent);
+}
+@media(hover:hover) and (pointer:fine){
+  #dr-app button.rm:hover,#dr-app .compact-x:hover{
+    border-color:var(--control-accent)!important;
+    color:var(--control-accent)!important;
+  }
+}
+@media(hover:none) and (pointer:coarse){
+  #dr-app button.rm.is-touch-hover,#dr-app .compact-x.is-touch-hover{
+    border-color:var(--control-accent)!important;
+    color:var(--control-accent)!important;
+  }
+}
 </style>
 <script id="dr-gsi-bootstrap" async defer src="https://accounts.google.com/gsi/client"></script>
 </head>

@@ -1234,6 +1234,21 @@ html,body{overflow-x:hidden;}
   }
   #dr-app .date-wrap>input[type=date]{font-size:16px!important;}
 }
+
+/* v1.0.23 — square X shares the exact input accent source */
+#dr-app button.rm,#dr-app .compact-x{--remove-accent:var(--control-accent);}
+@media(hover:hover) and (pointer:fine){
+  #dr-app button.rm:hover,#dr-app .compact-x:hover{
+    border-color:var(--control-accent)!important;
+    color:var(--control-accent)!important;
+  }
+}
+@media(hover:none) and (pointer:coarse){
+  #dr-app button.rm.is-touch-hover,#dr-app .compact-x.is-touch-hover{
+    border-color:var(--control-accent)!important;
+    color:var(--control-accent)!important;
+  }
+}
 </style>
 
 <script id="dr-gsi-bootstrap" async defer src="https://accounts.google.com/gsi/client"></script>
