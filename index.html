@@ -1120,12 +1120,12 @@ html,body{overflow-x:hidden;}
   }
 }
 
-/* v1.0.21 — date geometry, paired alignment, unclipped zoom, unified remove hover */
+/* v1.0.22 — stable date layout: no JS width measurement, no intrinsic-size spill */
 #dr-app .delivery-row,
 #dr-app .total-delivery-row,
 #dr-app .total-schedule-row{
   display:grid!important;
-  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
   column-gap:var(--space-4)!important;
   row-gap:0!important;
   align-items:start!important;
@@ -1141,60 +1141,61 @@ html,body{overflow-x:hidden;}
 #dr-app .total-delivery-row>.dfield,
 #dr-app .total-schedule-row>.field,
 #dr-app .total-schedule-row>.dfield{
-  margin-bottom:0!important;
   min-width:0!important;
-  width:100%!important;
-  max-width:100%!important;
+  width:auto!important;
+  max-width:none!important;
+  margin-bottom:0!important;
   overflow:visible!important;
 }
 #dr-app .delivery-row>:only-child,
 #dr-app .total-delivery-row>:only-child,
-#dr-app .total-schedule-row>:only-child{grid-column:1/2!important;}
+#dr-app .total-schedule-row>:only-child{grid-column:1!important;}
+
+/* Wrapper owns the width; native date intrinsic width can no longer resize the grid. */
 #dr-app .date-wrap{
-  display:block!important;
   position:relative!important;
+  display:block!important;
   width:100%!important;
   min-width:0!important;
   max-width:100%!important;
-  overflow:visible!important;
-  contain:none!important;
+  height:var(--control-h)!important;
+  min-height:var(--control-h)!important;
+  overflow:hidden!important;
+  contain:layout paint!important;
 }
 #dr-app .date-wrap>input[type=date]{
   -webkit-appearance:none!important;
   appearance:none!important;
+  position:absolute!important;
+  inset:0!important;
   display:block!important;
+  box-sizing:border-box!important;
   width:100%!important;
   min-width:0!important;
   max-width:100%!important;
-  inline-size:100%!important;
-  min-inline-size:0!important;
-  max-inline-size:100%!important;
-  height:var(--control-h)!important;
-  min-height:var(--control-h)!important;
-  box-sizing:border-box!important;
+  height:100%!important;
+  min-height:0!important;
   margin:0!important;
   padding:9px 12px!important;
-  overflow:hidden!important;
   line-height:normal!important;
-}
-#dr-app .date-wrap>input[type=date]::-webkit-date-and-time-value{
-  display:block!important;
-  min-width:0!important;
-  width:auto!important;
-  text-align:left!important;
-  padding:0!important;
-}
-#dr-app .date-wrap>input[type=date]::-webkit-datetime-edit{
-  min-width:0!important;
-  padding:0!important;
   overflow:hidden!important;
+}
+#dr-app .date-wrap>input[type=date]::-webkit-date-and-time-value,
+#dr-app .date-wrap>input[type=date]::-webkit-datetime-edit,
+#dr-app .date-wrap>input[type=date]::-webkit-datetime-edit-fields-wrapper{
+  min-width:0!important;
+  max-width:100%!important;
+  margin:0!important;
+  padding:0!important;
+  text-align:left!important;
 }
 #dr-app .date-wrap>input[type=date]::-webkit-calendar-picker-indicator{
   flex:0 0 auto!important;
-  margin:0!important;
+  margin:0 0 0 auto!important;
   padding:0!important;
 }
-#dr-app .audience-field{align-self:start!important;}
+
+#dr-app .audience-field{align-self:start!important;min-width:0!important;}
 #dr-app .audience-field .chiprow,
 #dr-app .audience-field .statuschips-inline{
   height:var(--control-h)!important;
@@ -1205,6 +1206,8 @@ html,body{overflow-x:hidden;}
   align-content:center!important;
 }
 #dr-app .audience-field .chip{height:30px!important;margin:0!important;}
+
+#dr-app{--remove-accent:var(--brand);}
 #dr-app button.rm,#dr-app .compact-x{
   border-color:var(--hair)!important;
   color:var(--muted)!important;
@@ -1212,14 +1215,14 @@ html,body{overflow-x:hidden;}
 }
 @media(hover:hover) and (pointer:fine){
   #dr-app button.rm:hover,#dr-app .compact-x:hover{
-    border-color:var(--control-accent)!important;
-    color:var(--control-accent)!important;
+    border-color:var(--remove-accent)!important;
+    color:var(--remove-accent)!important;
   }
 }
 @media(hover:none) and (pointer:coarse){
   #dr-app button.rm.is-touch-hover,#dr-app .compact-x.is-touch-hover{
-    border-color:var(--control-accent)!important;
-    color:var(--control-accent)!important;
+    border-color:var(--remove-accent)!important;
+    color:var(--remove-accent)!important;
   }
 }
 @media(max-width:700px){
@@ -1228,11 +1231,8 @@ html,body{overflow-x:hidden;}
   #dr-app .total-schedule-row{
     grid-template-columns:minmax(0,1fr)!important;
     row-gap:var(--space-4)!important;
-    margin-bottom:20px!important;
   }
-  #dr-app .delivery-row>:only-child,
-  #dr-app .total-delivery-row>:only-child,
-  #dr-app .total-schedule-row>:only-child{grid-column:1!important;}
+  #dr-app .date-wrap>input[type=date]{font-size:16px!important;}
 }
 </style>
 
@@ -1706,7 +1706,7 @@ function itemHasPrint(it){return it.output.indexOf("print")>=0;}
 function itemHasDigital(it){return it.output.indexOf("digital")>=0;}
 function buildBadgesHTML(it){var t=typeOf(it.typeId),html="";if(t&&t.mode!=="notice"&&t.mode!=="structure"&&!t.forcePrint){if(itemHasDigital(it))html+='<span class="badge digital">數位</span>';if(itemHasPrint(it))html+='<span class="badge print">印刷</span>';}else if(t&&t.forcePrint)html+='<span class="badge print">印刷</span>';if(t&&t.mode!=="notice")html+=itemHasCopy(it)?'<span class="badge ready">文案已提供</span>':'<span class="badge pending">文案待補</span>';return html;}
 function updateLiveBits(){state.items.forEach(function(it){var card=document.querySelector('.item-card[data-item-id="'+it._id+'"]');if(!card)return;var nameEl=card.querySelector(".item-head .name");if(nameEl)nameEl.textContent=it.name||"未命名項目";var badgesEl=card.querySelector(".item-head .badges");if(badgesEl)badgesEl.innerHTML=buildBadgesHTML(it);});refreshStats();}
-function renderItems(){var wrap=$("dr-items");wrap.innerHTML="";state.items.forEach(function(it,idx){wrap.appendChild(renderItemCard(it,idx));});scheduleDateFit_();}
+function renderItems(){var wrap=$("dr-items");wrap.innerHTML="";state.items.forEach(function(it,idx){wrap.appendChild(renderItemCard(it,idx));});}
 function renderItemCard(it,idx){
   var card=el("div","item-card"+(it.collapsed?" collapsed":""));card.dataset.itemId=it._id;
   var head=el("div","item-head");
@@ -1824,7 +1824,7 @@ function buildRequestPayload(){return{department:state.dept||"",name:state.name|
 $("dr-submit-btn").addEventListener("click",async function(){if(this.disabled||submitInFlight)return;submitInFlight=true;var btn=this,container=$("dr-confirm");btn.classList.add("loading");btn.disabled=true;container.style.pointerEvents="none";Array.prototype.forEach.call(container.children,function(c){if(c!==btn.parentElement)c.style.opacity=".45";});btn.parentElement.style.pointerEvents="auto";$("dr-submit-err").style.display="none";try{if(!googleCredential&&!sessionToken)throw new Error("登入已失效，請重新登入。");if(!pendingCreateOperationId)pendingCreateOperationId=makeOperationId();persistDraftNow();var data=await apiPost("createRequest",{data:normalizeRequestTypography_(buildRequestPayload()),operationId:pendingCreateOperationId},{timeout:45000,retries:0});pendingCreateOperationId="";clearDraftStorage();$("dr-success-code").textContent=data.requestId||"";$("dr-success-msg").textContent=data.mailOk===false?"申請已建立。確認信寄送失敗："+data.mailError+"。":"確認信與 Word 附件已寄送。";$("dr-refill").onclick=function(){window.location.reload();};container.style.display="none";$("dr-success").style.display="block";}catch(error){console.error(error);persistDraftNow();submitInFlight=false;container.style.pointerEvents="auto";Array.prototype.forEach.call(container.children,function(c){c.style.opacity="1";});btn.classList.remove("loading");btn.disabled=false;if(error&&error.code==="AUTH_REQUIRED"){showLoginGate("登入已逾時，請重新登入。表單內容已保留。");return;}$("dr-submit-err").textContent="送出失敗："+(error.message||String(error))+"。表單內容已保留。";$("dr-submit-err").style.display="block";}});
 if(state.items.length===0)state.items.push(newItem());
 function initTouchFeedback(){
-  var selector=".btn-topbar,.draftbar button,.btn-primary,.btn-submit,.btn-ghost,input,textarea,select,.chip,.item-card,.sizerow .rm,.add-line,.block,.structure-order button,.del-line";
+  var selector=".btn-topbar,.draftbar button,.btn-primary,.btn-submit,.btn-ghost,input,textarea,select,.chip,.item-card,.rm,.add-line,.block,.structure-order button,.del-line";
   var active=null;
   var app=document.getElementById("dr-app");
 
@@ -1873,32 +1873,7 @@ if(window.ResizeObserver){
 window.addEventListener("resize",syncAppHeaderHeight,{passive:true});
 syncAppHeaderHeight();
 
-function fitMobileDateInputs(){
-  if(!window.matchMedia("(max-width:700px)").matches)return;
-  document.querySelectorAll("#dr-app .date-wrap").forEach(function(wrap){
-    var input=wrap.querySelector('input[type="date"]');
-    if(!input||wrap.offsetParent===null)return;
-    var width=Math.floor(wrap.getBoundingClientRect().width);
-    if(width>0){
-      input.style.setProperty("width",width+"px","important");
-      input.style.setProperty("max-width",width+"px","important");
-      input.style.setProperty("min-width","0","important");
-    }
-  });
-}
-var dateFitRaf_=0,dateFitTimer_=0;
-function scheduleDateFit_(){
-  if(!window.matchMedia("(max-width:700px)").matches)return;
-  cancelAnimationFrame(dateFitRaf_);
-  clearTimeout(dateFitTimer_);
-  dateFitRaf_=requestAnimationFrame(function(){
-    fitMobileDateInputs();
-    dateFitTimer_=setTimeout(fitMobileDateInputs,60);
-  });
-}
-window.addEventListener("resize",scheduleDateFit_,{passive:true});
-window.addEventListener("orientationchange",scheduleDateFit_,{passive:true});
-scheduleDateFit_();
+/* Date inputs are sized by CSS only. */
 
 startSessionHeartbeat();
 

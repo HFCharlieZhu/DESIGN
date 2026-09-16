@@ -1306,12 +1306,12 @@ html,body{overflow-x:clip!important;}
   #dr-app .ref-link-row>.dfield:nth-child(2){grid-column:1!important;padding-right:calc(44px + var(--space-2))!important;}
 }
 
-/* v1.0.21 — date geometry, paired alignment, unclipped zoom, unified remove hover */
+/* v1.0.22 — stable date layout: no JS width measurement, no intrinsic-size spill */
 #dr-app .delivery-row,
 #dr-app .total-delivery-row,
 #dr-app .total-schedule-row{
   display:grid!important;
-  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
   column-gap:var(--space-4)!important;
   row-gap:0!important;
   align-items:start!important;
@@ -1327,60 +1327,61 @@ html,body{overflow-x:clip!important;}
 #dr-app .total-delivery-row>.dfield,
 #dr-app .total-schedule-row>.field,
 #dr-app .total-schedule-row>.dfield{
-  margin-bottom:0!important;
   min-width:0!important;
-  width:100%!important;
-  max-width:100%!important;
+  width:auto!important;
+  max-width:none!important;
+  margin-bottom:0!important;
   overflow:visible!important;
 }
 #dr-app .delivery-row>:only-child,
 #dr-app .total-delivery-row>:only-child,
-#dr-app .total-schedule-row>:only-child{grid-column:1/2!important;}
+#dr-app .total-schedule-row>:only-child{grid-column:1!important;}
+
+/* Wrapper owns the width; native date intrinsic width can no longer resize the grid. */
 #dr-app .date-wrap{
-  display:block!important;
   position:relative!important;
+  display:block!important;
   width:100%!important;
   min-width:0!important;
   max-width:100%!important;
-  overflow:visible!important;
-  contain:none!important;
+  height:var(--control-h)!important;
+  min-height:var(--control-h)!important;
+  overflow:hidden!important;
+  contain:layout paint!important;
 }
 #dr-app .date-wrap>input[type=date]{
   -webkit-appearance:none!important;
   appearance:none!important;
+  position:absolute!important;
+  inset:0!important;
   display:block!important;
+  box-sizing:border-box!important;
   width:100%!important;
   min-width:0!important;
   max-width:100%!important;
-  inline-size:100%!important;
-  min-inline-size:0!important;
-  max-inline-size:100%!important;
-  height:var(--control-h)!important;
-  min-height:var(--control-h)!important;
-  box-sizing:border-box!important;
+  height:100%!important;
+  min-height:0!important;
   margin:0!important;
   padding:9px 12px!important;
-  overflow:hidden!important;
   line-height:normal!important;
-}
-#dr-app .date-wrap>input[type=date]::-webkit-date-and-time-value{
-  display:block!important;
-  min-width:0!important;
-  width:auto!important;
-  text-align:left!important;
-  padding:0!important;
-}
-#dr-app .date-wrap>input[type=date]::-webkit-datetime-edit{
-  min-width:0!important;
-  padding:0!important;
   overflow:hidden!important;
+}
+#dr-app .date-wrap>input[type=date]::-webkit-date-and-time-value,
+#dr-app .date-wrap>input[type=date]::-webkit-datetime-edit,
+#dr-app .date-wrap>input[type=date]::-webkit-datetime-edit-fields-wrapper{
+  min-width:0!important;
+  max-width:100%!important;
+  margin:0!important;
+  padding:0!important;
+  text-align:left!important;
 }
 #dr-app .date-wrap>input[type=date]::-webkit-calendar-picker-indicator{
   flex:0 0 auto!important;
-  margin:0!important;
+  margin:0 0 0 auto!important;
   padding:0!important;
 }
-#dr-app .audience-field{align-self:start!important;}
+
+#dr-app .audience-field{align-self:start!important;min-width:0!important;}
 #dr-app .audience-field .chiprow,
 #dr-app .audience-field .statuschips-inline{
   height:var(--control-h)!important;
@@ -1391,6 +1392,9 @@ html,body{overflow-x:clip!important;}
   align-content:center!important;
 }
 #dr-app .audience-field .chip{height:30px!important;margin:0!important;}
+
+#dr-app{--remove-accent:var(--brand);}
+#dr-app .card-detail{--remove-accent:var(--card-hover);}
 #dr-app button.rm,#dr-app .compact-x{
   border-color:var(--hair)!important;
   color:var(--muted)!important;
@@ -1398,14 +1402,14 @@ html,body{overflow-x:clip!important;}
 }
 @media(hover:hover) and (pointer:fine){
   #dr-app button.rm:hover,#dr-app .compact-x:hover{
-    border-color:var(--control-accent)!important;
-    color:var(--control-accent)!important;
+    border-color:var(--remove-accent)!important;
+    color:var(--remove-accent)!important;
   }
 }
 @media(hover:none) and (pointer:coarse){
   #dr-app button.rm.is-touch-hover,#dr-app .compact-x.is-touch-hover{
-    border-color:var(--control-accent)!important;
-    color:var(--control-accent)!important;
+    border-color:var(--remove-accent)!important;
+    color:var(--remove-accent)!important;
   }
 }
 @media(max-width:700px){
@@ -1414,11 +1418,8 @@ html,body{overflow-x:clip!important;}
   #dr-app .total-schedule-row{
     grid-template-columns:minmax(0,1fr)!important;
     row-gap:var(--space-4)!important;
-    margin-bottom:20px!important;
   }
-  #dr-app .delivery-row>:only-child,
-  #dr-app .total-delivery-row>:only-child,
-  #dr-app .total-schedule-row>:only-child{grid-column:1!important;}
+  #dr-app .date-wrap>input[type=date]{font-size:16px!important;}
 }
 </style>
 <script id="dr-gsi-bootstrap" async defer src="https://accounts.google.com/gsi/client"></script>
@@ -2630,7 +2631,7 @@ function buildDetail(rec, container){
       el.disabled=true;
     });
   }
-  scheduleDateFit_();
+  
 }
 
 function newItemData(){
@@ -2975,7 +2976,7 @@ document.getElementById("dr-logout").addEventListener("click",logout);
 document.getElementById("dr-mobile-logout").addEventListener("click",logout);
 
 function initTouchFeedback(){
-  var selector=".btn-topbar,input,select,textarea,.statuschip,.schip,.chip,.card-top,.dpanel,.itemblock,.add-line,.del-line,.structure-order button,.sizerow .rm,.compact-x,.btn-sm,.pgbtn";
+  var selector=".btn-topbar,input,select,textarea,.statuschip,.schip,.chip,.card-top,.dpanel,.itemblock,.add-line,.del-line,.structure-order button,.rm,.compact-x,.btn-sm,.pgbtn";
   var active=null,outerActive=null;
   var app=document.getElementById("dr-app");
 
@@ -3020,35 +3021,8 @@ function initTouchFeedback(){
   document.addEventListener("visibilitychange",function(){if(document.hidden)clear();});
 }initTouchFeedback();
 
-function fitMobileDateInputs(){
-  if(!window.matchMedia("(max-width:700px)").matches)return;
-  document.querySelectorAll("#dr-app .date-wrap").forEach(function(wrap){
-    var input=wrap.querySelector('input[type="date"]');
-    if(!input||wrap.offsetParent===null)return;
-    var width=Math.floor(wrap.getBoundingClientRect().width);
-    if(width>0){
-      input.style.setProperty("width",width+"px","important");
-      input.style.setProperty("max-width",width+"px","important");
-      input.style.setProperty("min-width","0","important");
-    }
-  });
-}
-var dateFitRaf_=0,dateFitTimer_=0;
-function scheduleDateFit_(){
-  if(!window.matchMedia("(max-width:700px)").matches)return;
-  cancelAnimationFrame(dateFitRaf_);
-  clearTimeout(dateFitTimer_);
-  dateFitRaf_=requestAnimationFrame(function(){
-    fitMobileDateInputs();
-    dateFitTimer_=setTimeout(fitMobileDateInputs,60);
-  });
-}
-window.addEventListener("resize",scheduleDateFit_,{passive:true});
-window.addEventListener("orientationchange",scheduleDateFit_,{passive:true});
-scheduleDateFit_();
+/* Date inputs are sized by CSS only. */
 
-populateFilters();
-renderAll();
 startSessionHeartbeat();
 
 function isKnownInAppBrowser_(){
