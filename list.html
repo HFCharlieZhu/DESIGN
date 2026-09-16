@@ -1229,6 +1229,82 @@ html,body{overflow-x:clip!important;}
 #dr-app .request-primary .schedule-note-field textarea{height:56px!important;min-height:56px!important;max-height:168px!important;}
 #dr-app .structure-block-title{font-size:var(--fs-meta);font-weight:var(--fw-medium);color:var(--body);margin:0 0 var(--space-3);}
 
+
+/* v1.0.17 — paired-field geometry and question spacing */
+#dr-app .field,#dr-app .dfield{margin-bottom:20px;}
+#dr-app .item-editor-head>.field,#dr-app .item-editor-head>.dfield{margin-bottom:0!important;}
+#dr-app .item-editor-head{display:flex!important;gap:var(--space-3)!important;align-items:end!important;}
+#dr-app .item-editor-head>.field,#dr-app .item-editor-head>.dfield{flex:1 1 auto!important;min-width:0!important;}
+#dr-app .delivery-row,#dr-app .total-delivery-row,#dr-app .total-schedule-row{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;column-gap:var(--space-4)!important;align-items:end!important;width:100%!important;min-width:0!important;}
+#dr-app .delivery-row>.field,#dr-app .delivery-row>.dfield,#dr-app .total-delivery-row>.field,#dr-app .total-schedule-row>.dfield{min-width:0!important;width:100%!important;max-width:100%!important;}
+#dr-app .audience-field .chiprow,#dr-app .audience-field .statuschips-inline{height:var(--control-h)!important;min-height:var(--control-h)!important;display:flex!important;align-items:center!important;align-content:center!important;margin-top:0!important;}
+#dr-app .audience-field .chip{height:30px!important;}
+#dr-app .date-wrap,#dr-app .date-wrap>input[type=date]{width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;}
+#dr-app .total-schedule-row>.dfield:first-child,#dr-app #f-deliverydate-field{overflow:hidden!important;}
+@media(max-width:700px){
+ #dr-app .item-editor-head{display:block!important;}
+ #dr-app .item-editor-head>.field+ .field,#dr-app .item-editor-head>.dfield+ .dfield{margin-top:var(--space-4)!important;}
+ #dr-app .delivery-row,#dr-app .total-delivery-row,#dr-app .total-schedule-row{grid-template-columns:minmax(0,1fr)!important;row-gap:var(--space-4)!important;}
+ #dr-app .total-schedule-row>.dfield:first-child,#dr-app #f-deliverydate-field{overflow:visible!important;}
+}
+#dr-app .total-schedule-row{overflow:hidden!important;}
+#dr-app .total-schedule-row>.audience-field{overflow:visible!important;}
+#dr-app .example-group h3{margin-bottom:10px!important;}
+
+/* v1.0.19 — shared field proportions */
+#dr-app .item-editor-head{
+  display:grid!important;
+  grid-template-columns:minmax(0,3fr) minmax(0,2fr)!important;
+  gap:var(--space-3)!important;
+  align-items:end!important;
+}
+#dr-app .item-editor-head>.field,#dr-app .item-editor-head>.dfield{
+  min-width:0!important;
+  width:100%!important;
+  max-width:100%!important;
+}
+#dr-app .filterrow{
+  display:grid!important;
+  grid-template-columns:minmax(0,3fr) minmax(0,1fr) minmax(0,1fr)!important;
+  gap:var(--space-2)!important;
+  align-items:center!important;
+}
+#dr-app .filterrow input[type=text],#dr-app .filterrow select{
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+}
+/* 素材連結：左半為網址；右半由說明輸入格＋方塊叉叉共同佔滿 */
+#dr-app .ref-link-row{
+  position:relative!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+  gap:var(--space-4)!important;
+  align-items:end!important;
+  margin-bottom:var(--space-3)!important;
+}
+#dr-app .ref-link-row>.dfield:first-child{grid-column:1!important;min-width:0!important;}
+#dr-app .ref-link-row>.dfield:nth-child(2){
+  grid-column:2!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+  padding-right:calc(44px + var(--space-2))!important;
+}
+#dr-app .ref-link-row>.rm{
+  position:absolute!important;
+  right:0!important;
+  bottom:0!important;
+  width:44px!important;
+  height:44px!important;
+}
+@media(max-width:700px){
+  #dr-app .item-editor-head{display:block!important;}
+  #dr-app .filterrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;}
+  #dr-app .filterrow input[type=text]{grid-column:1/-1!important;}
+  #dr-app .ref-link-row{grid-template-columns:minmax(0,1fr)!important;gap:var(--space-2)!important;}
+  #dr-app .ref-link-row>.dfield:first-child{grid-column:1!important;}
+  #dr-app .ref-link-row>.dfield:nth-child(2){grid-column:1!important;padding-right:calc(44px + var(--space-2))!important;}
+}
 </style>
 <script id="dr-gsi-bootstrap" async defer src="https://accounts.google.com/gsi/client"></script>
 </head>
@@ -1970,6 +2046,7 @@ function renderAll(){
 
   if(example){
     var eg=document.createElement("div");eg.className="month-group example-group";
+    eg.appendChild(elh("h3","Example"));
     var ecards=document.createElement("div");ecards.className="cards";
     ecards.appendChild(renderCard(example));
     eg.appendChild(ecards);
@@ -2239,9 +2316,9 @@ function buildDetail(rec, container){
   p1.appendChild(dfieldTextarea("需求背景/說明", work.data.purpose, function(v){ work.data.purpose=v; },true));
   p1.appendChild(dfieldTextarea("主要訊息／方向", work.data.message, function(v){ work.data.message=v; },false));
 
-  var row = document.createElement("div"); row.className="drow";
+  var row = document.createElement("div"); row.className="drow total-schedule-row";
   row.appendChild(dfieldDate("總交付日", work.data.deliveryDate, function(v){ work.data.deliveryDate=v; },true));
-  var audField = document.createElement("div"); audField.className="dfield";
+  var audField = document.createElement("div"); audField.className="dfield audience-field";
   audField.appendChild(dlabel_("目標對象",false));
   var ar = document.createElement("div"); ar.className="statuschips-inline";
   ["2B","2C"].forEach(function(v){
@@ -2497,6 +2574,8 @@ function refreshItemCopyState_(it,box,badgesEl){
   if(!itemHasCopy(it)&&primaries.length)primaries[0].classList.add("copy-pending-target");
 }
 
+function dHalfDateRow_(field){var r=document.createElement("div");r.className="drow delivery-row";r.appendChild(field);return r;}
+
 function buildItemBlock(it, idx, onStructuralChange, onDelete){
   var box = document.createElement("div"); box.className="itemblock";
 
@@ -2509,7 +2588,7 @@ function buildItemBlock(it, idx, onStructuralChange, onDelete){
   titleRow.appendChild(badgesEl);
   box.appendChild(titleRow);
 
-  var head = document.createElement("div"); head.className="itemblock-head";
+  var head = document.createElement("div"); head.className="itemblock-head item-editor-head";
   head.appendChild(dfieldText("項目名稱", it.name, function(v){ it.name=v; },true));
   var typeField = document.createElement("div"); typeField.className="dfield";
   typeField.appendChild(dlabel_("需求類型",true));
@@ -2585,7 +2664,7 @@ function buildItemBlock(it, idx, onStructuralChange, onDelete){
         onStructuralChange();
       });
       box.appendChild(addBlk);
-      box.appendChild(dfieldDate("交付日", it.useDate, function(v){ it.useDate=v; },false));
+      box.appendChild(dHalfDateRow_(dfieldDate("交付日", it.useDate, function(v){ it.useDate=v; },false)));
     } else {
       normalizeItemOutput_(it);
       if(!t.forcePrint){
@@ -2673,8 +2752,10 @@ function buildItemBlock(it, idx, onStructuralChange, onDelete){
       c4b.appendChild(dfieldText("其他", it.copy.other, function(v){ it.copy.other=v; refreshItemCopyState_(it,box,badgesEl); },null));
       var copyWrap=document.createElement("div");copyWrap.className="dfield";copyWrap.appendChild(dlabel_("文案",false,"選填，留白則標記為文案待補。"));copyWrap.appendChild(c4b);box.appendChild(copyWrap);
 
-      if(t.showChannel){ box.appendChild(dfieldText("使用位置", it.channel, function(v){ it.channel=v; },false)); }
-      box.appendChild(dfieldDate("交付日", it.useDate, function(v){ it.useDate=v; },false));
+      var deliveryPair=document.createElement("div");deliveryPair.className="drow delivery-row";
+      if(t.showChannel){ deliveryPair.appendChild(dfieldText("使用位置", it.channel, function(v){ it.channel=v; },false)); }
+      deliveryPair.appendChild(dfieldDate("交付日", it.useDate, function(v){ it.useDate=v; },false));
+      box.appendChild(deliveryPair);
       box.appendChild(dfieldText("CTA／連結", it.cta, function(v){ it.cta=v; },false));
     }
     

@@ -1064,6 +1064,61 @@ html,body{overflow-x:hidden;}
 @media(hover:hover) and (pointer:fine){#dr-app button.rm:hover,#dr-app .compact-x:hover{border-color:var(--body)!important;color:var(--body)!important;}}
 @media(hover:none) and (pointer:coarse){#dr-app button.rm.is-touch-hover,#dr-app .compact-x.is-touch-hover{border-color:var(--body)!important;color:var(--body)!important;}}
 
+
+/* v1.0.17 — paired-field geometry and question spacing */
+#dr-app .field,#dr-app .dfield{margin-bottom:20px;}
+#dr-app .item-editor-head>.field,#dr-app .item-editor-head>.dfield{margin-bottom:0!important;}
+#dr-app .item-editor-head{display:flex!important;gap:var(--space-3)!important;align-items:end!important;}
+#dr-app .item-editor-head>.field,#dr-app .item-editor-head>.dfield{flex:1 1 auto!important;min-width:0!important;}
+#dr-app .delivery-row,#dr-app .total-delivery-row,#dr-app .total-schedule-row{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;column-gap:var(--space-4)!important;align-items:end!important;width:100%!important;min-width:0!important;}
+#dr-app .delivery-row>.field,#dr-app .delivery-row>.dfield,#dr-app .total-delivery-row>.field,#dr-app .total-schedule-row>.dfield{min-width:0!important;width:100%!important;max-width:100%!important;}
+#dr-app .audience-field .chiprow,#dr-app .audience-field .statuschips-inline{height:var(--control-h)!important;min-height:var(--control-h)!important;display:flex!important;align-items:center!important;align-content:center!important;margin-top:0!important;}
+#dr-app .audience-field .chip{height:30px!important;}
+#dr-app .date-wrap,#dr-app .date-wrap>input[type=date]{width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;}
+#dr-app .total-schedule-row>.dfield:first-child,#dr-app #f-deliverydate-field{overflow:hidden!important;}
+@media(max-width:700px){
+ #dr-app .item-editor-head{display:block!important;}
+ #dr-app .item-editor-head>.field+ .field,#dr-app .item-editor-head>.dfield+ .dfield{margin-top:var(--space-4)!important;}
+ #dr-app .delivery-row,#dr-app .total-delivery-row,#dr-app .total-schedule-row{grid-template-columns:minmax(0,1fr)!important;row-gap:var(--space-4)!important;}
+ #dr-app .total-schedule-row>.dfield:first-child,#dr-app #f-deliverydate-field{overflow:visible!important;}
+}
+#dr-app .audience-row{align-items:end!important;}
+#dr-app .audience-row>.field{width:100%!important;}
+
+/* v1.0.20 — copy fields: exact 5:5 and shared spacing */
+#dr-app .copy4,
+#dr-app .block-body{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  column-gap:var(--space-4)!important;
+  row-gap:var(--space-3)!important;
+  width:100%!important;
+  min-width:0!important;
+}
+#dr-app .copy4>.field,
+#dr-app .block-body>.field{
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  margin:0!important;
+}
+#dr-app .copy4>.field input,
+#dr-app .block-body>.field input{
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  box-sizing:border-box!important;
+}
+/* EDM／活動頁 only: these two are intentionally full-width below the four 5:5 copy fields. */
+#dr-app .block-body>.full{grid-column:1/-1!important;}
+@media(max-width:700px){
+  #dr-app .copy4,
+  #dr-app .block-body{
+    grid-template-columns:minmax(0,1fr)!important;
+    column-gap:0!important;
+    row-gap:var(--space-3)!important;
+  }
+}
 </style>
 
 <script id="dr-gsi-bootstrap" async defer src="https://accounts.google.com/gsi/client"></script>
@@ -1117,7 +1172,7 @@ html,body{overflow-x:hidden;}
 <div class="field"><label>需求名稱<span class="req">*</span></label><input id="f-name" placeholder="例：PATRONI 品牌生日月" type="text"/><div class="errmsg">請填寫需求名稱。</div></div>
 <div class="field"><label>需求背景/說明<span class="req">*</span></label><textarea id="f-purpose" placeholder="填寫需求背景與方向。"></textarea><div class="errmsg">請填寫需求背景/說明。</div></div>
 <div class="field"><label>主要訊息／方向<span class="opt">選填</span></label><textarea id="f-message" placeholder="填寫主要訊息與溝通方向。"></textarea></div>
-<div class="row"><div class="field"><label>目標對象<span class="opt">選填</span></label><div class="chiprow" id="f-audience-group"><button class="chip" data-val="2B" type="button">2B</button><button class="chip" data-val="2C" type="button">2C</button></div></div><div class="field"></div></div>
+<div class="row audience-row"><div class="field audience-field"><label>目標對象<span class="opt">選填</span></label><div class="chiprow" id="f-audience-group"><button class="chip" data-val="2B" type="button">2B</button><button class="chip" data-val="2C" type="button">2C</button></div></div><div class="field"></div></div>
 <div class="row"><div class="field"><label>備註 1<span class="opt">選填</span></label><textarea id="f-note1"></textarea></div><div class="field"><label>備註 2<span class="opt">選填</span></label><textarea id="f-note2"></textarea></div></div>
 </div>
 <div class="panel">
@@ -1134,7 +1189,7 @@ html,body{overflow-x:hidden;}
 </div>
 <div class="panel">
 <div class="panel-head"><div class="panel-num">5</div><div class="panel-title">時程</div></div>
-<div class="row">
+<div class="row total-delivery-row">
 <div class="field" id="f-deliverydate-field"><label>總交付日<span class="req">*</span></label><div class="date-wrap"><input id="f-deliverydate" type="date"/></div><div class="errmsg">請填寫總交付日。</div><div class="hint" hidden="" id="f-deliverydate-warn">部分項目交付日晚於總交付日。</div></div>
 <div class="field" hidden="" id="f-schedulenote-wrap"><label>時程備註<span class="opt">選填</span></label><textarea id="f-schedulenote"></textarea><div class="hint" id="f-schedulenote-hint"></div></div>
 </div>
@@ -1552,12 +1607,13 @@ function renderItemCard(it,idx){
   del.addEventListener("click",function(e){e.stopPropagation();state.items=state.items.filter(function(x){return x._id!==it._id;});render();saveDraft();});
   deleteFooter.appendChild(del);body.appendChild(deleteFooter);card.appendChild(body);return card;
 }
-function buildItemBody(it){var frag=document.createDocumentFragment(),row1=el("div","row");row1.appendChild(fieldText("項目名稱",true,it.name,function(v){it.name=v;updateLiveBits();saveDraft();}));var typeField=el("div","field");typeField.innerHTML='<label>需求類型<span class="req">*</span></label>';var sel=el("select");sel.appendChild(el("option","","請選擇"));TYPES.forEach(function(t){var o=el("option","",t.label);o.value=t.id;if(it.typeId===t.id)o.selected=true;sel.appendChild(o);});sel.addEventListener("change",function(){it.typeId=sel.value;var t=typeOf(it.typeId);it.sizeRows=[newSizeRow()];if(t&&t.forcePrint)it.output=["print"];else it.output=[];applyDefaultSize(it);render();saveDraft();});typeField.appendChild(sel);row1.appendChild(typeField);frag.appendChild(row1);var t=typeOf(it.typeId);if(!t){return frag;}if(t.mode==="notice"){frag.appendChild(el("div","notice-box",t.notice));return frag;}if(t.mode==="structure"){frag.appendChild(buildStructureBlock(it));frag.appendChild(fieldDate("交付日",false,it.useDate,function(v){it.useDate=v;updateLiveBits();checkDeliveryWarn();saveDraft();}));frag.appendChild(fieldTextarea("項目備註",false,it.note,function(v){it.note=v;saveDraft();}));return frag;}if(!t.forcePrint){var outField=el("div","field");outField.innerHTML='<label>輸出形式<span class="req">*</span></label>';var rg=el("div","chiprow");[["digital","數位"],["print","印刷"]].forEach(function(pair){var c=el("button","chip c-"+pair[0],pair[1]);c.type="button";c.setAttribute("aria-pressed",it.output.indexOf(pair[0])>=0?"true":"false");c.addEventListener("click",function(){var i=it.output.indexOf(pair[0]);if(i>=0)it.output.splice(i,1);else it.output.push(pair[0]);render();saveDraft();});rg.appendChild(c);});outField.appendChild(rg);frag.appendChild(outField);}if(t.extra&&t.extra.indexOf("page")>=0)frag.appendChild(fieldText("素材應用處",false,it.page,function(v){it.page=v;saveDraft();}));if(t.sizes&&t.sizes.length)frag.appendChild(buildSizeSection(it,t));if(itemHasPrint(it))frag.appendChild(fieldNumber("數量",true,it.printQty,function(v){it.printQty=v;updateLiveBits();saveDraft();}));var expField=el("div","field");expField.innerHTML='<label>商品曝光<span class="opt">選填</span></label>';var expRow=el("div","chiprow");[["reveal","露出商品"],["free","不限"]].forEach(function(pair){var c=el("button","chip",pair[1]);c.type="button";c.setAttribute("aria-pressed",it.exposure===pair[0]?"true":"false");c.addEventListener("click",function(){it.exposure=it.exposure===pair[0]?"":pair[0];if(it.exposure!=="reveal")it.exposureModel="";render();saveDraft();});expRow.appendChild(c);});expField.appendChild(expRow);frag.appendChild(expField);if(it.exposure==="reveal")frag.appendChild(fieldText("商品型號",false,it.exposureModel,function(v){it.exposureModel=v;saveDraft();}));var copyWrap=el("div","field");copyWrap.innerHTML='<label>文案<span class="opt">選填，留白則標記為文案待補。</span></label>';var c4=el("div","copy4");c4.appendChild(miniField("大標",it.copy.head,function(v){it.copy.head=v;updateLiveBits();saveDraft();}));c4.appendChild(miniField("副標",it.copy.sub,function(v){it.copy.sub=v;updateLiveBits();saveDraft();}));c4.appendChild(miniField("小字",it.copy.small,function(v){it.copy.small=v;updateLiveBits();saveDraft();}));c4.appendChild(miniField("其他",it.copy.other,function(v){it.copy.other=v;updateLiveBits();saveDraft();},true));copyWrap.appendChild(c4);frag.appendChild(copyWrap);var row2=el("div","row");if(t.showChannel)row2.appendChild(fieldText("使用位置",false,it.channel,function(v){it.channel=v;saveDraft();}));row2.appendChild(fieldDate("交付日",false,it.useDate,function(v){it.useDate=v;updateLiveBits();checkDeliveryWarn();saveDraft();}));frag.appendChild(row2);frag.appendChild(fieldText("CTA／連結",false,it.cta,function(v){it.cta=v;saveDraft();}));frag.appendChild(fieldTextarea("項目備註",false,it.note,function(v){it.note=v;saveDraft();}));return frag;}
+function buildItemBody(it){var frag=document.createDocumentFragment(),row1=el("div","row item-editor-head");row1.appendChild(fieldText("項目名稱",true,it.name,function(v){it.name=v;updateLiveBits();saveDraft();}));var typeField=el("div","field");typeField.innerHTML='<label>需求類型<span class="req">*</span></label>';var sel=el("select");sel.appendChild(el("option","","請選擇"));TYPES.forEach(function(t){var o=el("option","",t.label);o.value=t.id;if(it.typeId===t.id)o.selected=true;sel.appendChild(o);});sel.addEventListener("change",function(){it.typeId=sel.value;var t=typeOf(it.typeId);it.sizeRows=[newSizeRow()];if(t&&t.forcePrint)it.output=["print"];else it.output=[];applyDefaultSize(it);render();saveDraft();});typeField.appendChild(sel);row1.appendChild(typeField);frag.appendChild(row1);var t=typeOf(it.typeId);if(!t){return frag;}if(t.mode==="notice"){frag.appendChild(el("div","notice-box",t.notice));return frag;}if(t.mode==="structure"){frag.appendChild(buildStructureBlock(it));frag.appendChild(halfDateRow_(fieldDate("交付日",false,it.useDate,function(v){it.useDate=v;updateLiveBits();checkDeliveryWarn();saveDraft();})));frag.appendChild(fieldTextarea("項目備註",false,it.note,function(v){it.note=v;saveDraft();}));return frag;}if(!t.forcePrint){var outField=el("div","field");outField.innerHTML='<label>輸出形式<span class="req">*</span></label>';var rg=el("div","chiprow");[["digital","數位"],["print","印刷"]].forEach(function(pair){var c=el("button","chip c-"+pair[0],pair[1]);c.type="button";c.setAttribute("aria-pressed",it.output.indexOf(pair[0])>=0?"true":"false");c.addEventListener("click",function(){var i=it.output.indexOf(pair[0]);if(i>=0)it.output.splice(i,1);else it.output.push(pair[0]);render();saveDraft();});rg.appendChild(c);});outField.appendChild(rg);frag.appendChild(outField);}if(t.extra&&t.extra.indexOf("page")>=0)frag.appendChild(fieldText("素材應用處",false,it.page,function(v){it.page=v;saveDraft();}));if(t.sizes&&t.sizes.length)frag.appendChild(buildSizeSection(it,t));if(itemHasPrint(it))frag.appendChild(fieldNumber("數量",true,it.printQty,function(v){it.printQty=v;updateLiveBits();saveDraft();}));var expField=el("div","field");expField.innerHTML='<label>商品曝光<span class="opt">選填</span></label>';var expRow=el("div","chiprow");[["reveal","露出商品"],["free","不限"]].forEach(function(pair){var c=el("button","chip",pair[1]);c.type="button";c.setAttribute("aria-pressed",it.exposure===pair[0]?"true":"false");c.addEventListener("click",function(){it.exposure=it.exposure===pair[0]?"":pair[0];if(it.exposure!=="reveal")it.exposureModel="";render();saveDraft();});expRow.appendChild(c);});expField.appendChild(expRow);frag.appendChild(expField);if(it.exposure==="reveal")frag.appendChild(fieldText("商品型號",false,it.exposureModel,function(v){it.exposureModel=v;saveDraft();}));var copyWrap=el("div","field");copyWrap.innerHTML='<label>文案<span class="opt">選填，留白則標記為文案待補。</span></label>';var c4=el("div","copy4");c4.appendChild(miniField("大標",it.copy.head,function(v){it.copy.head=v;updateLiveBits();saveDraft();}));c4.appendChild(miniField("副標",it.copy.sub,function(v){it.copy.sub=v;updateLiveBits();saveDraft();}));c4.appendChild(miniField("小字",it.copy.small,function(v){it.copy.small=v;updateLiveBits();saveDraft();}));c4.appendChild(miniField("其他",it.copy.other,function(v){it.copy.other=v;updateLiveBits();saveDraft();}));copyWrap.appendChild(c4);frag.appendChild(copyWrap);var row2=el("div","row delivery-row");if(t.showChannel)row2.appendChild(fieldText("使用位置",false,it.channel,function(v){it.channel=v;saveDraft();}));row2.appendChild(fieldDate("交付日",false,it.useDate,function(v){it.useDate=v;updateLiveBits();checkDeliveryWarn();saveDraft();}));frag.appendChild(row2);frag.appendChild(fieldText("CTA／連結",false,it.cta,function(v){it.cta=v;saveDraft();}));frag.appendChild(fieldTextarea("項目備註",false,it.note,function(v){it.note=v;saveDraft();}));return frag;}
 function miniField(label,val,onChange,full){var f=el("div","field"+(full?" full":""));f.style.margin="0";var lab=el("label","",label);lab.style.fontWeight="400";lab.style.color="var(--muted)";f.appendChild(lab);var inp=document.createElement("input");inp.type="text";inp.value=val||"";inp.addEventListener("input",function(){onChange(inp.value);});f.appendChild(inp);return f;}
 function fieldText(label,req,val,onChange){var f=el("div","field");f.innerHTML='<label>'+label+(req?'<span class="req">*</span>':'<span class="opt">選填</span>')+'</label>';var inp=document.createElement("input");inp.type="text";inp.value=val||"";inp.addEventListener("input",function(){onChange(inp.value);});f.appendChild(inp);return f;}
 function fieldTextarea(label,req,val,onChange){var f=el("div","field");f.innerHTML='<label>'+label+(req?'<span class="req">*</span>':'<span class="opt">選填</span>')+'</label>';var inp=document.createElement("textarea");inp.value=val||"";inp.addEventListener("input",function(){onChange(inp.value);});f.appendChild(inp);return f;}
 function fieldDate(label,req,val,onChange){var f=el("div","field");f.innerHTML='<label>'+label+(req?'<span class="req">*</span>':'<span class="opt">選填</span>')+'</label>';var w=el("div","date-wrap"),inp=document.createElement("input");inp.type="date";inp.value=val||"";inp.addEventListener("input",function(){onChange(inp.value);});w.appendChild(inp);f.appendChild(w);return f;}
 function fieldNumber(label,req,val,onChange){var f=el("div","field");f.innerHTML='<label>'+label+(req?'<span class="req">*</span>':'<span class="opt">選填</span>')+'</label>';var inp=document.createElement("input");inp.type="number";inp.min="0";inp.value=val||"";inp.addEventListener("input",function(){onChange(inp.value);});f.appendChild(inp);return f;}
+function halfDateRow_(field){var r=el("div","row delivery-row");r.appendChild(field);return r;}
 function buildSizeSection(it,t){var wrap=el("div","field");wrap.innerHTML='<label>尺寸<span class="opt">選填，除印刷品外若留白將由設計端評估。</span></label>';var options=t.sizes.slice();if(!t.forcePrint&&itemHasPrint(it))options=options.concat(PRINT_SIZE_DEFS);it.sizeRows.forEach(function(row){var r=el("div","sizerow size-spec-row"),purposeField=el("div","field");purposeField.style.margin="0";if(row.purpose==="__custom__"){var wrapCustom=el("div","");wrapCustom.style.cssText="display:flex;align-items:center;gap:6px;border:1.2px solid var(--line);border-radius:var(--r);padding:0 4px 0 12px;height:44px;";var prefix=el("span","","自訂：");prefix.style.cssText="font-size:14px;color:var(--body);flex:0 0 auto;white-space:nowrap;";wrapCustom.appendChild(prefix);var ci=document.createElement("input");ci.type="text";ci.value=row.customText||"";ci.placeholder="輸入用途名稱";ci.style.cssText="border:0;padding:8px 4px;height:100%;flex:1 1 auto;";ci.addEventListener("input",function(){row.customText=ci.value;saveDraft();});wrapCustom.appendChild(ci);var backBtn=el("button","","✕");backBtn.type="button";backBtn.className="inline-clear";backBtn.style.cssText="border:0;background:none;cursor:pointer;color:var(--muted);flex:0 0 auto;font-size:14px;";backBtn.addEventListener("click",function(){row.purpose="";row.customText="";render();saveDraft();});wrapCustom.appendChild(backBtn);purposeField.appendChild(wrapCustom);}else{var sel=el("select");sel.appendChild(el("option","","用途／版位"));options.forEach(function(opt){var o=el("option","",opt.label);o.value=opt.custom?"__custom__":opt.label;if(row.purpose===o.value)o.selected=true;sel.appendChild(o);});sel.addEventListener("change",function(){row.purpose=sel.value;if(row.purpose!=="__custom__"){var def=null;for(var i=0;i<options.length;i++){if(options[i].label===row.purpose){def=options[i];break;}}if(def&&def.w&&def.h)row.px=def.w+"×"+def.h+(def.unit||"px");else if(def&&def.note)row.px=def.note;else row.px="";}render();saveDraft();});purposeField.appendChild(sel);}r.appendChild(purposeField);var pxField=el("div","field");pxField.style.margin="0";var isFrozen=false;if(row.purpose&&row.purpose!=="__custom__"){var d=null;for(var j=0;j<options.length;j++){if(options[j].label===row.purpose){d=options[j];break;}}if(d&&(d.w||d.note))isFrozen=true;}var pxi=document.createElement("input");pxi.type="text";pxi.placeholder="實際尺寸";pxi.value=row.px||"";if(isFrozen){pxi.disabled=true;pxi.classList.add("readonly");}else pxi.addEventListener("input",function(){row.px=pxi.value;saveDraft();});pxField.appendChild(pxi);var valueGroup=el("div","size-value-group");valueGroup.appendChild(pxField);var rmBtn=el("button","rm","✕");rmBtn.type="button";rmBtn.setAttribute("aria-label","刪除此尺寸");rmBtn.addEventListener("click",function(){it.sizeRows=it.sizeRows.filter(function(x){return x!==row;});render();saveDraft();});valueGroup.appendChild(rmBtn);r.appendChild(valueGroup);wrap.appendChild(r);});var add=el("button","add-line","＋ 新增尺寸");add.type="button";add.addEventListener("click",function(){it.sizeRows.push(newSizeRow());render();saveDraft();});wrap.appendChild(add);return wrap;}
 function buildStructureBlock(it){
   var wrap=document.createDocumentFragment(),blocksEl=el("div","blocks");
