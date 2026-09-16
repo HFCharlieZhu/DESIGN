@@ -1167,12 +1167,12 @@ html,body{overflow-x:clip!important;}
 }
 @media(hover:hover) and (pointer:fine){
   #dr-app .sizerow .rm:hover,#dr-app .size-value-group>.rm:hover,#dr-app .compact-x:hover{
-    border-color:var(--body)!important;color:var(--body)!important;
+    border-color:var(--control-accent)!important;color:var(--control-accent)!important;
   }
 }
 @media(hover:none) and (pointer:coarse){
   #dr-app .sizerow .rm.is-touch-hover,#dr-app .size-value-group>.rm.is-touch-hover,#dr-app .compact-x.is-touch-hover{
-    border-color:var(--body)!important;color:var(--body)!important;
+    border-color:var(--control-accent)!important;color:var(--control-accent)!important;
   }
   #dr-app .del-line.is-touch-hover{color:var(--body)!important;}
 }
@@ -1219,8 +1219,8 @@ html,body{overflow-x:clip!important;}
   color:var(--muted)!important;font-family:inherit!important;font-size:14px!important;line-height:1!important;
   cursor:pointer;transition:border-color var(--ease),color var(--ease),opacity var(--ease)!important;
 }
-@media(hover:hover) and (pointer:fine){#dr-app button.rm:hover,#dr-app .compact-x:hover{border-color:var(--body)!important;color:var(--body)!important;}}
-@media(hover:none) and (pointer:coarse){#dr-app button.rm.is-touch-hover,#dr-app .compact-x.is-touch-hover{border-color:var(--body)!important;color:var(--body)!important;}}
+@media(hover:hover) and (pointer:fine){#dr-app button.rm:hover,#dr-app .compact-x:hover{border-color:var(--control-accent)!important;color:var(--control-accent)!important;}}
+@media(hover:none) and (pointer:coarse){#dr-app button.rm.is-touch-hover,#dr-app .compact-x.is-touch-hover{border-color:var(--control-accent)!important;color:var(--control-accent)!important;}}
 #dr-app .detail-actions .saved-hint{
   display:block!important;grid-column:1/-1!important;height:20px!important;min-height:20px!important;
   margin:2px 0 0!important;padding:0!important;visibility:hidden;opacity:0;line-height:20px;
@@ -1393,8 +1393,6 @@ html,body{overflow-x:clip!important;}
 }
 #dr-app .audience-field .chip{height:30px!important;margin:0!important;}
 
-#dr-app{--remove-accent:var(--brand);}
-#dr-app .card-detail{--remove-accent:var(--card-hover);}
 #dr-app button.rm,#dr-app .compact-x{
   border-color:var(--hair)!important;
   color:var(--muted)!important;
@@ -1402,14 +1400,14 @@ html,body{overflow-x:clip!important;}
 }
 @media(hover:hover) and (pointer:fine){
   #dr-app button.rm:hover,#dr-app .compact-x:hover{
-    border-color:var(--remove-accent)!important;
-    color:var(--remove-accent)!important;
+    border-color:var(--control-accent)!important;
+    color:var(--control-accent)!important;
   }
 }
 @media(hover:none) and (pointer:coarse){
   #dr-app button.rm.is-touch-hover,#dr-app .compact-x.is-touch-hover{
-    border-color:var(--remove-accent)!important;
-    color:var(--remove-accent)!important;
+    border-color:var(--control-accent)!important;
+    color:var(--control-accent)!important;
   }
 }
 @media(max-width:700px){
@@ -1422,7 +1420,7 @@ html,body{overflow-x:clip!important;}
   #dr-app .date-wrap>input[type=date]{font-size:16px!important;}
 }
 
-/* v1.0.23 — structure field rhythm + unified square-remove accent */
+/* v1.0.24 — EDM / 活動頁區塊欄位節奏與申請表一致 */
 #dr-app .structure-block .copy4{
   display:grid!important;
   grid-template-columns:repeat(2,minmax(0,1fr))!important;
@@ -1450,18 +1448,29 @@ html,body{overflow-x:clip!important;}
   }
 }
 
-/* Square X uses the exact same accent source as inputs and panel borders. */
-#dr-app button.rm,#dr-app .compact-x{
-  --remove-accent:var(--control-accent);
+/* v1.0.24 — 方塊叉叉與輸入框共用唯一 hover 色源：--control-accent */
+#dr-app button.rm,
+#dr-app .compact-x{
+  border-color:var(--hair)!important;
+  color:var(--muted)!important;
+  transition:border-color var(--ease),color var(--ease),background-color var(--ease)!important;
 }
 @media(hover:hover) and (pointer:fine){
-  #dr-app button.rm:hover,#dr-app .compact-x:hover{
+  #dr-app .sizerow button.rm:hover,
+  #dr-app .size-value-group>button.rm:hover,
+  #dr-app .ref-link-row>button.rm:hover,
+  #dr-app button.rm:hover,
+  #dr-app .compact-x:hover{
     border-color:var(--control-accent)!important;
     color:var(--control-accent)!important;
   }
 }
 @media(hover:none) and (pointer:coarse){
-  #dr-app button.rm.is-touch-hover,#dr-app .compact-x.is-touch-hover{
+  #dr-app .sizerow button.rm.is-touch-hover,
+  #dr-app .size-value-group>button.rm.is-touch-hover,
+  #dr-app .ref-link-row>button.rm.is-touch-hover,
+  #dr-app button.rm.is-touch-hover,
+  #dr-app .compact-x.is-touch-hover{
     border-color:var(--control-accent)!important;
     color:var(--control-accent)!important;
   }

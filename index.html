@@ -136,7 +136,7 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 #dr-app .sizerow:last-of-type{margin-bottom:0;}
 @media (max-width:600px){#dr-app .sizerow{grid-template-columns:1fr;}}
 #dr-app .sizerow .rm{height:40px;width:40px;flex:0 0 auto;border:1px solid var(--hair);background:var(--paper);border-radius:var(--r);cursor:pointer;color:var(--muted);font-size:16px;transition:border-color var(--ease);}
-#dr-app .sizerow .rm:hover{border-color:var(--red);color:var(--red);}
+#dr-app .sizerow .rm:hover{border-color:var(--control-accent)!important;color:var(--control-accent)!important;}
 #dr-app .add-line{display:inline-flex;align-items:center;gap:6px;border:1px dashed var(--line);background:transparent;color:var(--ink);font-family:inherit;font-size:12px;font-weight:700;border-radius:999px;height:32px;padding:0 14px;cursor:pointer;margin-top:4px;transition:border-color var(--ease);}
 #dr-app .add-line:hover{border-color:var(--brand);}
 #dr-app .radiogroup{display:flex;gap:16px;flex-wrap:wrap;}
@@ -785,10 +785,7 @@ html,body{overflow-x:hidden;}
     border-color:var(--brand)!important;
   }
 
-  #dr-app .sizerow .rm.is-touch-hover{
-    border-color:var(--red)!important;
-    color:var(--red)!important;
-  }
+  #dr-app .sizerow .rm.is-touch-hover{border-color:var(--control-accent)!important;color:var(--control-accent)!important;}
 }
 
 
@@ -1004,12 +1001,12 @@ html,body{overflow-x:hidden;}
 }
 @media(hover:hover) and (pointer:fine){
   #dr-app .sizerow .rm:hover,#dr-app .size-value-group>.rm:hover,#dr-app .compact-x:hover{
-    border-color:var(--body)!important;color:var(--body)!important;
+    border-color:var(--control-accent)!important;color:var(--control-accent)!important;
   }
 }
 @media(hover:none) and (pointer:coarse){
   #dr-app .sizerow .rm.is-touch-hover,#dr-app .size-value-group>.rm.is-touch-hover,#dr-app .compact-x.is-touch-hover{
-    border-color:var(--body)!important;color:var(--body)!important;
+    border-color:var(--control-accent)!important;color:var(--control-accent)!important;
   }
   #dr-app .del-line.is-touch-hover{color:var(--body)!important;}
 }
@@ -1061,8 +1058,8 @@ html,body{overflow-x:hidden;}
   color:var(--muted)!important;font-family:inherit!important;font-size:14px!important;line-height:1!important;
   cursor:pointer;transition:border-color var(--ease),color var(--ease),opacity var(--ease)!important;
 }
-@media(hover:hover) and (pointer:fine){#dr-app button.rm:hover,#dr-app .compact-x:hover{border-color:var(--body)!important;color:var(--body)!important;}}
-@media(hover:none) and (pointer:coarse){#dr-app button.rm.is-touch-hover,#dr-app .compact-x.is-touch-hover{border-color:var(--body)!important;color:var(--body)!important;}}
+@media(hover:hover) and (pointer:fine){#dr-app button.rm:hover,#dr-app .compact-x:hover{border-color:var(--control-accent)!important;color:var(--control-accent)!important;}}
+@media(hover:none) and (pointer:coarse){#dr-app button.rm.is-touch-hover,#dr-app .compact-x.is-touch-hover{border-color:var(--control-accent)!important;color:var(--control-accent)!important;}}
 
 
 /* v1.0.17 — paired-field geometry and question spacing */
@@ -1207,7 +1204,6 @@ html,body{overflow-x:hidden;}
 }
 #dr-app .audience-field .chip{height:30px!important;margin:0!important;}
 
-#dr-app{--remove-accent:var(--brand);}
 #dr-app button.rm,#dr-app .compact-x{
   border-color:var(--hair)!important;
   color:var(--muted)!important;
@@ -1215,14 +1211,14 @@ html,body{overflow-x:hidden;}
 }
 @media(hover:hover) and (pointer:fine){
   #dr-app button.rm:hover,#dr-app .compact-x:hover{
-    border-color:var(--remove-accent)!important;
-    color:var(--remove-accent)!important;
+    border-color:var(--control-accent)!important;
+    color:var(--control-accent)!important;
   }
 }
 @media(hover:none) and (pointer:coarse){
   #dr-app button.rm.is-touch-hover,#dr-app .compact-x.is-touch-hover{
-    border-color:var(--remove-accent)!important;
-    color:var(--remove-accent)!important;
+    border-color:var(--control-accent)!important;
+    color:var(--control-accent)!important;
   }
 }
 @media(max-width:700px){
@@ -1235,16 +1231,29 @@ html,body{overflow-x:hidden;}
   #dr-app .date-wrap>input[type=date]{font-size:16px!important;}
 }
 
-/* v1.0.23 — square X shares the exact input accent source */
-#dr-app button.rm,#dr-app .compact-x{--remove-accent:var(--control-accent);}
+/* v1.0.24 — 方塊叉叉與輸入框共用唯一 hover 色源：--control-accent */
+#dr-app button.rm,
+#dr-app .compact-x{
+  border-color:var(--hair)!important;
+  color:var(--muted)!important;
+  transition:border-color var(--ease),color var(--ease),background-color var(--ease)!important;
+}
 @media(hover:hover) and (pointer:fine){
-  #dr-app button.rm:hover,#dr-app .compact-x:hover{
+  #dr-app .sizerow button.rm:hover,
+  #dr-app .size-value-group>button.rm:hover,
+  #dr-app .ref-link-row>button.rm:hover,
+  #dr-app button.rm:hover,
+  #dr-app .compact-x:hover{
     border-color:var(--control-accent)!important;
     color:var(--control-accent)!important;
   }
 }
 @media(hover:none) and (pointer:coarse){
-  #dr-app button.rm.is-touch-hover,#dr-app .compact-x.is-touch-hover{
+  #dr-app .sizerow button.rm.is-touch-hover,
+  #dr-app .size-value-group>button.rm.is-touch-hover,
+  #dr-app .ref-link-row>button.rm.is-touch-hover,
+  #dr-app button.rm.is-touch-hover,
+  #dr-app .compact-x.is-touch-hover{
     border-color:var(--control-accent)!important;
     color:var(--control-accent)!important;
   }
