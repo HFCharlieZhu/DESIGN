@@ -8,8 +8,15 @@
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <meta content="noindex,nofollow,noarchive,nosnippet,noimageindex" name="robots"/>
 <title>允禾發 設計需求表</title>
-<link rel="icon" type="image/png" sizes="160x160" href="https://raw.githubusercontent.com/HFCharlieZhu/DESIGN/main/graphic-design-brief-logo_160.png">
-<link rel="apple-touch-icon" href="https://raw.githubusercontent.com/HFCharlieZhu/DESIGN/main/graphic-design-brief-logo_160.png">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml" sizes="any">
+<link rel="icon" href="assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="assets/favicon-16.png" type="image/png" sizes="16x16">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#F2F2F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1C1C1E" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="設計需求表">
+
 <meta property="og:image" content="https://raw.githubusercontent.com/HFCharlieZhu/DESIGN/main/graphic-design-brief-logo_1020.png">
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1020">
@@ -38,7 +45,7 @@ html,body{margin:0;padding:0;background:#eeeeee;}
   color:var(--ink); background:var(--tint);
   min-height:100vh; line-height:1.7; letter-spacing:.02em;
   -webkit-font-smoothing:antialiased;
-}
+--control-accent:var(--brand);}
 #dr-app *{box-sizing:border-box;}
 #dr-app .wrap{max-width:1040px;margin:0 auto;padding:0 20px 80px;}
 
@@ -66,13 +73,15 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 #dr-app .filterrow input[type=text]{flex:1 1 220px;min-width:160px;}
 #dr-app .filterrow select{flex:0 0 auto;width:auto;min-width:120px;}
 #dr-app input[type=text],#dr-app select,#dr-app textarea,#dr-app input[type=date],#dr-app input[type=number]{
+  --control-accent:inherit;
   font-family:inherit;font-size:14px;color:var(--ink);background:var(--paper);
   border:1.2px solid var(--line);border-radius:var(--r);padding:9px 12px;outline:none;transition:border-color var(--ease);
+  -webkit-tap-highlight-color:transparent;
 }
 @media(hover:hover) and (pointer:fine){
-  #dr-app input:hover,#dr-app select:hover,#dr-app textarea:hover{border-color:var(--brand);}
+  #dr-app input:hover,#dr-app select:hover,#dr-app textarea:hover{border-color:var(--control-accent);}
 }
-#dr-app input:focus,#dr-app select:focus,#dr-app textarea:focus{border-color:var(--brand);}
+#dr-app input:focus,#dr-app select:focus,#dr-app textarea:focus{border-color:var(--control-accent);}
 #dr-app select{appearance:none;-webkit-appearance:none;
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='11' height='7'><path d='M1 1l4.5 4.5L10 1' stroke='%23111' stroke-width='1.6' fill='none'/></svg>");
   background-repeat:no-repeat;background-position:right 12px center;padding-right:30px;}
@@ -119,7 +128,7 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 #dr-app .card.bg-normal .card-top{background:var(--paper);}
 #dr-app .card.is-grey:not(.open){filter:grayscale(1);}
 
-#dr-app .card-detail{display:none;background:var(--paper);border-top:1.2px solid var(--hair);padding:18px 16px;}
+#dr-app .card-detail{--control-accent:var(--card-hover);display:none;background:var(--paper);border-top:1.2px solid var(--hair);padding:18px 16px;}
 #dr-app .card.open .card-detail{display:block;}
 
 #dr-app .dpanel{border:1.2px solid var(--hair);border-radius:var(--r);padding:14px;margin-bottom:14px;background:var(--paper);transition:border-color var(--ease);}
@@ -128,11 +137,11 @@ html,body{margin:0;padding:0;background:#eeeeee;}
   #dr-app .dpanel:hover{border-color:var(--card-hover, var(--brand));}
   #dr-app .card-detail input:hover,
   #dr-app .card-detail textarea:hover,
-  #dr-app .card-detail select:hover{border-color:var(--card-hover, var(--brand));}
+  #dr-app .card-detail select:hover{border-color:var(--card-hover, var(--control-accent));}
 }
 #dr-app .card-detail input:focus,
 #dr-app .card-detail textarea:focus,
-#dr-app .card-detail select:focus{border-color:var(--card-hover, var(--brand));}
+#dr-app .card-detail select:focus{border-color:var(--card-hover, var(--control-accent));}
 #dr-app .dpanel:last-child{margin-bottom:0;}
 #dr-app .dpanel-title{font-size:12px;font-weight:700;color:var(--body);margin-bottom:10px;}
 #dr-app .drow{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
@@ -388,7 +397,7 @@ html,body{overflow-x:hidden;}
 @media (hover:none) and (pointer:coarse){
 
   #dr-app .btn-topbar:active,#dr-app .btn-sm.primary:active{background:var(--brand-dk);}
-  #dr-app input:active,#dr-app select:active,#dr-app textarea:active{border-color:var(--brand);}
+  #dr-app input:active,#dr-app select:active,#dr-app textarea:active{border-color:var(--control-accent);}
 }
 @media (max-width:700px){
   #dr-app{--gutter:16px;--space-5:20px;}
@@ -625,7 +634,7 @@ html,body{overflow-x:clip!important;}
 
   #dr-app input.is-touch-hover,
   #dr-app select.is-touch-hover,
-  #dr-app textarea.is-touch-hover{border-color:var(--brand)!important;}
+  #dr-app textarea.is-touch-hover{border-color:var(--control-accent)!important;}
 
   #dr-app .statuschip.overdue.is-touch-hover{border-color:var(--brand)!important;}
   #dr-app .statuschip.error.is-touch-hover{border-color:var(--red)!important;}
@@ -644,7 +653,7 @@ html,body{overflow-x:clip!important;}
   #dr-app .card-detail input.is-touch-hover,
   #dr-app .card-detail textarea.is-touch-hover,
   #dr-app .card-detail select.is-touch-hover{
-    border-color:var(--card-hover,var(--brand))!important;
+    border-color:var(--card-hover,var(--control-accent))!important;
   }
 
   #dr-app .schip.is-touch-hover{border-color:var(--schip-color,var(--brand))!important;}
@@ -1077,34 +1086,34 @@ html,body{overflow-x:clip!important;}
 }
 
 
-/* v1.0.11 — one border-state source for every editable bordered control inside a request.
-   Global list/filter UI still uses brand yellow; anything inside a request inherits that request's state color. */
+/* v1.0.12 — form-control interaction color has one source only.
+   --control-accent defaults to brand at app level and becomes --card-hover inside each request.
+   Hover, focus, active and touch therefore cannot diverge. */
 @media(hover:hover) and (pointer:fine){
-  #dr-app .card-detail input:not([disabled]):hover,
-  #dr-app .card-detail textarea:not([disabled]):hover,
-  #dr-app .card-detail select:not([disabled]):hover,
-  #dr-app .card-detail .chip:not([aria-pressed="true"]):not([disabled]):hover,
-  #dr-app .card-detail .add-line:not([disabled]):hover,
-  #dr-app .card-detail .structure-order button:not([disabled]):hover{
-    border-color:var(--card-hover)!important;
+  #dr-app input:not([disabled]):hover,
+  #dr-app textarea:not([disabled]):hover,
+  #dr-app select:not([disabled]):hover{
+    border-color:var(--control-accent)!important;
   }
 }
-#dr-app .card-detail input:not([disabled]):focus,
-#dr-app .card-detail textarea:not([disabled]):focus,
-#dr-app .card-detail select:not([disabled]):focus,
-#dr-app .card-detail input:not([disabled]):focus-visible,
-#dr-app .card-detail textarea:not([disabled]):focus-visible,
-#dr-app .card-detail select:not([disabled]):focus-visible{
-  border-color:var(--card-hover)!important;
+#dr-app input:not([disabled]):focus,
+#dr-app textarea:not([disabled]):focus,
+#dr-app select:not([disabled]):focus,
+#dr-app input:not([disabled]):focus-visible,
+#dr-app textarea:not([disabled]):focus-visible,
+#dr-app select:not([disabled]):focus-visible,
+#dr-app input:not([disabled]):active,
+#dr-app textarea:not([disabled]):active,
+#dr-app select:not([disabled]):active{
+  border-color:var(--control-accent)!important;
+  outline:none!important;
+  box-shadow:none;
 }
 @media(hover:none) and (pointer:coarse){
-  #dr-app .card-detail input:not([disabled]).is-touch-hover,
-  #dr-app .card-detail textarea:not([disabled]).is-touch-hover,
-  #dr-app .card-detail select:not([disabled]).is-touch-hover,
-  #dr-app .card-detail .chip:not([aria-pressed="true"]):not([disabled]).is-touch-hover,
-  #dr-app .card-detail .add-line:not([disabled]).is-touch-hover,
-  #dr-app .card-detail .structure-order button:not([disabled]).is-touch-hover{
-    border-color:var(--card-hover)!important;
+  #dr-app input:not([disabled]).is-touch-hover,
+  #dr-app textarea:not([disabled]).is-touch-hover,
+  #dr-app select:not([disabled]).is-touch-hover{
+    border-color:var(--control-accent)!important;
   }
 }
 

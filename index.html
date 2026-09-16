@@ -8,8 +8,15 @@
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <meta content="noindex,nofollow,noarchive,nosnippet,noimageindex" name="robots"/>
 <title>允禾發 設計需求表</title>
-<link rel="icon" type="image/png" sizes="160x160" href="https://raw.githubusercontent.com/HFCharlieZhu/DESIGN/main/graphic-design-brief-logo_160.png">
-<link rel="apple-touch-icon" href="https://raw.githubusercontent.com/HFCharlieZhu/DESIGN/main/graphic-design-brief-logo_160.png">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml" sizes="any">
+<link rel="icon" href="assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="assets/favicon-16.png" type="image/png" sizes="16x16">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#F2F2F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1C1C1E" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="設計需求表">
+
 <meta property="og:image" content="https://raw.githubusercontent.com/HFCharlieZhu/DESIGN/main/graphic-design-brief-logo_1020.png">
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1020">
@@ -86,8 +93,8 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 #dr-app .field .errmsg{font-size:12px;color:var(--red);margin-top:5px;display:none;}
 #dr-app .field.err .errmsg{display:block;}
 #dr-app input[type=text],#dr-app input[type=date],#dr-app input[type=number],#dr-app input[type=url],#dr-app textarea,#dr-app select{width:100%;font-family:inherit;font-size:14px;color:var(--ink);background:var(--paper);border:1.2px solid var(--line);border-radius:var(--r);padding:10px 12px;outline:none;transition:border-color var(--ease);}
-#dr-app input:focus,#dr-app textarea:focus,#dr-app select:focus{border-color:var(--brand);}
-#dr-app input:hover,#dr-app textarea:hover,#dr-app select:hover{border-color:var(--brand);}
+#dr-app input:focus,#dr-app textarea:focus,#dr-app select:focus{border-color:var(--control-accent);}
+#dr-app input:hover,#dr-app textarea:hover,#dr-app select:hover{border-color:var(--control-accent);}
 #dr-app input[disabled],#dr-app textarea[disabled]{background:var(--tint);color:var(--body);border-color:var(--hair);cursor:not-allowed;}
 #dr-app textarea{resize:vertical;min-height:64px;max-height:192px;}
 #dr-app .readonly{background:var(--tint);color:var(--body);border-color:var(--hair);}
@@ -136,7 +143,7 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 #dr-app .add-line:hover{border-color:var(--brand);}
 #dr-app .radiogroup{display:flex;gap:16px;flex-wrap:wrap;}
 #dr-app .radiopill{display:inline-flex;align-items:center;gap:7px;font-size:14px;cursor:pointer;}
-#dr-app .radiopill input{width:15px;height:15px;accent-color:var(--brand);margin:0;cursor:pointer;}
+#dr-app .radiopill input{width:15px;height:15px;accent-color:var(--control-accent);margin:0;cursor:pointer;}
 #dr-app .copy4{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 @media (max-width:600px){#dr-app .copy4{grid-template-columns:1fr;}}
 #dr-app .blocks{display:flex;flex-direction:column;gap:10px;}
@@ -319,7 +326,7 @@ html,body{overflow-x:hidden;}
 @media (hover:none) and (pointer:coarse){
 
   #dr-app .btn-topbar:active,#dr-app .btn-primary:active,#dr-app .btn-submit:active{background:var(--brand-dk);}
-  #dr-app input:active,#dr-app select:active,#dr-app textarea:active{border-color:var(--brand);}
+  #dr-app input:active,#dr-app select:active,#dr-app textarea:active{border-color:var(--control-accent);}
 }
 @media (max-width:700px){
   #dr-app{--gutter:16px;--space-5:20px;}
@@ -773,7 +780,7 @@ html,body{overflow-x:hidden;}
 
   #dr-app input.is-touch-hover,
   #dr-app textarea.is-touch-hover,
-  #dr-app select.is-touch-hover{border-color:var(--brand)!important;}
+  #dr-app select.is-touch-hover{border-color:var(--control-accent)!important;}
 
   #dr-app .chip.is-touch-hover{border-color:var(--brand)!important;}
   #dr-app .chip.c-digital.is-touch-hover{border-color:var(--blue)!important;}
@@ -846,7 +853,7 @@ html,body{overflow-x:hidden;}
   #dr-app input:hover,
   #dr-app textarea:hover,
   #dr-app select:hover{
-    border-color:var(--brand)!important;
+    border-color:var(--control-accent)!important;
   }
 }
 #dr-app input:focus,
@@ -855,13 +862,13 @@ html,body{overflow-x:hidden;}
 #dr-app input:focus-visible,
 #dr-app textarea:focus-visible,
 #dr-app select:focus-visible{
-  border-color:var(--brand)!important;
+  border-color:var(--control-accent)!important;
 }
 @media(hover:none) and (pointer:coarse){
   #dr-app input.is-touch-hover,
   #dr-app textarea.is-touch-hover,
   #dr-app select.is-touch-hover{
-    border-color:var(--brand)!important;
+    border-color:var(--control-accent)!important;
   }
 }
 
@@ -915,7 +922,7 @@ html,body{overflow-x:hidden;}
   #dr-app input:not([disabled]):hover,
   #dr-app textarea:not([disabled]):hover,
   #dr-app select:not([disabled]):hover{
-    border-color:var(--brand)!important;
+    border-color:var(--control-accent)!important;
   }
 }
 #dr-app input:not([disabled]):focus,
@@ -924,13 +931,51 @@ html,body{overflow-x:hidden;}
 #dr-app input:not([disabled]):focus-visible,
 #dr-app textarea:not([disabled]):focus-visible,
 #dr-app select:not([disabled]):focus-visible{
-  border-color:var(--brand)!important;
+  border-color:var(--control-accent)!important;
 }
 @media(hover:none) and (pointer:coarse){
   #dr-app input:not([disabled]).is-touch-hover,
   #dr-app textarea:not([disabled]).is-touch-hover,
   #dr-app select:not([disabled]).is-touch-hover{
-    border-color:var(--brand)!important;
+    border-color:var(--control-accent)!important;
+  }
+}
+
+
+/* v1.0.12 — all form controls share one interaction-border source. */
+#dr-app input[type=text],
+#dr-app input[type=date],
+#dr-app input[type=number],
+#dr-app textarea,
+#dr-app select{
+  --control-accent:var(--brand);
+  -webkit-tap-highlight-color:transparent;
+}
+@media(hover:hover) and (pointer:fine){
+  #dr-app input:not([disabled]):hover,
+  #dr-app textarea:not([disabled]):hover,
+  #dr-app select:not([disabled]):hover{
+    border-color:var(--control-accent)!important;
+  }
+}
+#dr-app input:not([disabled]):focus,
+#dr-app textarea:not([disabled]):focus,
+#dr-app select:not([disabled]):focus,
+#dr-app input:not([disabled]):focus-visible,
+#dr-app textarea:not([disabled]):focus-visible,
+#dr-app select:not([disabled]):focus-visible,
+#dr-app input:not([disabled]):active,
+#dr-app textarea:not([disabled]):active,
+#dr-app select:not([disabled]):active{
+  border-color:var(--control-accent)!important;
+  outline:none!important;
+  box-shadow:none;
+}
+@media(hover:none) and (pointer:coarse){
+  #dr-app input:not([disabled]).is-touch-hover,
+  #dr-app textarea:not([disabled]).is-touch-hover,
+  #dr-app select:not([disabled]).is-touch-hover{
+    border-color:var(--control-accent)!important;
   }
 }
 
