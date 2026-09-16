@@ -8,6 +8,14 @@
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <meta content="noindex,nofollow,noarchive,nosnippet,noimageindex" name="robots"/>
 <title>允禾發 設計需求表</title>
+<link rel="icon" type="image/png" sizes="160x160" href="https://raw.githubusercontent.com/HFCharlieZhu/DESIGN/main/graphic-design-brief-logo_160.png">
+<link rel="apple-touch-icon" href="https://raw.githubusercontent.com/HFCharlieZhu/DESIGN/main/graphic-design-brief-logo_160.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/HFCharlieZhu/DESIGN/main/graphic-design-brief-logo_1020.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1020">
+<meta property="og:image:height" content="1020">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/HFCharlieZhu/DESIGN/main/graphic-design-brief-logo_1020.png">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&amp;family=Noto+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
 <style>
 :root{color-scheme:light;}
@@ -209,7 +217,6 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 #dr-gate{box-sizing:border-box;width:100%;min-height:100dvh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:32px 20px;text-align:center;background:var(--tint);}
 #dr-gate .g-title{font-size:20px;line-height:1.4;font-weight:700;color:var(--ink);}
 #dr-gate .g-sub{max-width:380px;margin:0;font-size:12px;line-height:1.7;color:var(--body);}
-#dr-gate .g-login-label{font-size:12px;line-height:1.5;font-weight:700;color:var(--ink);}
 #dr-gate .g-note{max-width:380px;margin:0;font-size:12px;line-height:1.7;color:var(--muted);}
 #dr-gate .google-login-slot{min-height:44px;display:flex;align-items:center;justify-content:center;}
 #dr-login-status{min-height:18px;font-size:12px;line-height:1.5;color:var(--body);}
@@ -253,7 +260,7 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 
 #dr-app .topbar-title,#dr-gate .g-title,#dr-app .card-top .idcode{font-weight:700}
 #dr-app .month-group h3,#dr-app .card-top .cname,#dr-app .dpanel-title{font-weight:700}
-#dr-app .topbar-kind,#dr-gate .g-login-label,#dr-app .avatar,#dr-app .statuschip[aria-pressed="true"],#dr-app .status-pill,#dr-app .schip[aria-pressed="true"],#dr-app .chip[aria-pressed="true"],#dr-app .badge,#dr-app .itemblock-title .idx,#dr-app .add-line,#dr-app .btn-sm,#dr-app .pgbtn{font-weight:500}
+#dr-app .topbar-kind,#dr-app .avatar,#dr-app .statuschip[aria-pressed="true"],#dr-app .status-pill,#dr-app .schip[aria-pressed="true"],#dr-app .chip[aria-pressed="true"],#dr-app .badge,#dr-app .itemblock-title .idx,#dr-app .add-line,#dr-app .btn-sm,#dr-app .pgbtn{font-weight:500}
 #dr-app .card-top .idcode{font-size:12px}
 #dr-app .card-top .cname{font-size:14px}
 #dr-app .status-pill,#dr-app .dfield label,#dr-app .logbox{font-size:12px}
@@ -263,7 +270,6 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 #dr-gate{box-sizing:border-box;width:100%;min-height:100dvh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:32px 20px;text-align:center;background:var(--tint);}
 #dr-gate .g-title{font-size:var(--fs-title);line-height:1.4;font-weight:var(--fw-bold);color:var(--ink);}
 #dr-gate .g-sub{max-width:380px;margin:0;font-size:var(--fs-body);line-height:1.7;font-weight:var(--fw-regular);color:var(--body);}
-#dr-gate .g-login-label{font-size:var(--fs-body);line-height:1.5;font-weight:var(--fw-medium);color:var(--ink);}
 #dr-gate .g-note{max-width:380px;margin:0;font-size:var(--fs-meta);line-height:1.7;font-weight:var(--fw-regular);color:var(--muted);}
 #dr-gate .google-login-slot{min-height:44px;display:flex;align-items:center;justify-content:center;}
 #dr-login-status{min-height:20px;font-size:var(--fs-meta);line-height:1.5;font-weight:var(--fw-regular);color:var(--body);}
@@ -335,8 +341,7 @@ html,body{overflow-x:hidden;}
 #dr-app .logbox{margin-top:var(--space-3);}
 #dr-gate{min-height:100dvh;gap:var(--space-4);padding:var(--space-6) var(--space-5);}
 #dr-gate .g-title{font-size:var(--fs-title);}
-#dr-gate .g-sub,#dr-gate .g-login-label{font-size:var(--fs-body);}
-#dr-gate .g-note,#dr-login-status{font-size:var(--fs-meta);}
+#dr-gate .g-sub,#dr-gate .g-note,#dr-login-status{font-size:var(--fs-meta);}
 #dr-gate .g-sub,#dr-gate .g-note{width:min(100%,380px);}
 #dr-gate .google-login-slot{width:min(100%,300px);min-height:44px;}
 #dr-gate .google-login-slot>div{max-width:100%!important;}
@@ -411,7 +416,6 @@ html,body{overflow-x:clip!important;}
   #dr-app .detail-actions .danger{grid-column:2;}
 }
 
-
 #dr-app .request-primary{
   margin:0 0 var(--space-5);
   padding:0;
@@ -434,8 +438,6 @@ html,body{overflow-x:clip!important;}
     margin-bottom:var(--space-4);
   }
 }
-
-
 
 /* Final mobile date-field containment */
 #dr-app,#dr-app *{box-sizing:border-box;}
@@ -504,8 +506,6 @@ html,body{overflow-x:clip!important;}
   }
 }
 
-
-
 /* Equal two-field rows: true paired form fields use a 50/50 grid.
    Purposefully asymmetric layouts such as size rows, headers, filters and action bars are untouched. */
 #dr-app .row,
@@ -531,8 +531,6 @@ html,body{overflow-x:clip!important;}
   }
 }
 
-
-
 #dr-app .size-spec-row{
   display:grid!important;
   grid-template-columns:repeat(2,minmax(0,1fr))!important;
@@ -550,6 +548,28 @@ html,body{overflow-x:clip!important;}
   }
 }
 
+
+
+/* Label/helper typography hierarchy */
+#dr-app .field>label,
+#dr-app .dfield>label{
+  font-size:var(--fs-meta)!important;
+  line-height:1.5!important;
+  font-weight:var(--fw-medium)!important;
+  color:var(--ink)!important;
+}
+#dr-app .field .hint,
+#dr-app .dfield .hint,
+#dr-app .field .opt,
+#dr-app .dfield .opt,
+#dr-app .field .helper,
+#dr-app .dfield .helper{
+  font-size:var(--fs-meta)!important;
+  line-height:1.6!important;
+  font-weight:var(--fw-regular)!important;
+  color:var(--muted)!important;
+}
+
 </style>
 <script async="" defer="" src="https://accounts.google.com/gsi/client"></script>
 
@@ -558,8 +578,7 @@ html,body{overflow-x:clip!important;}
 <div id="dr-app">
 <div id="dr-gate">
 <div class="g-title">允禾發 設計需求表</div>
-<div class="g-sub">請使用 @harfunco.com Google Workspace 帳號登入。</div>
-<div class="g-login-label">使用允禾發 Google 帳號登入</div>
+<div class="g-sub">使用允禾發 Google 帳號登入</div>
 <div class="google-login-slot" id="dr-login-slot"></div>
 <div id="dr-login-status"></div>
 <div class="g-note">帳號用於身分驗證與需求表寄送。</div>
@@ -624,6 +643,7 @@ function initialsOf(name){
 }
 
 function setCurrentUser(user){
+  user=user&&typeof user==="object"?user:{};
   try{sessionStorage.setItem(AUTH_HINT_KEY,"1");if(SESSION_TOKEN)sessionStorage.setItem(SESSION_TOKEN_KEY,SESSION_TOKEN);sessionStorage.setItem(USER_CACHE_KEY,JSON.stringify({name:user.name||"",email:user.email||""}));}catch(e){}
   CURRENT_USER = {
     name: user.name || user.email || "",
