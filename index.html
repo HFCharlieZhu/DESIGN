@@ -1343,6 +1343,36 @@ html,body{overflow-x:hidden;}
     color:var(--line)!important;
   }
 }
+
+/* v1.0.28 — square-X color logic matches EDM reorder arrows */
+#dr-app button.rm,
+#dr-app .compact-x{
+  border-color:var(--ink)!important;
+  color:var(--ink)!important;
+  background:transparent!important;
+}
+@media(hover:hover) and (pointer:fine){
+  #dr-app .sizerow button.rm:hover,
+  #dr-app .size-value-group>button.rm:hover,
+  #dr-app .ref-link-row>button.rm:hover,
+  #dr-app button.rm:hover,
+  #dr-app .compact-x:hover{
+    border-color:var(--control-accent)!important;
+    color:var(--ink)!important;
+    background:transparent!important;
+  }
+}
+@media(hover:none) and (pointer:coarse){
+  #dr-app .sizerow button.rm.is-touch-hover,
+  #dr-app .size-value-group>button.rm.is-touch-hover,
+  #dr-app .ref-link-row>button.rm.is-touch-hover,
+  #dr-app button.rm.is-touch-hover,
+  #dr-app .compact-x.is-touch-hover{
+    border-color:var(--control-accent)!important;
+    color:var(--ink)!important;
+    background:transparent!important;
+  }
+}
 </style>
 
 <script id="dr-gsi-bootstrap" async defer src="https://accounts.google.com/gsi/client"></script>
