@@ -1076,6 +1076,48 @@ html,body{overflow-x:clip!important;}
   flex:0 0 20px!important;
 }
 
+
+/* v1.0.10 — one interaction-border source inside each request card. */
+@media(hover:hover) and (pointer:fine){
+  #dr-app .card-detail input:hover,
+  #dr-app .card-detail textarea:hover,
+  #dr-app .card-detail select:hover{
+    border-color:var(--card-hover,var(--brand))!important;
+  }
+}
+#dr-app .card-detail input:focus,
+#dr-app .card-detail textarea:focus,
+#dr-app .card-detail select:focus,
+#dr-app .card-detail input:focus-visible,
+#dr-app .card-detail textarea:focus-visible,
+#dr-app .card-detail select:focus-visible{
+  border-color:var(--card-hover,var(--brand))!important;
+}
+@media(hover:none) and (pointer:coarse){
+  #dr-app .card-detail input.is-touch-hover,
+  #dr-app .card-detail textarea.is-touch-hover,
+  #dr-app .card-detail select.is-touch-hover{
+    border-color:var(--card-hover,var(--brand))!important;
+  }
+}
+
+/* The change-log divider is full bleed inside its panel without shifting the content box. */
+#dr-app .dpanel{
+  --dpanel-pad:var(--space-4);
+}
+#dr-app .logbox{
+  box-sizing:border-box!important;
+  width:auto!important;
+  max-width:none!important;
+  margin:var(--space-3) calc(-1 * var(--dpanel-pad)) 0!important;
+  padding:var(--space-3) var(--dpanel-pad) 0!important;
+}
+@media(max-width:700px){
+  #dr-app .dpanel{
+    --dpanel-pad:var(--space-3);
+  }
+}
+
 </style>
 <script id="dr-gsi-bootstrap" async defer src="https://accounts.google.com/gsi/client"></script>
 </head>
