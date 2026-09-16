@@ -129,8 +129,6 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 #dr-app .item-head .toggle-caret{flex:0 0 auto;width:11px;height:7px;transition:transform var(--ease);}
 #dr-app .item-card.collapsed .toggle-caret{transform:rotate(-90deg);}
 #dr-app .item-card.collapsed .item-head{border-bottom-color:transparent;}
-#dr-app .item-head .del{flex:0 0 auto;border:0;background:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 4px;line-height:1;}
-#dr-app .item-head .del:hover{color:var(--red);}
 #dr-app .item-body{padding:16px;}
 #dr-app .item-card.collapsed .item-body{display:none;}
 #dr-app .notice-box{padding:14px;background:var(--tint);border:1.2px dashed var(--body);border-radius:var(--r);font-size:12px;color:var(--body);}
@@ -148,18 +146,12 @@ html,body{margin:0;padding:0;background:#eeeeee;}
 @media (max-width:600px){#dr-app .copy4{grid-template-columns:1fr;}}
 #dr-app .blocks{display:flex;flex-direction:column;gap:10px;}
 #dr-app .block{border:1.2px solid var(--hair);border-radius:var(--r);background:var(--tint);transition:border-color var(--ease);}
-#dr-app .block.dragging{opacity:.4;}
-#dr-app .block.dragover{border-color:var(--brand);}
 #dr-app .block:hover{border-color:var(--brand);}
 #dr-app .block-head{display:flex;align-items:center;gap:8px;padding:9px 10px;border-bottom:1px solid var(--hair);}
-#dr-app .grip{cursor:grab;flex:0 0 auto;color:var(--muted);width:16px;height:16px;}
-#dr-app .grip:active{cursor:grabbing;}
 #dr-app .block-head .bname{flex:1 1 auto;font-size:12px;font-weight:700;}
 #dr-app .block-order{display:flex;gap:2px;flex:0 0 auto;}
 #dr-app .block-order button{border:1px solid var(--hair);background:var(--paper);width:22px;height:22px;border-radius:5px;cursor:pointer;font-size:12px;color:var(--body);transition:border-color var(--ease);}
 #dr-app .block-order button:hover{border-color:var(--brand);}
-#dr-app .block-del{flex:0 0 auto;border:0;background:none;color:var(--muted);cursor:pointer;font-size:14px;}
-#dr-app .block-del:hover{color:var(--red);}
 #dr-app .block-body{padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 @media (max-width:600px){#dr-app .block-body{grid-template-columns:1fr;}}
 #dr-app .block-body .full{grid-column:1/-1;}
@@ -295,7 +287,6 @@ html,body{overflow-x:hidden;}
 #dr-app .item-head .name{grid-column:2;min-width:0;font-size:var(--fs-body);font-weight:var(--fw-bold);}
 #dr-app .item-head .badges{grid-column:3;display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;}
 #dr-app .item-head .toggle-caret{grid-column:4;justify-self:center;width:14px;height:10px;}
-#dr-app .item-head .del{grid-column:5;width:36px;height:36px;display:grid;place-items:center;padding:0;border-radius:999px;}
 #dr-app .item-body{padding:var(--space-5);}
 #dr-app .item-body>.notice-box,#dr-app .item-body>.blocks{margin-top:var(--space-3);}
 #dr-app .notice-box{padding:var(--space-4);line-height:1.7;}
@@ -304,11 +295,9 @@ html,body{overflow-x:hidden;}
 #dr-app .add-line{min-height:36px;margin-top:var(--space-2);padding:0 14px;}
 #dr-app .blocks{gap:var(--space-3);}
 #dr-app .block-head{display:grid;grid-template-columns:20px minmax(0,1fr) auto 36px;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);}
-#dr-app .block-head .grip{grid-column:1;}
 #dr-app .block-head .bname{grid-column:2;min-width:0;}
 #dr-app .block-order{grid-column:3;gap:4px;}
 #dr-app .block-order button{width:36px;height:36px;}
-#dr-app .block-del{grid-column:4;width:36px;height:36px;padding:0;display:grid;place-items:center;border-radius:999px;}
 #dr-app .block-body{padding:var(--space-4);grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3) var(--space-4);}
 #dr-app .statsbar{padding:var(--space-3) var(--gutter);}
 #dr-app .statsbar-in{gap:var(--space-4);}
@@ -346,7 +335,6 @@ html,body{overflow-x:hidden;}
   #dr-app .item-head .idx{grid-column:1;grid-row:1;}
   #dr-app .item-head .name{grid-column:2;grid-row:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   #dr-app .item-head .toggle-caret{grid-column:3;grid-row:1;width:40px;height:40px;padding:15px 13px;box-sizing:border-box;justify-self:stretch;}
-  #dr-app .item-head .del{grid-column:4;grid-row:1;width:40px;height:40px;}
   #dr-app .item-head .badges{grid-column:2/5;grid-row:2;width:auto;justify-content:flex-start;}
   #dr-app .badge{padding:3px 8px;}
   #dr-app .item-body>.notice-box,#dr-app .item-body>.blocks{margin-top:var(--space-3);}
@@ -356,7 +344,7 @@ html,body{overflow-x:hidden;}
   #dr-app .sizerow>.rm{grid-column:2;grid-row:2;align-self:stretch;}
   #dr-app .block-head{grid-template-columns:20px minmax(0,1fr) auto 40px;padding:10px 12px;}
   #dr-app .block-order{display:flex;gap:6px;}
-  #dr-app .block-order button,#dr-app .block-del{width:40px;height:40px;}
+  #dr-app .block-order button{width:40px;height:40px;}
   #dr-app .block-body{grid-template-columns:minmax(0,1fr);gap:var(--space-3);}
   #dr-app .copy4{grid-template-columns:minmax(0,1fr);gap:var(--space-3);}
   #dr-app input[type=date]{display:block;width:100%;inline-size:100%;max-inline-size:100%;min-inline-size:0;}
@@ -797,8 +785,6 @@ html,body{overflow-x:hidden;}
     border-color:var(--brand)!important;
   }
 
-  #dr-app .item-head .del.is-touch-hover,
-  #dr-app .block-del.is-touch-hover{color:var(--red)!important;}
   #dr-app .sizerow .rm.is-touch-hover{
     border-color:var(--red)!important;
     color:var(--red)!important;
@@ -978,6 +964,83 @@ html,body{overflow-x:hidden;}
     border-color:var(--control-accent)!important;
   }
 }
+
+
+/* v1.0.15 — shared editor control contract */
+#dr-app .add-line{
+  height:36px!important;min-height:36px!important;padding:0 14px!important;
+  font-size:var(--fs-meta)!important;font-weight:var(--fw-medium)!important;
+}
+#dr-app .del-line{
+  height:28px!important;min-height:28px!important;padding:0!important;border:0!important;
+  background:none!important;color:var(--muted)!important;font-family:inherit!important;
+  font-size:var(--fs-meta)!important;font-weight:var(--fw-regular)!important;line-height:28px!important;
+  text-decoration:underline;text-underline-offset:2px;cursor:pointer;
+  transition:color var(--ease),opacity var(--ease);
+}
+@media(hover:hover) and (pointer:fine){#dr-app .del-line:hover{color:var(--body)!important;}}
+#dr-app .del-line[disabled]{opacity:.3;cursor:not-allowed;}
+#dr-app .item-delete-footer{display:flex;align-items:center;justify-content:flex-start;margin-top:var(--space-3);min-height:28px;}
+
+/* Item header keeps only the expand control at the far right. */
+#dr-app .item-head{grid-template-columns:28px minmax(0,1fr) auto 40px!important;}
+#dr-app .item-head .toggle-caret{grid-column:4!important;justify-self:end!important;width:40px!important;height:40px!important;padding:15px 13px!important;box-sizing:border-box;}
+#dr-app .item-head .del{display:none!important;}
+@media(max-width:700px){
+  #dr-app .item-head{grid-template-columns:28px minmax(0,1fr) 40px!important;grid-template-rows:auto auto!important;}
+  #dr-app .item-head .idx{grid-column:1!important;grid-row:1!important;}
+  #dr-app .item-head .name{grid-column:2!important;grid-row:1!important;}
+  #dr-app .item-head .toggle-caret{grid-column:3!important;grid-row:1!important;}
+  #dr-app .item-head .badges{grid-column:2/4!important;grid-row:2!important;}
+}
+
+/* Square-X is the single delete treatment for compact rows. */
+#dr-app .sizerow .rm,#dr-app .size-value-group>.rm,#dr-app .compact-x{
+  width:44px!important;min-width:44px!important;max-width:44px!important;height:44px!important;
+  padding:0!important;margin:0!important;display:grid!important;place-items:center!important;
+  border:1.2px solid var(--hair)!important;border-radius:var(--r)!important;background:var(--paper)!important;
+  color:var(--muted)!important;font-family:inherit!important;font-size:14px!important;line-height:1!important;
+  cursor:pointer;transition:border-color var(--ease),color var(--ease),opacity var(--ease)!important;
+}
+@media(hover:hover) and (pointer:fine){
+  #dr-app .sizerow .rm:hover,#dr-app .size-value-group>.rm:hover,#dr-app .compact-x:hover{
+    border-color:var(--body)!important;color:var(--body)!important;
+  }
+}
+@media(hover:none) and (pointer:coarse){
+  #dr-app .sizerow .rm.is-touch-hover,#dr-app .size-value-group>.rm.is-touch-hover,#dr-app .compact-x.is-touch-hover{
+    border-color:var(--body)!important;color:var(--body)!important;
+  }
+  #dr-app .del-line.is-touch-hover{color:var(--body)!important;}
+}
+
+/* Mobile size editor: purpose on row 1; size field + square-X fully occupy row 2. */
+@media(max-width:700px){
+  #dr-app .size-spec-row{display:grid!important;grid-template-columns:minmax(0,1fr)!important;width:100%!important;max-width:100%!important;}
+  #dr-app .size-spec-row>.field{grid-column:1/-1!important;width:100%!important;min-width:0!important;}
+  #dr-app .size-value-group{grid-column:1/-1!important;display:grid!important;grid-template-columns:minmax(0,1fr) 44px!important;gap:var(--space-4)!important;width:100%!important;min-width:0!important;max-width:100%!important;}
+  #dr-app .size-value-group>.field,#dr-app .size-value-group input{width:100%!important;min-width:0!important;max-width:100%!important;}
+}
+
+/* EDM / landing-page blocks share the overview footer controls. */
+#dr-app .block-head{display:flex!important;align-items:center!important;justify-content:flex-start!important;padding:var(--space-3)!important;}
+#dr-app .block-head .bname{flex:1 1 auto!important;}
+#dr-app .block-head .grip,#dr-app .block-head>.block-order,#dr-app .block-head>.block-del{display:none!important;}
+#dr-app .structure-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px var(--space-4) var(--space-3);min-height:28px;}
+#dr-app .structure-order{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin:0;}
+#dr-app .structure-order button{
+  width:28px!important;height:28px!important;padding:0!important;border:1.2px solid var(--ink)!important;
+  border-radius:50%!important;background:transparent!important;color:var(--ink)!important;font-family:inherit!important;
+  font-size:13px!important;line-height:1!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  cursor:pointer;transition:border-color var(--ease),opacity var(--ease)!important;
+}
+@media(hover:hover) and (pointer:fine){#dr-app .structure-order button:hover{border-color:var(--brand)!important;}}
+#dr-app .structure-order button[disabled]{opacity:.25!important;cursor:not-allowed!important;}
+@media(hover:hover) and (pointer:fine){#dr-app .structure-order button[disabled]:hover{border-color:var(--ink)!important;}}
+
+
+#dr-app .inline-clear{color:var(--muted)!important;transition:color var(--ease);}
+@media(hover:hover) and (pointer:fine){#dr-app .inline-clear:hover{color:var(--body)!important;}}
 
 </style>
 
@@ -1452,15 +1515,53 @@ function itemHasDigital(it){return it.output.indexOf("digital")>=0;}
 function buildBadgesHTML(it){var t=typeOf(it.typeId),html="";if(t&&t.mode!=="notice"&&t.mode!=="structure"&&!t.forcePrint){if(itemHasDigital(it))html+='<span class="badge digital">數位</span>';if(itemHasPrint(it))html+='<span class="badge print">印刷</span>';}else if(t&&t.forcePrint)html+='<span class="badge print">印刷</span>';if(t&&t.mode!=="notice")html+=itemHasCopy(it)?'<span class="badge ready">文案已提供</span>':'<span class="badge pending">文案待補</span>';return html;}
 function updateLiveBits(){state.items.forEach(function(it){var card=document.querySelector('.item-card[data-item-id="'+it._id+'"]');if(!card)return;var nameEl=card.querySelector(".item-head .name");if(nameEl)nameEl.textContent=it.name||"未命名項目";var badgesEl=card.querySelector(".item-head .badges");if(badgesEl)badgesEl.innerHTML=buildBadgesHTML(it);});refreshStats();}
 function renderItems(){var wrap=$("dr-items");wrap.innerHTML="";state.items.forEach(function(it,idx){wrap.appendChild(renderItemCard(it,idx));});scheduleDateFit_();}
-function renderItemCard(it,idx){var card=el("div","item-card"+(it.collapsed?" collapsed":""));card.dataset.itemId=it._id;var head=el("div","item-head");head.appendChild(el("div","idx",String(idx+1)));head.appendChild(el("div","name",it.name||"未命名項目"));var badges=el("div","badges");badges.innerHTML=buildBadgesHTML(it);head.appendChild(badges);var caret=document.createElementNS("http://www.w3.org/2000/svg","svg");caret.setAttribute("class","toggle-caret");caret.setAttribute("viewBox","0 0 11 7");caret.innerHTML='<path d="M1 1l4.5 4.5L10 1" stroke="#111" stroke-width="1.6" fill="none"/>';head.appendChild(caret);var del=el("button","del","✕");del.type="button";del.addEventListener("click",function(e){e.stopPropagation();if(state.items.length<=1)return;state.items=state.items.filter(function(x){return x._id!==it._id;});render();saveDraft();});head.appendChild(del);head.addEventListener("click",function(){it.collapsed=!it.collapsed;renderItems();});card.appendChild(head);var body=el("div","item-body");body.appendChild(buildItemBody(it));card.appendChild(body);return card;}
+function renderItemCard(it,idx){
+  var card=el("div","item-card"+(it.collapsed?" collapsed":""));card.dataset.itemId=it._id;
+  var head=el("div","item-head");
+  head.appendChild(el("div","idx",String(idx+1)));
+  head.appendChild(el("div","name",it.name||"未命名項目"));
+  var badges=el("div","badges");badges.innerHTML=buildBadgesHTML(it);head.appendChild(badges);
+  var caret=document.createElementNS("http://www.w3.org/2000/svg","svg");caret.setAttribute("class","toggle-caret");caret.setAttribute("viewBox","0 0 11 7");caret.innerHTML='<path d="M1 1l4.5 4.5L10 1" stroke="#111" stroke-width="1.6" fill="none"/>';head.appendChild(caret);
+  head.addEventListener("click",function(){it.collapsed=!it.collapsed;renderItems();});
+  card.appendChild(head);
+  var body=el("div","item-body");body.appendChild(buildItemBody(it));
+  var deleteFooter=el("div","item-delete-footer");
+  var del=el("button","del-line","刪除此項目");del.type="button";
+  del.addEventListener("click",function(e){e.stopPropagation();state.items=state.items.filter(function(x){return x._id!==it._id;});render();saveDraft();});
+  deleteFooter.appendChild(del);body.appendChild(deleteFooter);card.appendChild(body);return card;
+}
 function buildItemBody(it){var frag=document.createDocumentFragment(),row1=el("div","row");row1.appendChild(fieldText("項目名稱",true,it.name,function(v){it.name=v;updateLiveBits();saveDraft();}));var typeField=el("div","field");typeField.innerHTML='<label>需求類型<span class="req">*</span></label>';var sel=el("select");sel.appendChild(el("option","","請選擇"));TYPES.forEach(function(t){var o=el("option","",t.label);o.value=t.id;if(it.typeId===t.id)o.selected=true;sel.appendChild(o);});sel.addEventListener("change",function(){it.typeId=sel.value;var t=typeOf(it.typeId);it.sizeRows=[newSizeRow()];if(t&&t.forcePrint)it.output=["print"];else it.output=[];applyDefaultSize(it);render();saveDraft();});typeField.appendChild(sel);row1.appendChild(typeField);frag.appendChild(row1);var t=typeOf(it.typeId);if(!t){return frag;}if(t.mode==="notice"){frag.appendChild(el("div","notice-box",t.notice));return frag;}if(t.mode==="structure"){frag.appendChild(buildStructureBlock(it));frag.appendChild(fieldDate("交付日",false,it.useDate,function(v){it.useDate=v;updateLiveBits();checkDeliveryWarn();saveDraft();}));frag.appendChild(fieldTextarea("項目備註",false,it.note,function(v){it.note=v;saveDraft();}));return frag;}if(!t.forcePrint){var outField=el("div","field");outField.innerHTML='<label>輸出形式<span class="req">*</span></label>';var rg=el("div","chiprow");[["digital","數位"],["print","印刷"]].forEach(function(pair){var c=el("button","chip c-"+pair[0],pair[1]);c.type="button";c.setAttribute("aria-pressed",it.output.indexOf(pair[0])>=0?"true":"false");c.addEventListener("click",function(){var i=it.output.indexOf(pair[0]);if(i>=0)it.output.splice(i,1);else it.output.push(pair[0]);render();saveDraft();});rg.appendChild(c);});outField.appendChild(rg);frag.appendChild(outField);}if(t.extra&&t.extra.indexOf("page")>=0)frag.appendChild(fieldText("素材應用處",false,it.page,function(v){it.page=v;saveDraft();}));if(t.sizes&&t.sizes.length)frag.appendChild(buildSizeSection(it,t));if(itemHasPrint(it))frag.appendChild(fieldNumber("數量",true,it.printQty,function(v){it.printQty=v;updateLiveBits();saveDraft();}));var expField=el("div","field");expField.innerHTML='<label>商品曝光<span class="opt">選填</span></label>';var expRow=el("div","chiprow");[["reveal","露出商品"],["free","不限"]].forEach(function(pair){var c=el("button","chip",pair[1]);c.type="button";c.setAttribute("aria-pressed",it.exposure===pair[0]?"true":"false");c.addEventListener("click",function(){it.exposure=it.exposure===pair[0]?"":pair[0];if(it.exposure!=="reveal")it.exposureModel="";render();saveDraft();});expRow.appendChild(c);});expField.appendChild(expRow);frag.appendChild(expField);if(it.exposure==="reveal")frag.appendChild(fieldText("商品型號",false,it.exposureModel,function(v){it.exposureModel=v;saveDraft();}));var copyWrap=el("div","field");copyWrap.innerHTML='<label>文案<span class="opt">選填，留白則標記為文案待補。</span></label>';var c4=el("div","copy4");c4.appendChild(miniField("大標",it.copy.head,function(v){it.copy.head=v;updateLiveBits();saveDraft();}));c4.appendChild(miniField("副標",it.copy.sub,function(v){it.copy.sub=v;updateLiveBits();saveDraft();}));c4.appendChild(miniField("小字",it.copy.small,function(v){it.copy.small=v;updateLiveBits();saveDraft();}));c4.appendChild(miniField("其他",it.copy.other,function(v){it.copy.other=v;updateLiveBits();saveDraft();},true));copyWrap.appendChild(c4);frag.appendChild(copyWrap);var row2=el("div","row");if(t.showChannel)row2.appendChild(fieldText("使用位置",false,it.channel,function(v){it.channel=v;saveDraft();}));row2.appendChild(fieldDate("交付日",false,it.useDate,function(v){it.useDate=v;updateLiveBits();checkDeliveryWarn();saveDraft();}));frag.appendChild(row2);frag.appendChild(fieldText("CTA／連結",false,it.cta,function(v){it.cta=v;saveDraft();}));frag.appendChild(fieldTextarea("項目備註",false,it.note,function(v){it.note=v;saveDraft();}));return frag;}
 function miniField(label,val,onChange,full){var f=el("div","field"+(full?" full":""));f.style.margin="0";var lab=el("label","",label);lab.style.fontWeight="400";lab.style.color="var(--muted)";f.appendChild(lab);var inp=document.createElement("input");inp.type="text";inp.value=val||"";inp.addEventListener("input",function(){onChange(inp.value);});f.appendChild(inp);return f;}
 function fieldText(label,req,val,onChange){var f=el("div","field");f.innerHTML='<label>'+label+(req?'<span class="req">*</span>':'<span class="opt">選填</span>')+'</label>';var inp=document.createElement("input");inp.type="text";inp.value=val||"";inp.addEventListener("input",function(){onChange(inp.value);});f.appendChild(inp);return f;}
 function fieldTextarea(label,req,val,onChange){var f=el("div","field");f.innerHTML='<label>'+label+(req?'<span class="req">*</span>':'<span class="opt">選填</span>')+'</label>';var inp=document.createElement("textarea");inp.value=val||"";inp.addEventListener("input",function(){onChange(inp.value);});f.appendChild(inp);return f;}
 function fieldDate(label,req,val,onChange){var f=el("div","field");f.innerHTML='<label>'+label+(req?'<span class="req">*</span>':'<span class="opt">選填</span>')+'</label>';var w=el("div","date-wrap"),inp=document.createElement("input");inp.type="date";inp.value=val||"";inp.addEventListener("input",function(){onChange(inp.value);});w.appendChild(inp);f.appendChild(w);return f;}
 function fieldNumber(label,req,val,onChange){var f=el("div","field");f.innerHTML='<label>'+label+(req?'<span class="req">*</span>':'<span class="opt">選填</span>')+'</label>';var inp=document.createElement("input");inp.type="number";inp.min="0";inp.value=val||"";inp.addEventListener("input",function(){onChange(inp.value);});f.appendChild(inp);return f;}
-function buildSizeSection(it,t){var wrap=el("div","field");wrap.innerHTML='<label>尺寸<span class="opt">選填，除印刷品外若留白將由設計端評估。</span></label>';var options=t.sizes.slice();if(!t.forcePrint&&itemHasPrint(it))options=options.concat(PRINT_SIZE_DEFS);it.sizeRows.forEach(function(row){var r=el("div","sizerow size-spec-row"),purposeField=el("div","field");purposeField.style.margin="0";if(row.purpose==="__custom__"){var wrapCustom=el("div","");wrapCustom.style.cssText="display:flex;align-items:center;gap:6px;border:1.2px solid var(--line);border-radius:var(--r);padding:0 4px 0 12px;height:40px;";var prefix=el("span","","自訂：");prefix.style.cssText="font-size:14px;color:var(--body);flex:0 0 auto;white-space:nowrap;";wrapCustom.appendChild(prefix);var ci=document.createElement("input");ci.type="text";ci.value=row.customText||"";ci.placeholder="輸入用途名稱";ci.style.cssText="border:0;padding:8px 4px;height:100%;flex:1 1 auto;";ci.addEventListener("input",function(){row.customText=ci.value;saveDraft();});wrapCustom.appendChild(ci);var backBtn=el("button","","✕");backBtn.type="button";backBtn.style.cssText="border:0;background:none;cursor:pointer;color:var(--muted);flex:0 0 auto;font-size:14px;";backBtn.addEventListener("click",function(){row.purpose="";row.customText="";render();saveDraft();});wrapCustom.appendChild(backBtn);purposeField.appendChild(wrapCustom);}else{var sel=el("select");sel.appendChild(el("option","","用途／版位"));options.forEach(function(opt){var o=el("option","",opt.label);o.value=opt.custom?"__custom__":opt.label;if(row.purpose===o.value)o.selected=true;sel.appendChild(o);});sel.addEventListener("change",function(){row.purpose=sel.value;if(row.purpose!=="__custom__"){var def=null;for(var i=0;i<options.length;i++){if(options[i].label===row.purpose){def=options[i];break;}}if(def&&def.w&&def.h)row.px=def.w+"×"+def.h+(def.unit||"px");else if(def&&def.note)row.px=def.note;else row.px="";}render();saveDraft();});purposeField.appendChild(sel);}r.appendChild(purposeField);var pxField=el("div","field");pxField.style.margin="0";var isFrozen=false;if(row.purpose&&row.purpose!=="__custom__"){var d=null;for(var j=0;j<options.length;j++){if(options[j].label===row.purpose){d=options[j];break;}}if(d&&(d.w||d.note))isFrozen=true;}var pxi=document.createElement("input");pxi.type="text";pxi.placeholder="實際尺寸";pxi.value=row.px||"";if(isFrozen){pxi.disabled=true;pxi.classList.add("readonly");}else pxi.addEventListener("input",function(){row.px=pxi.value;saveDraft();});pxField.appendChild(pxi);var valueGroup=el("div","size-value-group");valueGroup.appendChild(pxField);var rmBtn=el("button","rm","✕");rmBtn.type="button";rmBtn.disabled=it.sizeRows.length<=1;if(rmBtn.disabled)rmBtn.style.opacity=".3";rmBtn.addEventListener("click",function(){if(it.sizeRows.length<=1)return;it.sizeRows=it.sizeRows.filter(function(x){return x!==row;});render();saveDraft();});valueGroup.appendChild(rmBtn);r.appendChild(valueGroup);wrap.appendChild(r);});var add=el("button","add-line","＋ 新增尺寸");add.type="button";add.addEventListener("click",function(){it.sizeRows.push(newSizeRow());render();saveDraft();});wrap.appendChild(add);return wrap;}
-function buildStructureBlock(it){var wrap=document.createDocumentFragment(),blocksEl=el("div","blocks"),dragSrc=null;it.blocks.forEach(function(bk,bi){var b=el("div","block");b.draggable=false;b.addEventListener("dragover",function(e){e.preventDefault();b.classList.add("dragover");});b.addEventListener("dragleave",function(){b.classList.remove("dragover");});b.addEventListener("drop",function(e){e.preventDefault();b.classList.remove("dragover");if(!dragSrc||dragSrc===bk)return;var from=it.blocks.indexOf(dragSrc),to=it.blocks.indexOf(bk);it.blocks.splice(from,1);it.blocks.splice(to,0,dragSrc);renderItems();saveDraft();});var bh=el("div","block-head");var grip=document.createElementNS("http://www.w3.org/2000/svg","svg");grip.setAttribute("class","grip");grip.setAttribute("viewBox","0 0 16 16");grip.setAttribute("draggable","true");grip.addEventListener("dragstart",function(e){dragSrc=bk;b.classList.add("dragging");e.dataTransfer.effectAllowed="move";e.stopPropagation();});grip.addEventListener("dragend",function(e){dragSrc=null;b.classList.remove("dragging");blocksEl.querySelectorAll(".block").forEach(function(x){x.classList.remove("dragover");});e.stopPropagation();});grip.innerHTML='<circle cx="5" cy="4" r="1.3" fill="#9fa0a0"/><circle cx="11" cy="4" r="1.3" fill="#9fa0a0"/><circle cx="5" cy="8" r="1.3" fill="#9fa0a0"/><circle cx="11" cy="8" r="1.3" fill="#9fa0a0"/><circle cx="5" cy="12" r="1.3" fill="#9fa0a0"/><circle cx="11" cy="12" r="1.3" fill="#9fa0a0"/>';bh.appendChild(grip);bh.appendChild(el("div","bname","區塊 "+(bi+1)));var order=el("div","block-order"),up=el("button","","↑");up.type="button";up.disabled=bi===0;up.addEventListener("click",function(){if(bi===0)return;var a=it.blocks,tmp=a[bi-1];a[bi-1]=a[bi];a[bi]=tmp;renderItems();saveDraft();});var down=el("button","","↓");down.type="button";down.disabled=bi===it.blocks.length-1;down.addEventListener("click",function(){if(bi===it.blocks.length-1)return;var a=it.blocks,tmp=a[bi+1];a[bi+1]=a[bi];a[bi]=tmp;renderItems();saveDraft();});order.appendChild(up);order.appendChild(down);bh.appendChild(order);var del=el("button","block-del","✕");del.type="button";del.addEventListener("click",function(){if(it.blocks.length<=1)return;it.blocks=it.blocks.filter(function(x){return x!==bk;});render();saveDraft();});bh.appendChild(del);b.appendChild(bh);var bb=el("div","block-body");bb.appendChild(miniField("大標",bk.head,function(v){bk.head=v;updateLiveBits();saveDraft();}));bb.appendChild(miniField("副標",bk.sub,function(v){bk.sub=v;updateLiveBits();saveDraft();}));bb.appendChild(miniField("小字",bk.small,function(v){bk.small=v;updateLiveBits();saveDraft();}));bb.appendChild(miniField("其他",bk.other,function(v){bk.other=v;updateLiveBits();saveDraft();}));bb.appendChild(miniField("圖片說明",bk.imgNote,function(v){bk.imgNote=v;saveDraft();},true));bb.appendChild(miniField("CTA／連結",bk.link,function(v){bk.link=v;saveDraft();},true));b.appendChild(bb);blocksEl.appendChild(b);});wrap.appendChild(blocksEl);var add=el("button","add-line","＋ 新增區塊");add.type="button";add.style.marginTop="10px";add.addEventListener("click",function(){it.blocks.push(newBlock());render();saveDraft();});wrap.appendChild(add);var stat=el("div","structure-stat","自動統計："+it.blocks.length+" 個區塊");wrap.appendChild(stat);return wrap;}
+function buildSizeSection(it,t){var wrap=el("div","field");wrap.innerHTML='<label>尺寸<span class="opt">選填，除印刷品外若留白將由設計端評估。</span></label>';var options=t.sizes.slice();if(!t.forcePrint&&itemHasPrint(it))options=options.concat(PRINT_SIZE_DEFS);it.sizeRows.forEach(function(row){var r=el("div","sizerow size-spec-row"),purposeField=el("div","field");purposeField.style.margin="0";if(row.purpose==="__custom__"){var wrapCustom=el("div","");wrapCustom.style.cssText="display:flex;align-items:center;gap:6px;border:1.2px solid var(--line);border-radius:var(--r);padding:0 4px 0 12px;height:44px;";var prefix=el("span","","自訂：");prefix.style.cssText="font-size:14px;color:var(--body);flex:0 0 auto;white-space:nowrap;";wrapCustom.appendChild(prefix);var ci=document.createElement("input");ci.type="text";ci.value=row.customText||"";ci.placeholder="輸入用途名稱";ci.style.cssText="border:0;padding:8px 4px;height:100%;flex:1 1 auto;";ci.addEventListener("input",function(){row.customText=ci.value;saveDraft();});wrapCustom.appendChild(ci);var backBtn=el("button","","✕");backBtn.type="button";backBtn.className="inline-clear";backBtn.style.cssText="border:0;background:none;cursor:pointer;color:var(--muted);flex:0 0 auto;font-size:14px;";backBtn.addEventListener("click",function(){row.purpose="";row.customText="";render();saveDraft();});wrapCustom.appendChild(backBtn);purposeField.appendChild(wrapCustom);}else{var sel=el("select");sel.appendChild(el("option","","用途／版位"));options.forEach(function(opt){var o=el("option","",opt.label);o.value=opt.custom?"__custom__":opt.label;if(row.purpose===o.value)o.selected=true;sel.appendChild(o);});sel.addEventListener("change",function(){row.purpose=sel.value;if(row.purpose!=="__custom__"){var def=null;for(var i=0;i<options.length;i++){if(options[i].label===row.purpose){def=options[i];break;}}if(def&&def.w&&def.h)row.px=def.w+"×"+def.h+(def.unit||"px");else if(def&&def.note)row.px=def.note;else row.px="";}render();saveDraft();});purposeField.appendChild(sel);}r.appendChild(purposeField);var pxField=el("div","field");pxField.style.margin="0";var isFrozen=false;if(row.purpose&&row.purpose!=="__custom__"){var d=null;for(var j=0;j<options.length;j++){if(options[j].label===row.purpose){d=options[j];break;}}if(d&&(d.w||d.note))isFrozen=true;}var pxi=document.createElement("input");pxi.type="text";pxi.placeholder="實際尺寸";pxi.value=row.px||"";if(isFrozen){pxi.disabled=true;pxi.classList.add("readonly");}else pxi.addEventListener("input",function(){row.px=pxi.value;saveDraft();});pxField.appendChild(pxi);var valueGroup=el("div","size-value-group");valueGroup.appendChild(pxField);var rmBtn=el("button","rm","✕");rmBtn.type="button";rmBtn.setAttribute("aria-label","刪除此尺寸");rmBtn.addEventListener("click",function(){it.sizeRows=it.sizeRows.filter(function(x){return x!==row;});render();saveDraft();});valueGroup.appendChild(rmBtn);r.appendChild(valueGroup);wrap.appendChild(r);});var add=el("button","add-line","＋ 新增尺寸");add.type="button";add.addEventListener("click",function(){it.sizeRows.push(newSizeRow());render();saveDraft();});wrap.appendChild(add);return wrap;}
+function buildStructureBlock(it){
+  var wrap=document.createDocumentFragment(),blocksEl=el("div","blocks");
+  it.blocks=Array.isArray(it.blocks)?it.blocks:[];
+  it.blocks.forEach(function(bk,bi){
+    var b=el("div","block");
+    var bh=el("div","block-head");bh.appendChild(el("div","bname","區塊 "+(bi+1)));b.appendChild(bh);
+    var bb=el("div","block-body");
+    bb.appendChild(miniField("大標",bk.head,function(v){bk.head=v;updateLiveBits();saveDraft();}));
+    bb.appendChild(miniField("副標",bk.sub,function(v){bk.sub=v;updateLiveBits();saveDraft();}));
+    bb.appendChild(miniField("小字",bk.small,function(v){bk.small=v;updateLiveBits();saveDraft();}));
+    bb.appendChild(miniField("其他",bk.other,function(v){bk.other=v;updateLiveBits();saveDraft();}));
+    bb.appendChild(miniField("圖片說明",bk.imgNote,function(v){bk.imgNote=v;saveDraft();},true));
+    bb.appendChild(miniField("CTA／連結",bk.link,function(v){bk.link=v;saveDraft();},true));
+    b.appendChild(bb);
+    var footer=el("div","structure-footer");
+    var del=el("button","del-line","刪除區塊");del.type="button";del.addEventListener("click",function(){it.blocks=it.blocks.filter(function(x){return x!==bk;});render();saveDraft();});footer.appendChild(del);
+    var order=el("div","structure-order"),up=el("button","","↑"),down=el("button","","↓");
+    up.type="button";up.setAttribute("aria-label","上移區塊");up.disabled=bi===0;up.addEventListener("click",function(){if(bi===0)return;var a=it.blocks,tmp=a[bi-1];a[bi-1]=a[bi];a[bi]=tmp;renderItems();saveDraft();});
+    down.type="button";down.setAttribute("aria-label","下移區塊");down.disabled=bi===it.blocks.length-1;down.addEventListener("click",function(){if(bi===it.blocks.length-1)return;var a=it.blocks,tmp=a[bi+1];a[bi+1]=a[bi];a[bi]=tmp;renderItems();saveDraft();});
+    order.appendChild(up);order.appendChild(down);footer.appendChild(order);b.appendChild(footer);blocksEl.appendChild(b);
+  });
+  wrap.appendChild(blocksEl);
+  var add=el("button","add-line","＋ 新增區塊");add.type="button";add.style.marginTop="10px";add.addEventListener("click",function(){it.blocks.push(newBlock());render();saveDraft();});wrap.appendChild(add);
+  var stat=el("div","structure-stat","自動統計："+it.blocks.length+" 個區塊");wrap.appendChild(stat);return wrap;
+}
 function renderLinks(){var wrap=$("dr-links");wrap.innerHTML="";state.refLinks.forEach(function(lk){var r=el("div","sizerow"),f1=el("div","field");f1.style.margin="0";var i1=document.createElement("input");i1.type="url";i1.placeholder="網址";i1.value=lk.url||"";i1.addEventListener("input",function(){lk.url=i1.value;saveDraft();});f1.appendChild(i1);r.appendChild(f1);var f2=el("div","field");f2.style.margin="0";var i2=document.createElement("input");i2.type="text";i2.placeholder="說明";i2.value=lk.note||"";i2.addEventListener("input",function(){lk.note=i2.value;saveDraft();});f2.appendChild(i2);r.appendChild(f2);var rm=el("button","rm","✕");rm.type="button";rm.addEventListener("click",function(){state.refLinks=state.refLinks.filter(function(x){return x!==lk;});renderLinks();saveDraft();});r.appendChild(rm);wrap.appendChild(r);});}
 $("dr-add-link").addEventListener("click",function(){state.refLinks.push(newLink());renderLinks();saveDraft();});
 
@@ -1530,7 +1631,7 @@ function buildRequestPayload(){return{department:state.dept||"",name:state.name|
 $("dr-submit-btn").addEventListener("click",async function(){if(this.disabled||submitInFlight)return;submitInFlight=true;var btn=this,container=$("dr-confirm");btn.classList.add("loading");btn.disabled=true;container.style.pointerEvents="none";Array.prototype.forEach.call(container.children,function(c){if(c!==btn.parentElement)c.style.opacity=".45";});btn.parentElement.style.pointerEvents="auto";$("dr-submit-err").style.display="none";try{if(!googleCredential&&!sessionToken)throw new Error("登入已失效，請重新登入。");if(!pendingCreateOperationId)pendingCreateOperationId=makeOperationId();persistDraftNow();var data=await apiPost("createRequest",{data:normalizeRequestTypography_(buildRequestPayload()),operationId:pendingCreateOperationId},{timeout:45000,retries:0});pendingCreateOperationId="";clearDraftStorage();$("dr-success-code").textContent=data.requestId||"";$("dr-success-msg").textContent=data.mailOk===false?"申請已建立。確認信寄送失敗："+data.mailError+"。":"確認信與 Word 附件已寄送。";$("dr-refill").onclick=function(){window.location.reload();};container.style.display="none";$("dr-success").style.display="block";}catch(error){console.error(error);persistDraftNow();submitInFlight=false;container.style.pointerEvents="auto";Array.prototype.forEach.call(container.children,function(c){c.style.opacity="1";});btn.classList.remove("loading");btn.disabled=false;if(error&&error.code==="AUTH_REQUIRED"){showLoginGate("登入已逾時，請重新登入。表單內容已保留。");return;}$("dr-submit-err").textContent="送出失敗："+(error.message||String(error))+"。表單內容已保留。";$("dr-submit-err").style.display="block";}});
 if(state.items.length===0)state.items.push(newItem());
 function initTouchFeedback(){
-  var selector=".btn-topbar,.draftbar button,.btn-primary,.btn-submit,.btn-ghost,input,textarea,select,.chip,.item-card,.item-head .del,.sizerow .rm,.add-line,.block,.block-order button,.block-del";
+  var selector=".btn-topbar,.draftbar button,.btn-primary,.btn-submit,.btn-ghost,input,textarea,select,.chip,.item-card,.sizerow .rm,.add-line,.block,.structure-order button,.del-line";
   var active=null;
   var app=document.getElementById("dr-app");
 

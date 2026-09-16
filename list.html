@@ -1141,6 +1141,63 @@ html,body{overflow-x:clip!important;}
   }
 }
 
+
+/* v1.0.15 — shared editor control contract */
+#dr-app .add-line{
+  height:36px!important;min-height:36px!important;padding:0 14px!important;
+  font-size:var(--fs-meta)!important;font-weight:var(--fw-medium)!important;
+}
+#dr-app .del-line{
+  height:28px!important;min-height:28px!important;padding:0!important;border:0!important;
+  background:none!important;color:var(--muted)!important;font-family:inherit!important;
+  font-size:var(--fs-meta)!important;font-weight:var(--fw-regular)!important;line-height:28px!important;
+  text-decoration:underline;text-underline-offset:2px;cursor:pointer;
+  transition:color var(--ease),opacity var(--ease);
+}
+@media(hover:hover) and (pointer:fine){#dr-app .del-line:hover{color:var(--body)!important;}}
+#dr-app .del-line[disabled]{opacity:.3;cursor:not-allowed;}
+#dr-app .item-delete-footer{display:flex;align-items:center;justify-content:flex-start;margin-top:var(--space-3);min-height:28px;}
+
+#dr-app .sizerow .rm,#dr-app .size-value-group>.rm,#dr-app .compact-x{
+  width:44px!important;min-width:44px!important;max-width:44px!important;height:44px!important;
+  padding:0!important;margin:0!important;display:grid!important;place-items:center!important;
+  border:1.2px solid var(--hair)!important;border-radius:var(--r)!important;background:var(--paper)!important;
+  color:var(--muted)!important;font-family:inherit!important;font-size:14px!important;line-height:1!important;
+  cursor:pointer;transition:border-color var(--ease),color var(--ease),opacity var(--ease)!important;
+}
+@media(hover:hover) and (pointer:fine){
+  #dr-app .sizerow .rm:hover,#dr-app .size-value-group>.rm:hover,#dr-app .compact-x:hover{
+    border-color:var(--body)!important;color:var(--body)!important;
+  }
+}
+@media(hover:none) and (pointer:coarse){
+  #dr-app .sizerow .rm.is-touch-hover,#dr-app .size-value-group>.rm.is-touch-hover,#dr-app .compact-x.is-touch-hover{
+    border-color:var(--body)!important;color:var(--body)!important;
+  }
+  #dr-app .del-line.is-touch-hover{color:var(--body)!important;}
+}
+#dr-app .size-section{margin-top:var(--space-3);}
+#dr-app .size-spec-row{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:var(--space-4)!important;align-items:end!important;margin-bottom:var(--space-4)!important;width:100%!important;}
+#dr-app .size-value-group{display:grid!important;grid-template-columns:minmax(0,1fr) 44px!important;gap:var(--space-4)!important;align-items:end!important;min-width:0!important;width:100%!important;}
+#dr-app .size-value-group>.dfield{min-width:0!important;margin:0!important;}
+@media(max-width:700px){
+  #dr-app .size-spec-row{grid-template-columns:minmax(0,1fr)!important;}
+  #dr-app .size-spec-row>.dfield{grid-column:1/-1!important;width:100%!important;min-width:0!important;}
+  #dr-app .size-value-group{grid-column:1/-1!important;grid-template-columns:minmax(0,1fr) 44px!important;width:100%!important;}
+}
+#dr-app .structure-order button{width:28px!important;height:28px!important;}
+#dr-app .ref-link-row{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px!important;gap:var(--space-4)!important;align-items:end!important;margin-bottom:var(--space-3)!important;}
+@media(max-width:700px){
+  #dr-app .ref-link-row{grid-template-columns:minmax(0,1fr) 44px!important;grid-template-rows:auto auto!important;}
+  #dr-app .ref-link-row>.dfield:first-child{grid-column:1/-1!important;grid-row:1!important;}
+  #dr-app .ref-link-row>.dfield:nth-child(2){grid-column:1!important;grid-row:2!important;}
+  #dr-app .ref-link-row>.rm{grid-column:2!important;grid-row:2!important;}
+}
+
+
+#dr-app .inline-clear{color:var(--muted)!important;transition:color var(--ease);}
+@media(hover:hover) and (pointer:fine){#dr-app .inline-clear:hover{color:var(--body)!important;}}
+
 </style>
 <script id="dr-gsi-bootstrap" async defer src="https://accounts.google.com/gsi/client"></script>
 </head>
@@ -2125,6 +2182,7 @@ function buildDetail(rec, container){
   p1.appendChild(statusField);
 
   p1.appendChild(dfieldTextarea("需求背景/說明", work.data.purpose, function(v){ work.data.purpose=v; }));
+  p1.appendChild(dfieldTextarea("主要訊息／方向", work.data.message, function(v){ work.data.message=v; }));
 
   var row = document.createElement("div"); row.className="drow";
   row.appendChild(dfieldDate("總交付日", work.data.deliveryDate, function(v){ work.data.deliveryDate=v; }));
@@ -2145,6 +2203,7 @@ function buildDetail(rec, container){
   audField.appendChild(ar);
   row.appendChild(audField);
   p1.appendChild(row);
+  if(String(work.data.scheduleNote||"").trim()){ p1.appendChild(dfieldTextarea("時程備註", work.data.scheduleNote, function(v){ work.data.scheduleNote=v; })); }
 
   
   var noteRow = document.createElement("div"); noteRow.className="drow";
@@ -2186,7 +2245,28 @@ function buildDetail(rec, container){
   p2.appendChild(meetWrap);
   frag.appendChild(p2);
 
-  
+  var refPanel=document.createElement("div");refPanel.className="dpanel";
+  var refTitle=document.createElement("div");refTitle.className="dpanel-title";refTitle.textContent="素材與參考";refPanel.appendChild(refTitle);
+  work.data.refLinks=Array.isArray(work.data.refLinks)?work.data.refLinks:[];
+  var refLinksWrap=document.createElement("div");refPanel.appendChild(refLinksWrap);
+  function renderRefLinks_(){
+    refLinksWrap.innerHTML="";
+    work.data.refLinks.forEach(function(lk){
+      var rr=document.createElement("div");rr.className="ref-link-row";
+      var uf=dfieldText("網址",lk.url,function(v){lk.url=v;});rr.appendChild(uf);
+      var nf=dfieldText("說明",lk.note,function(v){lk.note=v;});rr.appendChild(nf);
+      var rm=document.createElement("button");rm.type="button";rm.className="rm";rm.textContent="✕";rm.setAttribute("aria-label","刪除此連結");
+      rm.addEventListener("click",function(e){e.stopPropagation();work.data.refLinks=work.data.refLinks.filter(function(x){return x!==lk;});renderRefLinks_();});
+      rr.appendChild(rm);refLinksWrap.appendChild(rr);
+    });
+  }
+  renderRefLinks_();
+  var addRef=document.createElement("button");addRef.type="button";addRef.className="add-line";addRef.textContent="＋ 新增連結";
+  addRef.addEventListener("click",function(e){e.stopPropagation();work.data.refLinks.push({_id:"lk"+Date.now()+Math.random().toString(16).slice(2),url:"",note:""});renderRefLinks_();});
+  refPanel.appendChild(addRef);
+  refPanel.appendChild(dfieldTextarea("參考說明",work.data.refNote,function(v){work.data.refNote=v;}));
+  frag.appendChild(refPanel);
+
   logPanel = document.createElement("div"); logPanel.className="dpanel";
   var lt = document.createElement("div"); lt.className="dpanel-title"; lt.textContent="異動紀錄";
   logPanel.appendChild(lt);
@@ -2446,6 +2526,7 @@ function buildItemBlock(it, idx, onStructuralChange, onDelete){
         onStructuralChange();
       });
       box.appendChild(addBlk);
+      box.appendChild(dfieldDate("交付日", it.useDate, function(v){ it.useDate=v; }));
     } else {
       normalizeItemOutput_(it);
       if(!t.forcePrint){
@@ -2470,70 +2551,35 @@ function buildItemBlock(it, idx, onStructuralChange, onDelete){
         box.appendChild(outField);
       }
 
+      if(t.extra&&t.extra.indexOf("page")>=0){ box.appendChild(dfieldText("素材應用處", it.page, function(v){ it.page=v; })); }
+
       var options = (t.sizes||[]).slice();
       if(!t.forcePrint && it.output.indexOf("print")>=0){ options = options.concat(PRINT_SIZE_DEFS); }
       if(options.length){
-        (it.sizeRows||[]).forEach(function(row){
-          var r = document.createElement("div"); r.className="sizerow size-spec-row";
-          var sf = document.createElement("div"); sf.className="dfield"; sf.style.margin="0";
+        it.sizeRows=Array.isArray(it.sizeRows)?it.sizeRows:[];
+        var sizeWrap=document.createElement("div");sizeWrap.className="dfield size-section";
+        sizeWrap.appendChild(elh("label","尺寸"));
+        it.sizeRows.forEach(function(row){
+          var r=document.createElement("div");r.className="sizerow size-spec-row";
+          var sf=document.createElement("div");sf.className="dfield";sf.style.margin="0";
           if(row.purpose==="__custom__"){
-            
-            var cw = document.createElement("div");
-            cw.style.cssText="display:flex;align-items:center;gap:6px;border:1.2px solid var(--line);border-radius:var(--r);padding:0 4px 0 12px;height:38px;background:var(--paper);";
-            var pfx = document.createElement("span"); pfx.textContent="自訂：";
-            pfx.style.cssText="font-size:14px;color:var(--body);flex:0 0 auto;white-space:nowrap;";
-            cw.appendChild(pfx);
-            var ci = document.createElement("input"); ci.type="text"; ci.placeholder="輸入用途名稱"; ci.value=row.customText||"";
-            ci.style.cssText="border:0;padding:6px 4px;height:100%;flex:1 1 auto;background:transparent;";
-            ci.addEventListener("click", function(e){ e.stopPropagation(); });
-            ci.addEventListener("input", function(){ row.customText=ci.value; });
-            cw.appendChild(ci);
-            var back = document.createElement("button"); back.type="button"; back.textContent="✕";
-            back.style.cssText="border:0;background:none;cursor:pointer;color:var(--muted);flex:0 0 auto;font-size:14px;";
-            back.addEventListener("click", function(e){
-              e.stopPropagation();
-              row.purpose=""; row.customText=""; row.px="";
-              onStructuralChange();
-            });
-            cw.appendChild(back);
-            sf.appendChild(cw);
-            r.appendChild(sf);
-          } else {
-          var s = document.createElement("select");
-          var o0 = document.createElement("option"); o0.value=""; o0.textContent="用途／版位"; s.appendChild(o0);
-          options.forEach(function(opt){
-            var o = document.createElement("option"); o.value=opt.custom?"__custom__":opt.label; o.textContent=opt.label;
-            if(row.purpose===o.value) o.selected=true;
-            s.appendChild(o);
-          });
-          s.addEventListener("click", function(e){ e.stopPropagation(); });
-          s.addEventListener("change", function(e){
-            e.stopPropagation();
-            row.purpose = s.value;
-            var def=null;
-            for(var i=0;i<options.length;i++){ if(options[i].label===row.purpose){ def=options[i]; break; } }
-            if(def && def.w && def.h) row.px = def.w+"×"+def.h+(def.unit||"px");
-            else if(def && def.note) row.px = def.note;
-            else if(row.purpose!=="__custom__") row.px="";
-            onStructuralChange();
-          });
-          sf.appendChild(s);
+            var cw=document.createElement("div");cw.style.cssText="display:flex;align-items:center;gap:6px;border:1.2px solid var(--line);border-radius:var(--r);padding:0 4px 0 12px;height:44px;background:var(--paper);";
+            var pfx=document.createElement("span");pfx.textContent="自訂：";pfx.style.cssText="font-size:14px;color:var(--body);flex:0 0 auto;white-space:nowrap;";cw.appendChild(pfx);
+            var ci=document.createElement("input");ci.type="text";ci.placeholder="輸入用途名稱";ci.value=row.customText||"";ci.style.cssText="border:0;padding:6px 4px;height:100%;flex:1 1 auto;min-width:0;background:transparent;";ci.addEventListener("click",function(e){e.stopPropagation();});ci.addEventListener("input",function(){row.customText=ci.value;});cw.appendChild(ci);
+            var back=document.createElement("button");back.type="button";back.textContent="✕";back.className="inline-clear";back.style.cssText="border:0;background:none;cursor:pointer;color:var(--muted);flex:0 0 auto;font-size:14px;";back.addEventListener("click",function(e){e.stopPropagation();row.purpose="";row.customText="";row.px="";onStructuralChange();});cw.appendChild(back);sf.appendChild(cw);
+          }else{
+            var s=document.createElement("select");var o0=document.createElement("option");o0.value="";o0.textContent="用途／版位";s.appendChild(o0);
+            options.forEach(function(opt){var o=document.createElement("option");o.value=opt.custom?"__custom__":opt.label;o.textContent=opt.label;if(row.purpose===o.value)o.selected=true;s.appendChild(o);});
+            s.addEventListener("click",function(e){e.stopPropagation();});s.addEventListener("change",function(e){e.stopPropagation();row.purpose=s.value;var def=null;for(var i=0;i<options.length;i++){if(options[i].label===row.purpose){def=options[i];break;}}if(def&&def.w&&def.h)row.px=def.w+"×"+def.h+(def.unit||"px");else if(def&&def.note)row.px=def.note;else if(row.purpose!=="__custom__")row.px="";onStructuralChange();});sf.appendChild(s);
+          }
           r.appendChild(sf);
-          }
-
-          var pf = document.createElement("div"); pf.className="dfield"; pf.style.margin="0";
-          var pxi = document.createElement("input"); pxi.type="text"; pxi.placeholder="實際尺寸"; pxi.value=row.px||"";
-          var frozen = false;
-          if(row.purpose && row.purpose!=="__custom__"){
-            var d=null; for(var j=0;j<options.length;j++){ if(options[j].label===row.purpose){ d=options[j]; break; } }
-            if(d && (d.w||d.note)) frozen=true;
-          }
-          if(frozen){ pxi.disabled=true; pxi.classList.add("readonly"); }
-          else { pxi.addEventListener("click", function(e){e.stopPropagation();}); pxi.addEventListener("input", function(){ row.px=pxi.value; }); }
-          pf.appendChild(pxi);
-          r.appendChild(pf);
-          box.appendChild(r);
+          var pf=document.createElement("div");pf.className="dfield";pf.style.margin="0";var pxi=document.createElement("input");pxi.type="text";pxi.placeholder="實際尺寸";pxi.value=row.px||"";
+          var frozen=false;if(row.purpose&&row.purpose!=="__custom__"){var d=null;for(var j=0;j<options.length;j++){if(options[j].label===row.purpose){d=options[j];break;}}if(d&&(d.w||d.note))frozen=true;}
+          if(frozen){pxi.disabled=true;pxi.classList.add("readonly");}else{pxi.addEventListener("click",function(e){e.stopPropagation();});pxi.addEventListener("input",function(){row.px=pxi.value;});}pf.appendChild(pxi);
+          var valueGroup=document.createElement("div");valueGroup.className="size-value-group";valueGroup.appendChild(pf);
+          var rm=document.createElement("button");rm.type="button";rm.className="rm";rm.textContent="✕";rm.setAttribute("aria-label","刪除此尺寸");rm.addEventListener("click",function(e){e.stopPropagation();it.sizeRows=it.sizeRows.filter(function(x){return x!==row;});onStructuralChange();});valueGroup.appendChild(rm);r.appendChild(valueGroup);sizeWrap.appendChild(r);
         });
+        var addSize=document.createElement("button");addSize.type="button";addSize.className="add-line";addSize.textContent="＋ 新增尺寸";addSize.addEventListener("click",function(e){e.stopPropagation();it.sizeRows.push({purpose:"",customText:"",px:""});onStructuralChange();});sizeWrap.appendChild(addSize);box.appendChild(sizeWrap);
       }
       if(it.output.indexOf("print")>=0){
         box.appendChild(dfieldNumber("數量", it.printQty, function(v){ it.printQty=v; }));
@@ -2578,10 +2624,10 @@ function buildItemBlock(it, idx, onStructuralChange, onDelete){
     }
   }
 
+  var itemDeleteFooter=document.createElement("div");itemDeleteFooter.className="item-delete-footer";
   var delItemB = document.createElement("button"); delItemB.type="button"; delItemB.className="del-line"; delItemB.textContent="刪除此項目";
-  delItemB.style.marginTop="8px";
   delItemB.addEventListener("click", function(e){ e.stopPropagation(); onDelete(); });
-  box.appendChild(delItemB);
+  itemDeleteFooter.appendChild(delItemB);box.appendChild(itemDeleteFooter);
 
   refreshItemCopyState_(it,box,badgesEl);
   return box;
@@ -2668,7 +2714,7 @@ document.getElementById("dr-logout").addEventListener("click",logout);
 document.getElementById("dr-mobile-logout").addEventListener("click",logout);
 
 function initTouchFeedback(){
-  var selector=".btn-topbar,input,select,textarea,.statuschip,.schip,.chip,.card-top,.dpanel,.itemblock,.add-line,.del-line,.structure-order button,.btn-sm,.pgbtn";
+  var selector=".btn-topbar,input,select,textarea,.statuschip,.schip,.chip,.card-top,.dpanel,.itemblock,.add-line,.del-line,.structure-order button,.sizerow .rm,.compact-x,.btn-sm,.pgbtn";
   var active=null,outerActive=null;
   var app=document.getElementById("dr-app");
 
