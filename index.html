@@ -1042,6 +1042,28 @@ html,body{overflow-x:hidden;}
 #dr-app .inline-clear{color:var(--muted)!important;transition:color var(--ease);}
 @media(hover:hover) and (pointer:fine){#dr-app .inline-clear:hover{color:var(--body)!important;}}
 
+
+/* v1.0.16 — final form-control containment */
+#dr-app .field,#dr-app .dfield,#dr-app .row>*,#dr-app .drow>*{min-width:0!important;max-width:100%!important;}
+#dr-app .field input,#dr-app .field select,#dr-app .field textarea,
+#dr-app .dfield input,#dr-app .dfield select,#dr-app .dfield textarea{box-sizing:border-box!important;min-width:0!important;max-width:100%!important;}
+#dr-app .date-wrap{overflow:visible!important;contain:none!important;min-width:0!important;max-width:100%!important;}
+#dr-app .date-wrap>input[type=date]{
+  -webkit-appearance:auto!important;appearance:auto!important;box-sizing:border-box!important;
+  width:100%!important;min-width:0!important;max-width:100%!important;
+  inline-size:100%!important;min-inline-size:0!important;max-inline-size:100%!important;
+  overflow:visible!important;margin:0!important;
+}
+#dr-app button.rm,#dr-app .compact-x{
+  width:44px!important;min-width:44px!important;max-width:44px!important;height:44px!important;
+  padding:0!important;margin:0!important;display:grid!important;place-items:center!important;
+  border:1.2px solid var(--hair)!important;border-radius:var(--r)!important;background:var(--paper)!important;
+  color:var(--muted)!important;font-family:inherit!important;font-size:14px!important;line-height:1!important;
+  cursor:pointer;transition:border-color var(--ease),color var(--ease),opacity var(--ease)!important;
+}
+@media(hover:hover) and (pointer:fine){#dr-app button.rm:hover,#dr-app .compact-x:hover{border-color:var(--body)!important;color:var(--body)!important;}}
+@media(hover:none) and (pointer:coarse){#dr-app button.rm.is-touch-hover,#dr-app .compact-x.is-touch-hover{border-color:var(--body)!important;color:var(--body)!important;}}
+
 </style>
 
 <script id="dr-gsi-bootstrap" async defer src="https://accounts.google.com/gsi/client"></script>
@@ -1584,7 +1606,7 @@ document.addEventListener("visibilitychange",function(){if(document.hidden)flush
 window.addEventListener("pagehide",flushDraftOnLifecycle,{passive:true});
 window.addEventListener("beforeunload",flushDraftOnLifecycle);
 window.addEventListener("offline",flushDraftOnLifecycle,{passive:true});
-function collectErrors(){var errors=[];if(!state.name.trim())errors.push({msg:"需求名稱未填寫",focus:"f-name"});if(!state.purpose.trim())errors.push({msg:"需求背景/說明未填寫",focus:"f-purpose"});if(!state.deliveryDate)errors.push({msg:"總交付日未填寫",focus:"f-deliverydate"});if(state.items.length===0)errors.push({msg:"尚未新增項目。",focus:null});state.items.forEach(function(it,idx){var label="項目 "+(idx+1)+"（"+(it.name||"未命名")+"）";if(!it.typeId){errors.push({msg:label+"：需求類型未選擇",focus:null});return;}var t=typeOf(it.typeId);if(t.mode==="notice"||t.mode==="structure")return;if(!t.forcePrint&&it.output.length===0)errors.push({msg:label+"：輸出形式未選擇",focus:null});if(itemHasPrint(it)&&!it.printQty)errors.push({msg:label+"：數量未填寫",focus:null});});return errors;}
+function collectErrors(){var errors=[];if(!state.name.trim())errors.push({msg:"需求名稱未填寫",focus:"f-name"});if(!state.purpose.trim())errors.push({msg:"需求背景/說明未填寫",focus:"f-purpose"});if(!state.deliveryDate)errors.push({msg:"總交付日未填寫",focus:"f-deliverydate"});if(state.items.length===0)errors.push({msg:"尚未新增項目。",focus:null});state.items.forEach(function(it,idx){var label="項目 "+(idx+1)+"（"+(it.name||"未命名")+"）";if(!String(it.name||"").trim())errors.push({msg:"項目 "+(idx+1)+"：項目名稱未填寫",focus:null});if(!it.typeId){errors.push({msg:label+"：需求類型未選擇",focus:null});return;}var t=typeOf(it.typeId);if(t.mode==="notice"||t.mode==="structure")return;if(!t.forcePrint&&it.output.length===0)errors.push({msg:label+"：輸出形式未選擇",focus:null});if(itemHasPrint(it)&&!it.printQty)errors.push({msg:label+"：數量未填寫",focus:null});});return errors;}
 function collectWarnings(){var warns=[];state.items.forEach(function(it,idx){var t=typeOf(it.typeId);if(!t||t.mode==="notice")return;if(!itemHasCopy(it))warns.push({msg:"項目 "+(idx+1)+"（"+(it.name||"未命名")+"）：文案待補"});});return warns;}
 $("dr-goto-confirm").addEventListener("click",function(){if(!$("dr-draftbar").hidden){$("dr-draftbar").hidden=true;draftOffer=null;}var errors=collectErrors(),warns=collectWarnings(),errBox=$("dr-confirm-errbox"),errList=$("dr-err-list"),warnBox=$("dr-confirm-warnbox"),warnList=$("dr-warn-list");errList.innerHTML="";warnList.innerHTML="";if(errors.length){errBox.hidden=false;errors.forEach(function(e){var li=el("li","",e.msg);li.addEventListener("click",function(){$("dr-confirm").style.display="none";$("dr-form-shell").style.display="";$("dr-statsbar").style.display="";if(e.focus){var f=$(e.focus);if(f){f.focus();f.scrollIntoView({behavior:"smooth",block:"center"});}}});errList.appendChild(li);});}else errBox.hidden=true;if(warns.length){warnBox.hidden=false;warns.forEach(function(w){warnList.appendChild(el("li","",w.msg));});}else warnBox.hidden=true;renderPreview();$("dr-form-shell").style.display="none";$("dr-statsbar").style.display="none";$("dr-confirm").style.display="block";$("dr-submit-btn").disabled=errors.length>0;$("dr-submit-btn").style.opacity=errors.length>0?.4:1;window.scrollTo({top:0,behavior:"smooth"});});
 $("dr-back-to-form").addEventListener("click",function(){if(submitInFlight)return;$("dr-confirm").style.display="none";$("dr-form-shell").style.display="";$("dr-statsbar").style.display="";window.scrollTo({top:0,behavior:"smooth"});});

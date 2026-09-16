@@ -1198,6 +1198,37 @@ html,body{overflow-x:clip!important;}
 #dr-app .inline-clear{color:var(--muted)!important;transition:color var(--ease);}
 @media(hover:hover) and (pointer:fine){#dr-app .inline-clear:hover{color:var(--body)!important;}}
 
+
+/* v1.0.16 — final editor consistency and containment */
+#dr-app .dfield label .req{color:var(--red);margin-left:2px;}
+#dr-app .dfield label .opt{color:var(--muted);font-weight:var(--fw-regular);margin-left:4px;}
+#dr-app .field,#dr-app .dfield,#dr-app .row>*,#dr-app .drow>*{min-width:0!important;max-width:100%!important;}
+#dr-app .field input,#dr-app .field select,#dr-app .field textarea,
+#dr-app .dfield input,#dr-app .dfield select,#dr-app .dfield textarea{box-sizing:border-box!important;min-width:0!important;max-width:100%!important;}
+#dr-app .date-wrap{overflow:visible!important;contain:none!important;min-width:0!important;max-width:100%!important;}
+#dr-app .date-wrap>input[type=date]{
+  -webkit-appearance:auto!important;appearance:auto!important;box-sizing:border-box!important;
+  width:100%!important;min-width:0!important;max-width:100%!important;
+  inline-size:100%!important;min-inline-size:0!important;max-inline-size:100%!important;
+  overflow:visible!important;margin:0!important;
+}
+#dr-app button.rm,#dr-app .compact-x{
+  width:44px!important;min-width:44px!important;max-width:44px!important;height:44px!important;
+  padding:0!important;margin:0!important;display:grid!important;place-items:center!important;
+  border:1.2px solid var(--hair)!important;border-radius:var(--r)!important;background:var(--paper)!important;
+  color:var(--muted)!important;font-family:inherit!important;font-size:14px!important;line-height:1!important;
+  cursor:pointer;transition:border-color var(--ease),color var(--ease),opacity var(--ease)!important;
+}
+@media(hover:hover) and (pointer:fine){#dr-app button.rm:hover,#dr-app .compact-x:hover{border-color:var(--body)!important;color:var(--body)!important;}}
+@media(hover:none) and (pointer:coarse){#dr-app button.rm.is-touch-hover,#dr-app .compact-x.is-touch-hover{border-color:var(--body)!important;color:var(--body)!important;}}
+#dr-app .detail-actions .saved-hint{
+  display:block!important;grid-column:1/-1!important;height:20px!important;min-height:20px!important;
+  margin:2px 0 0!important;padding:0!important;visibility:hidden;opacity:0;line-height:20px;
+}
+#dr-app .detail-actions .saved-hint.show{display:block!important;visibility:visible;opacity:1!important;height:20px!important;min-height:20px!important;margin-top:2px!important;}
+#dr-app .request-primary .schedule-note-field textarea{height:56px!important;min-height:56px!important;max-height:168px!important;}
+#dr-app .structure-block-title{font-size:var(--fs-meta);font-weight:var(--fw-medium);color:var(--body);margin:0 0 var(--space-3);}
+
 </style>
 <script id="dr-gsi-bootstrap" async defer src="https://accounts.google.com/gsi/client"></script>
 </head>
@@ -1714,7 +1745,7 @@ var TYPES = [
   ]},
   {id:"edm", label:"EDM", mode:"structure"},
   {id:"landing", label:"活動頁", mode:"structure"},
-  {id:"product", label:"商品頁", mode:"notice", notice:"文案請前往《長條圖參考分配》填寫。"},
+  {id:"product", label:"商品頁", mode:"notice", notice:"本項文案請前往《長條圖參考分配》填寫。"},
   {id:"print", label:"印刷品", mode:"normal", forcePrint:true, sizes:[{label:"A4"},{label:"A3"},{label:"A2"},{label:"A5"},{label:"自訂尺寸", custom:true}]},
   {id:"booth", label:"展場", mode:"notice", notice:"本項目需另行安排會議。"},
   {id:"other", label:"其他", mode:"normal", sizes:[{label:"自訂尺寸", custom:true}], showChannel:true}
@@ -2106,6 +2137,29 @@ function buildDetail(rec, container){
     canDelete=canDeleteRecord_(work);
     updateCardChrome();
   }
+  function collectRequiredErrors_(){
+    var errors=[];
+    if(!String(work.data.name||"").trim())errors.push("需求名稱");
+    if(!String(work.data.purpose||"").trim())errors.push("需求背景/說明");
+    if(!String(work.data.deliveryDate||"").trim())errors.push("總交付日");
+    if(!Array.isArray(work.data.items)||work.data.items.length===0)errors.push("設計項目");
+    (work.data.items||[]).forEach(function(it,idx){
+      var prefix="項目 "+(idx+1);
+      if(!String(it.name||"").trim())errors.push(prefix+"：項目名稱");
+      if(!it.typeId){errors.push(prefix+"：需求類型");return;}
+      var t=typeOf(it.typeId);if(!t||t.mode==="notice"||t.mode==="structure")return;
+      normalizeItemOutput_(it);
+      if(!t.forcePrint&&it.output.length===0)errors.push(prefix+"：輸出形式");
+      if(itemHasPrint(it)&&!it.printQty)errors.push(prefix+"：數量");
+    });
+    return errors;
+  }
+  function guardRequired_(){
+    var errors=collectRequiredErrors_();
+    if(!errors.length)return true;
+    flash("必填未完成："+errors.slice(0,3).join("、")+(errors.length>3?"…":""));
+    return false;
+  }
   async function writeBack(labels){
     labels=(labels||[]).filter(Boolean);
     if(!labels.length) labels=["內容更新"];
@@ -2158,6 +2212,7 @@ function buildDetail(rec, container){
   var p1title = document.createElement("div"); p1title.className="dpanel-title"; p1title.textContent="需求";
   p1.appendChild(p1title);
   var nameField = document.createElement("div"); nameField.className="dfield request-name-field";
+  nameField.appendChild(dlabel_("需求名稱",true));
   var nameInput = document.createElement("input"); nameInput.type="text"; nameInput.value=work.data.name||"";
   nameInput.addEventListener("input", function(){ work.data.name=nameInput.value; });
   nameField.appendChild(nameInput);
@@ -2181,13 +2236,13 @@ function buildDetail(rec, container){
   statusField.appendChild(schipsEl);
   p1.appendChild(statusField);
 
-  p1.appendChild(dfieldTextarea("需求背景/說明", work.data.purpose, function(v){ work.data.purpose=v; }));
-  p1.appendChild(dfieldTextarea("主要訊息／方向", work.data.message, function(v){ work.data.message=v; }));
+  p1.appendChild(dfieldTextarea("需求背景/說明", work.data.purpose, function(v){ work.data.purpose=v; },true));
+  p1.appendChild(dfieldTextarea("主要訊息／方向", work.data.message, function(v){ work.data.message=v; },false));
 
   var row = document.createElement("div"); row.className="drow";
-  row.appendChild(dfieldDate("總交付日", work.data.deliveryDate, function(v){ work.data.deliveryDate=v; }));
+  row.appendChild(dfieldDate("總交付日", work.data.deliveryDate, function(v){ work.data.deliveryDate=v; },true));
   var audField = document.createElement("div"); audField.className="dfield";
-  audField.appendChild(elh("label","目標對象"));
+  audField.appendChild(dlabel_("目標對象",false));
   var ar = document.createElement("div"); ar.className="statuschips-inline";
   ["2B","2C"].forEach(function(v){
     var c = document.createElement("button"); c.type="button"; c.className="chip"; c.textContent=v;
@@ -2203,12 +2258,12 @@ function buildDetail(rec, container){
   audField.appendChild(ar);
   row.appendChild(audField);
   p1.appendChild(row);
-  if(String(work.data.scheduleNote||"").trim()){ p1.appendChild(dfieldTextarea("時程備註", work.data.scheduleNote, function(v){ work.data.scheduleNote=v; })); }
+  var scheduleNoteField=dfieldTextarea("時程備註", work.data.scheduleNote, function(v){ work.data.scheduleNote=v; },false);scheduleNoteField.classList.add("schedule-note-field");p1.appendChild(scheduleNoteField);
 
   
   var noteRow = document.createElement("div"); noteRow.className="drow";
-  noteRow.appendChild(dfieldTextarea("備註 1", work.data.note1, function(v){ work.data.note1=v; }));
-  noteRow.appendChild(dfieldTextarea("備註 2", work.data.note2, function(v){ work.data.note2=v; }));
+  noteRow.appendChild(dfieldTextarea("備註 1", work.data.note1, function(v){ work.data.note1=v; },false));
+  noteRow.appendChild(dfieldTextarea("備註 2", work.data.note2, function(v){ work.data.note2=v; },false));
   p1.appendChild(noteRow);
   frag.appendChild(p1);
 
@@ -2241,20 +2296,21 @@ function buildDetail(rec, container){
   
   var meetWrap = document.createElement("div");
   meetWrap.style.marginTop = "14px";
-  meetWrap.appendChild(dfieldDate("會議日期", work.meetingDate, function(v){ work.meetingDate=v; }));
+  meetWrap.appendChild(dfieldDate("會議日期", work.meetingDate, function(v){ work.meetingDate=v; },false));
   p2.appendChild(meetWrap);
   frag.appendChild(p2);
 
   var refPanel=document.createElement("div");refPanel.className="dpanel";
   var refTitle=document.createElement("div");refTitle.className="dpanel-title";refTitle.textContent="素材與參考";refPanel.appendChild(refTitle);
   work.data.refLinks=Array.isArray(work.data.refLinks)?work.data.refLinks:[];
-  var refLinksWrap=document.createElement("div");refPanel.appendChild(refLinksWrap);
+  var refLinksField=document.createElement("div");refLinksField.className="dfield";refLinksField.appendChild(dlabel_("素材連結",false));
+  var refLinksWrap=document.createElement("div");refLinksField.appendChild(refLinksWrap);
   function renderRefLinks_(){
     refLinksWrap.innerHTML="";
     work.data.refLinks.forEach(function(lk){
       var rr=document.createElement("div");rr.className="ref-link-row";
-      var uf=dfieldText("網址",lk.url,function(v){lk.url=v;});rr.appendChild(uf);
-      var nf=dfieldText("說明",lk.note,function(v){lk.note=v;});rr.appendChild(nf);
+      var uf=document.createElement("div");uf.className="dfield";uf.style.margin="0";var ui=document.createElement("input");ui.type="url";ui.placeholder="網址";ui.value=lk.url||"";ui.addEventListener("click",function(e){e.stopPropagation();});ui.addEventListener("input",function(){lk.url=ui.value;});uf.appendChild(ui);rr.appendChild(uf);
+      var nf=document.createElement("div");nf.className="dfield";nf.style.margin="0";var ni=document.createElement("input");ni.type="text";ni.placeholder="說明";ni.value=lk.note||"";ni.addEventListener("click",function(e){e.stopPropagation();});ni.addEventListener("input",function(){lk.note=ni.value;});nf.appendChild(ni);rr.appendChild(nf);
       var rm=document.createElement("button");rm.type="button";rm.className="rm";rm.textContent="✕";rm.setAttribute("aria-label","刪除此連結");
       rm.addEventListener("click",function(e){e.stopPropagation();work.data.refLinks=work.data.refLinks.filter(function(x){return x!==lk;});renderRefLinks_();});
       rr.appendChild(rm);refLinksWrap.appendChild(rr);
@@ -2263,8 +2319,8 @@ function buildDetail(rec, container){
   renderRefLinks_();
   var addRef=document.createElement("button");addRef.type="button";addRef.className="add-line";addRef.textContent="＋ 新增連結";
   addRef.addEventListener("click",function(e){e.stopPropagation();work.data.refLinks.push({_id:"lk"+Date.now()+Math.random().toString(16).slice(2),url:"",note:""});renderRefLinks_();});
-  refPanel.appendChild(addRef);
-  refPanel.appendChild(dfieldTextarea("參考說明",work.data.refNote,function(v){work.data.refNote=v;}));
+  refLinksField.appendChild(addRef);refPanel.appendChild(refLinksField);
+  refPanel.appendChild(dfieldTextarea("參考說明",work.data.refNote,function(v){work.data.refNote=v;},false));
   frag.appendChild(refPanel);
 
   logPanel = document.createElement("div"); logPanel.className="dpanel";
@@ -2286,6 +2342,7 @@ function buildDetail(rec, container){
   var btnSave = document.createElement("button"); btnSave.type="button"; btnSave.className="btn-sm primary"; prepareActionButton(btnSave,"儲存");
   btnSave.addEventListener("click", async function(e){
     e.stopPropagation();
+    if(!guardRequired_())return;
     if(actionBusy)return;actionBusy=true;setActionLoading(btnSave,true,actionButtons);
     try{
       var labels = [];
@@ -2308,6 +2365,7 @@ function buildDetail(rec, container){
   var btnResend = document.createElement("button"); btnResend.type="button"; btnResend.className="btn-sm"; prepareActionButton(btnResend,"重新發送需求");
   btnResend.addEventListener("click", async function(e){
     e.stopPropagation();
+    if(!guardRequired_())return;
     if(actionBusy)return;actionBusy=true;setActionLoading(btnResend,true,actionButtons);
     try{
       var labels = [];
@@ -2452,9 +2510,9 @@ function buildItemBlock(it, idx, onStructuralChange, onDelete){
   box.appendChild(titleRow);
 
   var head = document.createElement("div"); head.className="itemblock-head";
-  head.appendChild(dfieldText("項目名稱", it.name, function(v){ it.name=v; }));
+  head.appendChild(dfieldText("項目名稱", it.name, function(v){ it.name=v; },true));
   var typeField = document.createElement("div"); typeField.className="dfield";
-  typeField.innerHTML = "<label>需求類型</label>";
+  typeField.appendChild(dlabel_("需求類型",true));
   var sel = document.createElement("select");
   var opt0 = document.createElement("option"); opt0.value=""; opt0.textContent="請選擇"; sel.appendChild(opt0);
   TYPES.forEach(function(t){ var o=document.createElement("option"); o.value=t.id; o.textContent=t.label; if(it.typeId===t.id) o.selected=true; sel.appendChild(o); });
@@ -2481,16 +2539,17 @@ function buildItemBlock(it, idx, onStructuralChange, onDelete){
     } else if(t.mode==="structure"){
       (it.blocks||[]).forEach(function(bk,bi){
         var bwrap = document.createElement("div"); bwrap.className="structure-block";
+        var blockTitle=document.createElement("div");blockTitle.className="structure-block-title";blockTitle.textContent="區塊 "+(bi+1);bwrap.appendChild(blockTitle);
         var c4 = document.createElement("div"); c4.className="copy4";
-        var blockHeadField=dfieldText("大標", bk.head, function(v){ bk.head=v; refreshItemCopyState_(it,box,badgesEl); });
+        var blockHeadField=dfieldText("大標", bk.head, function(v){ bk.head=v; refreshItemCopyState_(it,box,badgesEl); },null);
         blockHeadField.classList.add("copy-primary-field");
         c4.appendChild(blockHeadField);
-        c4.appendChild(dfieldText("副標", bk.sub, function(v){ bk.sub=v; refreshItemCopyState_(it,box,badgesEl); }));
-        c4.appendChild(dfieldText("小字", bk.small, function(v){ bk.small=v; refreshItemCopyState_(it,box,badgesEl); }));
-        c4.appendChild(dfieldText("其他", bk.other, function(v){ bk.other=v; refreshItemCopyState_(it,box,badgesEl); }));
+        c4.appendChild(dfieldText("副標", bk.sub, function(v){ bk.sub=v; refreshItemCopyState_(it,box,badgesEl); },null));
+        c4.appendChild(dfieldText("小字", bk.small, function(v){ bk.small=v; refreshItemCopyState_(it,box,badgesEl); },null));
+        c4.appendChild(dfieldText("其他", bk.other, function(v){ bk.other=v; refreshItemCopyState_(it,box,badgesEl); },null));
         bwrap.appendChild(c4);
-        bwrap.appendChild(dfieldText("圖片說明", bk.imgNote, function(v){ bk.imgNote=v; }));
-        bwrap.appendChild(dfieldText("CTA／連結", bk.link, function(v){ bk.link=v; }));
+        bwrap.appendChild(dfieldText("圖片說明", bk.imgNote, function(v){ bk.imgNote=v; },null));
+        bwrap.appendChild(dfieldText("CTA／連結", bk.link, function(v){ bk.link=v; },null));
         var delB = document.createElement("button"); delB.type="button"; delB.className="del-line"; delB.textContent="刪除區塊";
         delB.addEventListener("click", function(e){
           e.stopPropagation();
@@ -2526,12 +2585,12 @@ function buildItemBlock(it, idx, onStructuralChange, onDelete){
         onStructuralChange();
       });
       box.appendChild(addBlk);
-      box.appendChild(dfieldDate("交付日", it.useDate, function(v){ it.useDate=v; }));
+      box.appendChild(dfieldDate("交付日", it.useDate, function(v){ it.useDate=v; },false));
     } else {
       normalizeItemOutput_(it);
       if(!t.forcePrint){
         var outField = document.createElement("div"); outField.className="dfield";
-        outField.innerHTML = "<label>輸出形式</label>";
+        outField.appendChild(dlabel_("輸出形式",true));
         var outRow = document.createElement("div"); outRow.className="statuschips-inline";
         [["digital","數位"],["print","印刷"]].forEach(function(pair){
           var c = document.createElement("button"); c.type="button"; c.className="chip c-"+pair[0]; c.textContent=pair[1];
@@ -2551,14 +2610,14 @@ function buildItemBlock(it, idx, onStructuralChange, onDelete){
         box.appendChild(outField);
       }
 
-      if(t.extra&&t.extra.indexOf("page")>=0){ box.appendChild(dfieldText("素材應用處", it.page, function(v){ it.page=v; })); }
+      if(t.extra&&t.extra.indexOf("page")>=0){ box.appendChild(dfieldText("素材應用處", it.page, function(v){ it.page=v; },false)); }
 
       var options = (t.sizes||[]).slice();
       if(!t.forcePrint && it.output.indexOf("print")>=0){ options = options.concat(PRINT_SIZE_DEFS); }
       if(options.length){
         it.sizeRows=Array.isArray(it.sizeRows)?it.sizeRows:[];
         var sizeWrap=document.createElement("div");sizeWrap.className="dfield size-section";
-        sizeWrap.appendChild(elh("label","尺寸"));
+        sizeWrap.appendChild(dlabel_("尺寸",false,"選填，除印刷品外若留白將由設計端評估。"));
         it.sizeRows.forEach(function(row){
           var r=document.createElement("div");r.className="sizerow size-spec-row";
           var sf=document.createElement("div");sf.className="dfield";sf.style.margin="0";
@@ -2582,11 +2641,11 @@ function buildItemBlock(it, idx, onStructuralChange, onDelete){
         var addSize=document.createElement("button");addSize.type="button";addSize.className="add-line";addSize.textContent="＋ 新增尺寸";addSize.addEventListener("click",function(e){e.stopPropagation();it.sizeRows.push({purpose:"",customText:"",px:""});onStructuralChange();});sizeWrap.appendChild(addSize);box.appendChild(sizeWrap);
       }
       if(it.output.indexOf("print")>=0){
-        box.appendChild(dfieldNumber("數量", it.printQty, function(v){ it.printQty=v; }));
+        box.appendChild(dfieldNumber("數量", it.printQty, function(v){ it.printQty=v; },true));
       }
 
       var expField = document.createElement("div"); expField.className="dfield";
-      expField.innerHTML = "<label>商品曝光</label>";
+      expField.appendChild(dlabel_("商品曝光",false));
       var expRow = document.createElement("div"); expRow.className="statuschips-inline";
       [["reveal","露出商品"],["free","不限"]].forEach(function(pair){
         var c = document.createElement("button"); c.type="button"; c.className="chip"; c.textContent=pair[1];
@@ -2602,25 +2661,25 @@ function buildItemBlock(it, idx, onStructuralChange, onDelete){
       expField.appendChild(expRow);
       box.appendChild(expField);
       if(it.exposure==="reveal"){
-        box.appendChild(dfieldText("商品型號", it.exposureModel, function(v){ it.exposureModel=v; }));
+        box.appendChild(dfieldText("商品型號", it.exposureModel, function(v){ it.exposureModel=v; },false));
       }
 
       var c4b = document.createElement("div"); c4b.className="copy4";
-      var copyHeadField=dfieldText("大標", it.copy.head, function(v){ it.copy.head=v; refreshItemCopyState_(it,box,badgesEl); });
+      var copyHeadField=dfieldText("大標", it.copy.head, function(v){ it.copy.head=v; refreshItemCopyState_(it,box,badgesEl); },null);
       copyHeadField.classList.add("copy-primary-field");
       c4b.appendChild(copyHeadField);
-      c4b.appendChild(dfieldText("副標", it.copy.sub, function(v){ it.copy.sub=v; refreshItemCopyState_(it,box,badgesEl); }));
-      c4b.appendChild(dfieldText("小字", it.copy.small, function(v){ it.copy.small=v; refreshItemCopyState_(it,box,badgesEl); }));
-      c4b.appendChild(dfieldText("其他", it.copy.other, function(v){ it.copy.other=v; refreshItemCopyState_(it,box,badgesEl); }));
-      box.appendChild(c4b);
+      c4b.appendChild(dfieldText("副標", it.copy.sub, function(v){ it.copy.sub=v; refreshItemCopyState_(it,box,badgesEl); },null));
+      c4b.appendChild(dfieldText("小字", it.copy.small, function(v){ it.copy.small=v; refreshItemCopyState_(it,box,badgesEl); },null));
+      c4b.appendChild(dfieldText("其他", it.copy.other, function(v){ it.copy.other=v; refreshItemCopyState_(it,box,badgesEl); },null));
+      var copyWrap=document.createElement("div");copyWrap.className="dfield";copyWrap.appendChild(dlabel_("文案",false,"選填，留白則標記為文案待補。"));copyWrap.appendChild(c4b);box.appendChild(copyWrap);
 
-      if(t.showChannel){ box.appendChild(dfieldText("使用位置", it.channel, function(v){ it.channel=v; })); }
-      box.appendChild(dfieldDate("交付日", it.useDate, function(v){ it.useDate=v; }));
-      box.appendChild(dfieldText("CTA／連結", it.cta, function(v){ it.cta=v; }));
+      if(t.showChannel){ box.appendChild(dfieldText("使用位置", it.channel, function(v){ it.channel=v; },false)); }
+      box.appendChild(dfieldDate("交付日", it.useDate, function(v){ it.useDate=v; },false));
+      box.appendChild(dfieldText("CTA／連結", it.cta, function(v){ it.cta=v; },false));
     }
     
     if(t.mode!=="notice"){
-      box.appendChild(dfieldTextarea("項目備註", it.note, function(v){ it.note=v; }));
+      box.appendChild(dfieldTextarea("項目備註", it.note, function(v){ it.note=v; },false));
     }
   }
 
@@ -2633,27 +2692,33 @@ function buildItemBlock(it, idx, onStructuralChange, onDelete){
   return box;
 }
 
-function dfieldText(label, val, onChange){
+function dlabel_(label,required,optText){
+  var lab=document.createElement("label");lab.appendChild(document.createTextNode(label));
+  if(required===true){var req=document.createElement("span");req.className="req";req.textContent="*";lab.appendChild(req);}
+  else if(required===false){var opt=document.createElement("span");opt.className="opt";opt.textContent=optText||"選填";lab.appendChild(opt);}
+  return lab;
+}
+function dfieldText(label, val, onChange, required, optText){
   var f = document.createElement("div"); f.className="dfield";
-  f.appendChild(elh("label", label));
+  f.appendChild(dlabel_(label,required,optText));
   var i = document.createElement("input"); i.type="text"; i.value=val||"";
   i.addEventListener("click", function(e){e.stopPropagation();});
   i.addEventListener("input", function(){ onChange(i.value); });
   f.appendChild(i);
   return f;
 }
-function dfieldTextarea(label, val, onChange){
+function dfieldTextarea(label, val, onChange, required, optText){
   var f = document.createElement("div"); f.className="dfield";
-  f.appendChild(elh("label", label));
+  f.appendChild(dlabel_(label,required,optText));
   var i = document.createElement("textarea"); i.value=val||"";
   i.addEventListener("click", function(e){e.stopPropagation();});
   i.addEventListener("input", function(){ onChange(i.value); });
   f.appendChild(i);
   return f;
 }
-function dfieldDate(label, val, onChange){
+function dfieldDate(label, val, onChange, required, optText){
   var f = document.createElement("div"); f.className="dfield";
-  f.appendChild(elh("label", label));
+  f.appendChild(dlabel_(label,required,optText));
   var w = document.createElement("div"); w.className="date-wrap";
   var i = document.createElement("input"); i.type="date"; i.value=val||"";
   i.addEventListener("click", function(e){e.stopPropagation();});
@@ -2661,9 +2726,9 @@ function dfieldDate(label, val, onChange){
   w.appendChild(i); f.appendChild(w);
   return f;
 }
-function dfieldNumber(label, val, onChange){
+function dfieldNumber(label, val, onChange, required, optText){
   var f = document.createElement("div"); f.className="dfield";
-  f.appendChild(elh("label", label));
+  f.appendChild(dlabel_(label,required,optText));
   var i = document.createElement("input"); i.type="number"; i.min="0"; i.value=val||"";
   i.addEventListener("click", function(e){e.stopPropagation();});
   i.addEventListener("input", function(){ onChange(i.value); });
