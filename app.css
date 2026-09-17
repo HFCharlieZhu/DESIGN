@@ -57,6 +57,10 @@ html { overflow-x: clip; }
   --space-5: 24px;
   --space-6: 32px;
   --field-gap: 20px;
+  /* 子層縮排：等於卡片外框加內距，讓下一層的標題正好對齊上一層的標題 */
+  --level-in: calc(var(--space-4) + 1.2px);
+  /* 次要方塊鈕的寬度：桌機為方塊鈕的二分之一，手機放寬到三分之二較好按 */
+  --half-btn: calc(var(--icon-btn) / 2);
   --gutter: 24px;
 
   /* 元件尺寸 */
@@ -113,6 +117,7 @@ html { overflow-x: clip; }
 
 @media (max-width: 700px) {
   #dr-app { --gutter: 16px; --space-5: 20px; --space-6: 24px; }
+  #dr-app { --half-btn: calc(var(--icon-btn) * 2 / 3); }
 }
 
 /* ---------- 2. 版面骨架 ---------- */
@@ -634,7 +639,7 @@ html { overflow-x: clip; }
 
 #dr-app .ref-link-row > .field { margin: 0; }
 
-/* 與尺寸列相同：刪除鈕併入右半欄，兩欄各佔一半 */
+/* 與尺寸列相同：按鈕併入右半欄，兩欄各佔一半。 */
 #dr-app .link-value-group {
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--icon-btn);
@@ -642,6 +647,11 @@ html { overflow-x: clip; }
   align-items: start;
   min-width: 0;
   width: 100%;
+}
+
+/* 多一顆開啟鈕時：輸入格、箭頭、叉叉三者一律相距 space-4 */
+#dr-app .link-value-group.with-open {
+  grid-template-columns: minmax(0, 1fr) var(--half-btn) var(--icon-btn);
 }
 
 #dr-app .link-value-group > .field { margin: 0; }
@@ -780,7 +790,6 @@ html { overflow-x: clip; }
 #dr-app .badge.ready { background: var(--body); color: #ffffff; }
 #dr-app .badge.digital { background: var(--blue); }
 #dr-app .badge.print { background: var(--brown); color: #ffffff; }
-#dr-app .badge.overdue { background: var(--brand-dk); }
 
 /* 第二級：外框色，用於同區塊已有第一級膠囊時 */
 #dr-app .badge.lv2 { background: transparent; border-color: currentColor; }
@@ -790,6 +799,7 @@ html { overflow-x: clip; }
 #dr-app .badge.lv2.print { color: var(--brown); }
 #dr-app .badge.lv2.example { color: #4f8f7b; border-color: var(--green); }
 #dr-app .badge.lv2.urgent { color: var(--red); }
+#dr-app .badge.lv2.overdue { color: var(--brand-dk); }
 
 #dr-app .status-pill {
   display: inline-flex;
@@ -999,6 +1009,14 @@ html { overflow-x: clip; }
 }
 
 #dr-app .rm[disabled] { opacity: .25; cursor: not-allowed; }
+
+/* 開啟連結：與刪除方塊同一組外框樣式，寬度較窄、圓角拉滿成直式膠囊。
+   寬度由 --half-btn 決定（桌機二分之一、手機三分之二）。 */
+#dr-app .rm.rm-half {
+  width: var(--half-btn);
+  min-width: var(--half-btn);
+  border-radius: 999px;
+}
 
 @media (hover: hover) and (pointer: fine) {
   #dr-app .rm:not([disabled]):hover { border-color: var(--control-accent); }
@@ -1607,7 +1625,104 @@ html { overflow-x: clip; }
 
 /* 灰階：逾期且結案、取消、已刪除 */
 #dr-app .card.is-grey:not(.open) { filter: grayscale(1); }
-#dr-app .groups.has-open .card:not(.open) { opacity: .35; filter: grayscale(1); }
+#dr-app .cardhost.has-open .card:not(.open) { opacity: .35; filter: grayscale(1); }
+
+/* ---------- 過往資料 ---------- */
+
+#dr-app .archive { margin-top: var(--space-5); }
+
+/* 過往資料與年份：卡片式的一列。 */
+#dr-app .archive-head,
+#dr-app .arch-year-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 11px;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  background: var(--paper);
+  border: 1.2px solid var(--line);
+  border-radius: var(--r);
+  padding: var(--space-3) var(--space-4);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+#dr-app .arch-year-head { background: var(--tint); }
+
+/* 月份：與案件區的月份標題完全同一組樣式，只多一個展開箭頭。 */
+#dr-app .arch-month-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 11px;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  background: none;
+  border: 0;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+#dr-app .arch-month-head .arch-label {
+  font-size: var(--fs-body);
+  font-weight: var(--fw-medium);
+  color: var(--body);
+}
+
+#dr-app .archive-head .caret,
+#dr-app .arch-year-head .caret,
+#dr-app .arch-month-head .caret {
+  width: 11px;
+  height: 7px;
+  justify-self: end;
+  transition: transform var(--ease);
+}
+
+#dr-app .archive.open > .archive-head .caret,
+#dr-app .arch-year.open > .arch-year-head .caret,
+#dr-app .arch-month.open > .arch-month-head .caret { transform: rotate(180deg); }
+
+#dr-app .archive-title,
+#dr-app .arch-label {
+  font-size: var(--fs-body);
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+}
+
+#dr-app .archive-count,
+#dr-app .arch-count {
+  font-size: var(--fs-meta);
+  font-weight: var(--fw-regular);
+  color: var(--body);
+}
+
+#dr-app .archive-body { margin-top: var(--space-3); }
+
+#dr-app .arch-year { margin-bottom: var(--space-3); }
+#dr-app .arch-year:last-child { margin-bottom: 0; }
+
+/* 月份是年份的下一層：整列（含右邊箭頭）縮到年份卡片的內容邊界，
+   月標題與箭頭因此正好對齊上一層的標題與箭頭。卡片維持全寬。 */
+#dr-app .arch-months { margin-top: var(--space-4); }
+#dr-app .arch-month { margin-bottom: var(--space-4); }
+#dr-app .arch-month:last-child { margin-bottom: 0; }
+/* 按鈕在 width:auto 下會縮成內容寬，所以用 calc 明確扣掉左右縮排。 */
+#dr-app .arch-month-head {
+  width: calc(100% - var(--level-in) * 2);
+  margin-left: var(--level-in);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  #dr-app .archive-head:hover,
+  #dr-app .arch-year-head:hover { border-color: var(--ink); }
+  #dr-app .arch-month-head:hover .arch-label { color: var(--ink); }
+}
+
+#dr-app .archive-head.is-touch-hover,
+#dr-app .arch-year-head.is-touch-hover { border-color: var(--ink); }
 
 /* 兩層 hover 分工：外框由卡片標題列負責，內層由各面板負責 */
 @media (hover: hover) and (pointer: fine) {
@@ -1797,7 +1912,14 @@ html { overflow-x: clip; }
   }
   #dr-app .card-top .idcode { grid-column: 1; grid-row: 1; }
   #dr-app .card-top .cname { grid-column: 2; grid-row: 1; }
-  #dr-app .card-top .cmeta { grid-column: 1 / 3; grid-row: 2; justify-self: start; }
+  /* 日期與膠囊同一列：日期靠左、膠囊靠右，兩者底線對齊，卡片少一列。 */
+  #dr-app .card-top .cmeta {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
+    align-self: end;
+    white-space: nowrap;
+  }
   #dr-app .card-top .cmeta .meta-dept { display: none; }
   #dr-app .card-top .caret {
     grid-column: 3;
@@ -1808,12 +1930,18 @@ html { overflow-x: clip; }
     justify-self: stretch;
   }
   #dr-app .card-top .card-marks {
-    grid-column: 1 / -1;
-    grid-row: 3;
+    grid-column: 2 / -1;
+    grid-row: 2;
+    align-items: flex-end;
     justify-content: flex-end;
     gap: var(--space-2);
   }
-  #dr-app .card.is-deleted .card-top .card-marks { justify-content: flex-start; }
+  /* 已刪除的說明文字較長，仍獨立成一列靠左，不與日期擠在同一列。 */
+  #dr-app .card.is-deleted .card-top .card-marks {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    justify-content: flex-start;
+  }
   #dr-app .card-detail { padding: var(--space-4) var(--space-3); }
   #dr-app .subpanel { padding: var(--space-3); margin-bottom: var(--space-3); }
   #dr-app .logbox {

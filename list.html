@@ -83,13 +83,25 @@
     </div>
 
     <div class="summarybar" id="dr-summary"></div>
-    <div class="groups" id="dr-groups"></div>
+    <div class="groups cardhost" id="dr-groups"></div>
     <div class="empty" id="dr-empty" hidden>無符合條件的申請單。</div>
 
     <div class="pager" id="dr-pager" hidden>
       <button class="pgbtn" id="dr-prev" type="button">上一頁</button>
       <span class="pginfo" id="dr-pginfo"></span>
       <button class="pgbtn" id="dr-next" type="button">下一頁</button>
+    </div>
+
+    <div class="archive" id="dr-archive" hidden>
+      <button class="archive-head" id="dr-archive-toggle" type="button"
+        aria-expanded="false" aria-controls="dr-archive-body">
+        <span class="archive-title">過往資料</span>
+        <span class="archive-count" id="dr-archive-count"></span>
+        <svg class="caret" viewBox="0 0 11 7" aria-hidden="true">
+          <path d="M1 1l4.5 4.5L10 1" stroke="#111" stroke-width="1.6" fill="none"></path>
+        </svg>
+      </button>
+      <div class="archive-body cardhost" id="dr-archive-body" hidden></div>
     </div>
   </div>
 </div>
@@ -626,6 +638,27 @@ var detailCache = Object.create(null);
 var serverNow = new Date();
 var currentPage = 1;
 var openCardId = null;
+
+/* 過往資料：預設全部收合。案件區或搜尋欄一有動作就整個收起來。 */
+var RECENT_MONTHS = 3;
+var archiveOpen = false;
+var archiveOpenKeys = Object.create(null);
+
+function resetArchive() {
+  archiveOpen = false;
+  archiveOpenKeys = Object.create(null);
+}
+
+/** 案件區顯示的區間起點：本月往回數滿 RECENT_MONTHS 個月，跨年照算。 */
+function recentCutoff() {
+  var now = new Date();
+  return new Date(now.getFullYear(), now.getMonth() - (RECENT_MONTHS - 1), 1);
+}
+
+function isRecent(rec, cutoff) {
+  var d = new Date(rec.submittedAt);
+  return !isNaN(d.getTime()) && d >= cutoff;
+}
 var quickFilter = { overdue: false, error: false };
 
 function initialsOf(name) {
@@ -781,6 +814,7 @@ function onGoogleCredential(response) {
   apiPost("listRequests", {}, { retries: 1, timeout: 45000 }).then(function (json) {
     setLoginStatus("", false);
     enterApp(json.user || {});
+    saveListCache(json);
     applyListPayload(json, true);
   }).catch(function (err) {
     console.error(err);
@@ -807,7 +841,8 @@ function startAuth() {
   if (AUTH.load() && AUTH.user()) {
     // 已在另一頁登入過：直接進入畫面，只顯示清單載入，不再跑一次全頁登入進度。
     enterApp(AUTH.user());
-    loadList(true).catch(function () { });
+    var painted = paintFromCache(AUTH.user().email);
+    loadList(!painted, painted).catch(function () { });
     return;
   }
 
@@ -865,6 +900,8 @@ $("dr-logout").addEventListener("click", function () {
   detailCache = Object.create(null);
   openCardId = null;
   currentPage = 1;
+  resetArchive();
+  clearListCache();
   currentUser = { name: "", email: "", initials: "", isAdmin: false };
   showGate("");
 });
@@ -895,11 +932,13 @@ function setListLoading(loading) {
   }
 }
 
-function applyListPayload(json, resetView) {
+function applyListPayload(json, resetView, quiet) {
   if (json.user) applyUser(json.user);
   serverNow = json.serverNow ? new Date(json.serverNow) : new Date();
 
   var next = Array.isArray(json.requests) ? json.requests : [];
+  var changed = JSON.stringify(next) !== JSON.stringify(records);
+
   // 只丟掉內容確實變動過的明細快取，其餘保留以免重新展開時再打一次 API。
   var byId = Object.create(null);
   next.forEach(function (r) { byId[r.id] = r; });
@@ -911,11 +950,55 @@ function applyListPayload(json, resetView) {
 
   $("dr-data-retry").hidden = true;
   setListLoading(false);
-  showSystemMessage("案件清單已更新。", false, true);
+  // 先用快取畫出來時不報「已更新」；背景對完發現沒變也不報，避免畫面無故閃動。
+  if (!quiet && changed) showSystemMessage("案件清單已更新。", false, true);
 
-  if (resetView !== false) { currentPage = 1; openCardId = null; }
+  if (resetView !== false) { currentPage = 1; openCardId = null; resetArchive(); }
   populateFilters();
   renderAll();
+}
+
+/* ------------------------------------------------------------
+   清單本地快取：開頁先用上次的資料立刻畫出來，背景再跟伺服器對一次。
+   只是加速顯示，伺服器回來的結果一律覆蓋；登出時清掉。
+   ------------------------------------------------------------ */
+
+var LIST_CACHE_KEY = "dr_list_v1";
+var LIST_CACHE_MAX_AGE = 24 * 60 * 60 * 1000;
+
+function saveListCache(json) {
+  if (!json || !Array.isArray(json.requests)) return;
+  try {
+    localStorage.setItem(LIST_CACHE_KEY, JSON.stringify({
+      at: Date.now(),
+      email: (json.user && json.user.email) || (currentUser && currentUser.email) || "",
+      payload: json
+    }));
+  } catch (e) { }
+}
+
+function readListCache(email) {
+  var raw = null;
+  try { raw = localStorage.getItem(LIST_CACHE_KEY); } catch (e) { return null; }
+  if (!raw) return null;
+  var box = null;
+  try { box = JSON.parse(raw); } catch (e) { clearListCache(); return null; }
+  if (!box || !box.payload || !Array.isArray(box.payload.requests)) { clearListCache(); return null; }
+  if (Date.now() - (box.at || 0) > LIST_CACHE_MAX_AGE) { clearListCache(); return null; }
+  if (email && box.email && box.email !== email) { clearListCache(); return null; }
+  return box.payload;
+}
+
+function clearListCache() {
+  try { localStorage.removeItem(LIST_CACHE_KEY); } catch (e) { }
+}
+
+/** 有快取就先畫出來，讓畫面不必等伺服器；沒有就維持原本的載入提示。 */
+function paintFromCache(email) {
+  var cached = readListCache(email);
+  if (!cached) return false;
+  applyListPayload(cached, true, true);
+  return true;
 }
 
 function describeError(err) {
@@ -925,13 +1008,16 @@ function describeError(err) {
   return err.message || "案件資料暫時無法載入。";
 }
 
-function loadList(resetView) {
-  showSystemMessage("正在載入案件清單…", false, false);
+function loadList(resetView, quiet) {
+  if (!quiet) {
+    showSystemMessage("正在載入案件清單…", false, false);
+    setListLoading(true);
+  }
   $("dr-data-retry").hidden = true;
-  setListLoading(true);
 
   return apiPost("listRequests", {}, { retries: 1, timeout: 45000 }).then(function (json) {
-    applyListPayload(json, resetView !== false);
+    saveListCache(json);
+    applyListPayload(json, resetView !== false, quiet);
     return json;
   }).catch(function (err) {
     if (err && err.code === "AUTH_REQUIRED") {
@@ -1014,6 +1100,7 @@ function populateFilters() {
     c.addEventListener("click", function () {
       quickFilter[pair[0]] = !quickFilter[pair[0]];
       c.setAttribute("aria-pressed", quickFilter[pair[0]] ? "true" : "false");
+      resetArchive();
       currentPage = 1;
       openCardId = null;
       renderAll();
@@ -1050,6 +1137,7 @@ function matchesFilter(rec) {
 function refilter() {
   currentPage = 1;
   openCardId = null;
+  resetArchive();
   renderAll();
 }
 
@@ -1061,6 +1149,7 @@ $("dr-prev").addEventListener("click", function () {
   if (currentPage <= 1) return;
   currentPage--;
   openCardId = null;
+  resetArchive();
   renderAll();
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
@@ -1068,6 +1157,7 @@ $("dr-prev").addEventListener("click", function () {
 $("dr-next").addEventListener("click", function () {
   currentPage++;
   openCardId = null;
+  resetArchive();
   renderAll();
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
@@ -1076,6 +1166,27 @@ $("dr-next").addEventListener("click", function () {
    清單繪製
    ============================================================ */
 
+/** 依送出月份分組，回傳 { key: [rec], ... } 與由新到舊的 key 順序。 */
+function groupByMonth(list) {
+  var groups = {}, order = [];
+  list.forEach(function (r) {
+    var d = new Date(r.submittedAt);
+    var key = d.getFullYear() + "-" + pad2(d.getMonth() + 1);
+    if (!groups[key]) { groups[key] = []; order.push(key); }
+    groups[key].push(r);
+  });
+  return { groups: groups, order: order };
+}
+
+function monthGroupNode(title, list) {
+  var g = el("div", "month-group");
+  g.appendChild(el("h3", "", title));
+  var cards = el("div", "cards");
+  list.forEach(function (rec) { cards.appendChild(renderCard(rec)); });
+  g.appendChild(cards);
+  return g;
+}
+
 function renderAll() {
   var example = hasActiveFilter()
     ? null
@@ -1083,6 +1194,7 @@ function renderAll() {
   var list = records.filter(function (r) { return !r.isExample; }).filter(matchesFilter);
   list.sort(function (a, b) { return new Date(b.submittedAt) - new Date(a.submittedAt); });
 
+  /* 統計數字代表全部案件，不受案件區／過往資料的切分影響。 */
   var summary = $("dr-summary");
   summary.replaceChildren();
   [
@@ -1097,51 +1209,131 @@ function renderAll() {
     summary.appendChild(box);
   });
 
-  var totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+  var cutoff = recentCutoff();
+  var recent = list.filter(function (r) { return isRecent(r, cutoff); });
+  var older = list.filter(function (r) { return !isRecent(r, cutoff); });
+
+  var totalPages = Math.max(1, Math.ceil(recent.length / PAGE_SIZE));
   currentPage = Math.min(Math.max(1, currentPage), totalPages);
-  $("dr-pager").hidden = list.length <= PAGE_SIZE;
+  $("dr-pager").hidden = recent.length <= PAGE_SIZE;
   $("dr-pginfo").textContent = "第 " + currentPage + " / " + totalPages + " 頁";
   $("dr-prev").disabled = currentPage <= 1;
   $("dr-next").disabled = currentPage >= totalPages;
 
-  var pageList = list.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  var pageList = recent.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
   var groupsEl = $("dr-groups");
   groupsEl.replaceChildren();
-  $("dr-empty").hidden = pageList.length > 0 || !!example;
+  /* 案件區沒有結果時要說清楚過往資料裡還有幾筆，否則搜尋會像是查無此案。 */
+  var emptyEl = $("dr-empty");
+  emptyEl.hidden = pageList.length > 0 || !!example;
+  emptyEl.textContent = older.length
+    ? "近三個月沒有符合的案件，過往資料中有 " + older.length + " 筆。"
+    : "無符合條件的申請單。";
 
-  var groups = {}, order = [];
-  pageList.forEach(function (r) {
-    var d = new Date(r.submittedAt);
-    var key = d.getFullYear() + "-" + pad2(d.getMonth() + 1);
-    if (!groups[key]) { groups[key] = []; order.push(key); }
-    groups[key].push(r);
-  });
-
-  order.forEach(function (key) {
+  var byMonth = groupByMonth(pageList);
+  byMonth.order.forEach(function (key) {
     var parts = key.split("-");
-    var g = el("div", "month-group");
-    g.appendChild(el("h3", "", parts[0] + " 年 " + parts[1] + " 月"));
-    var cards = el("div", "cards");
-    groups[key].forEach(function (rec) { cards.appendChild(renderCard(rec)); });
-    g.appendChild(cards);
-    groupsEl.appendChild(g);
+    groupsEl.appendChild(monthGroupNode(parts[0] + " 年 " + parts[1] + " 月", byMonth.groups[key]));
   });
 
-  if (example) {
-    var eg = el("div", "month-group");
-    eg.appendChild(el("h3", "", "範例"));
-    var ec = el("div", "cards");
-    ec.appendChild(renderCard(example));
-    eg.appendChild(ec);
-    groupsEl.appendChild(eg);
-  }
+  if (example) groupsEl.appendChild(monthGroupNode("範例", [example]));
 
+  renderArchive(older);
   syncOpenDim();
 }
 
+/* ============================================================
+   過往資料
+   ============================================================ */
+
+/**
+ * 年 → 月 → 卡片三層，全部預設收合。
+ * 卡片只在該月展開時才繪製，收合即丟棄，避免累積上千張卡片。
+ */
+function renderArchive(older) {
+  var box = $("dr-archive");
+  var body = $("dr-archive-body");
+  var toggle = $("dr-archive-toggle");
+
+  box.hidden = older.length === 0;
+  $("dr-archive-count").textContent = hasActiveFilter()
+    ? "符合 " + older.length + " 筆"
+    : older.length + " 筆";
+  toggle.setAttribute("aria-expanded", archiveOpen ? "true" : "false");
+  box.classList.toggle("open", archiveOpen);
+  body.hidden = !archiveOpen;
+  body.replaceChildren();
+  if (!archiveOpen || !older.length) return;
+
+  var years = {}, yearOrder = [];
+  older.forEach(function (r) {
+    var y = String(new Date(r.submittedAt).getFullYear());
+    if (!years[y]) { years[y] = []; yearOrder.push(y); }
+    years[y].push(r);
+  });
+
+  yearOrder.forEach(function (year) {
+    var yearOpen = !!archiveOpenKeys[year];
+    var yearBox = el("div", "arch-year" + (yearOpen ? " open" : ""));
+    yearBox.appendChild(archRow("arch-year-head", year + " 年", years[year].length + " 筆", yearOpen,
+      function () { toggleArchiveKey(year); }));
+
+    if (yearOpen) {
+      var months = groupByMonth(years[year]);
+      var monthWrap = el("div", "arch-months");
+      months.order.forEach(function (key) {
+        var monthOpen = !!archiveOpenKeys[key];
+        var monthBox = el("div", "arch-month" + (monthOpen ? " open" : ""));
+        monthBox.appendChild(archRow("arch-month-head",
+          key.split("-")[1] + " 月", months.groups[key].length + " 筆", monthOpen,
+          function () { toggleArchiveKey(key); }));
+        if (monthOpen) {
+          var cards = el("div", "cards");
+          months.groups[key].forEach(function (rec) { cards.appendChild(renderCard(rec)); });
+          monthBox.appendChild(cards);
+        }
+        monthWrap.appendChild(monthBox);
+      });
+      yearBox.appendChild(monthWrap);
+    }
+    body.appendChild(yearBox);
+  });
+}
+
+function archRow(cls, title, count, open, onToggle) {
+  var row = document.createElement("button");
+  row.type = "button";
+  row.className = cls;
+  row.setAttribute("aria-expanded", open ? "true" : "false");
+  row.appendChild(el("span", "arch-label", title));
+  row.appendChild(el("span", "arch-count", count));
+  var caret = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  caret.setAttribute("class", "caret");
+  caret.setAttribute("viewBox", "0 0 11 7");
+  caret.setAttribute("aria-hidden", "true");
+  caret.innerHTML = '<path d="M1 1l4.5 4.5L10 1" stroke="#111" stroke-width="1.6" fill="none"/>';
+  row.appendChild(caret);
+  row.addEventListener("click", onToggle);
+  return row;
+}
+
+function toggleArchiveKey(key) {
+  if (archiveOpenKeys[key]) delete archiveOpenKeys[key];
+  else archiveOpenKeys[key] = true;
+  renderAll();
+}
+
+$("dr-archive-toggle").addEventListener("click", function () {
+  archiveOpen = !archiveOpen;
+  if (!archiveOpen) archiveOpenKeys = Object.create(null);
+  renderAll();
+});
+
 function syncOpenDim() {
-  var groupsEl = $("dr-groups");
-  groupsEl.classList.toggle("has-open", !!groupsEl.querySelector(".card.open"));
+  var open = !!document.querySelector(".cardhost .card.open");
+  document.querySelectorAll(".cardhost").forEach(function (host) {
+    host.classList.toggle("has-open", open);
+  });
 }
 
 function statusPillNode(rec) {
@@ -1162,7 +1354,7 @@ function buildCardMarks(rec) {
     return marks;
   }
 
-  if (isOverdue(rec)) marks.appendChild(el("span", "badge overdue", "逾期"));
+  if (isOverdue(rec)) marks.appendChild(el("span", "badge lv2 overdue", "逾期"));
   else if (isUrgent(rec)) marks.appendChild(el("span", "badge lv2 urgent", "急件"));
 
   if (rec.isExample) {
@@ -1246,7 +1438,7 @@ function renderCard(rec) {
   function toggle() {
     var willOpen = !card.classList.contains("open");
     if (willOpen) {
-      document.querySelectorAll("#dr-groups .card.open").forEach(function (x) {
+      document.querySelectorAll(".cardhost .card.open").forEach(function (x) {
         saveDetailDraftOf(x);
         x.classList.remove("open");
         var t = x.querySelector(".card-top");
@@ -1269,6 +1461,21 @@ function renderCard(rec) {
 
   if (isOpen) ensureDetail();
   return card;
+}
+
+/**
+ * 只放行 http／https，缺通訊協定時補上 https://。
+ * 其餘一律視為無效，避免 javascript: 之類的網址被點開。
+ */
+function safeHref(value) {
+  var text = String(value || "").trim();
+  if (!text) return "";
+  if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(text)) text = "https://" + text;
+  var url;
+  try { url = new URL(text); } catch (e) { return ""; }
+  if (url.protocol !== "http:" && url.protocol !== "https:") return "";
+  if (!url.hostname || url.hostname.indexOf(".") < 0) return "";
+  return url.href;
 }
 
 /* ============================================================
@@ -1819,13 +2026,29 @@ function buildDetail(record, container) {
       f1.appendChild(i1);
       row.appendChild(f1);
 
-      var group = el("div", "link-value-group");
+      var group = el("div", "link-value-group with-open");
       var f2 = el("div", "field");
       var i2 = textEntry(link.note, function (v) { link.note = v; markDirty(); }, "h1");
       i2.placeholder = "說明";
       i2.setAttribute("aria-label", "素材連結說明");
       f2.appendChild(i2);
       group.appendChild(f2);
+
+      var open = el("button", "rm rm-half", "→");
+      open.type = "button";
+      open.setAttribute("aria-label", "開啟這個連結");
+      function syncOpen() {
+        var href = safeHref(i1.value);
+        open.disabled = !href;
+        open.title = href ? "開啟 " + href : "請先填入完整網址";
+      }
+      open.addEventListener("click", function () {
+        var href = safeHref(i1.value);
+        if (href) window.open(href, "_blank", "noopener,noreferrer");
+      });
+      i1.addEventListener("input", syncOpen);
+      syncOpen();
+      group.appendChild(open);
 
       var rm = el("button", "rm", "✕");
       rm.type = "button";
