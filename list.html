@@ -567,6 +567,43 @@ function workingDaysBetween(from, to) {
 }
 
 /* ============================================================
+   共用區塊 G：下拉箭頭方向（兩頁完全相同，請一起更新）
+   ============================================================ */
+
+/**
+ * 下拉選單關閉時箭頭向下、展開時向上。
+ * 支援 :open 的瀏覽器由 CSS 直接處理，這裡只負責補上不支援的瀏覽器，
+ * 兩者不會同時作用，避免狀態互相打架。
+ */
+function initSelectCaret() {
+  var native = false;
+  try { native = window.CSS && CSS.supports("selector(select:open)"); } catch (e) { native = false; }
+  if (native) return;
+
+  var opened = null;
+  function close() {
+    if (!opened) return;
+    opened.classList.remove("is-open");
+    opened = null;
+  }
+  document.addEventListener("mousedown", function (e) {
+    var node = e.target;
+    var sel = node && node.closest ? node.closest("select") : null;
+    if (sel && sel === opened) { close(); return; }   // 再點一次是收合
+    close();
+    if (sel && !sel.disabled) { sel.classList.add("is-open"); opened = sel; }
+  }, true);
+  document.addEventListener("change", close, true);
+  document.addEventListener("blur", close, true);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" || e.key === "Enter" || e.key === "Tab") close();
+  }, true);
+  document.addEventListener("visibilitychange", function () { if (document.hidden) close(); });
+}
+
+initSelectCaret();
+
+/* ============================================================
    總覽狀態
    ============================================================ */
 

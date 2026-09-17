@@ -28,6 +28,9 @@ html { overflow-x: clip; }
   --line: #bababa;
   --hair: #d8d6d0;
   --paper: #ffffff;
+  /* 置頂表頭與置底統計列共用的霧面底色，兩者必須一致。 */
+  --veil: rgba(255, 255, 255, .7);
+  --veil-blur: blur(15px);
   --tint: #eeeeee;
   --blue: #4aacfe;
   --brown: #ac6a27;
@@ -124,9 +127,9 @@ html { overflow-x: clip; }
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(255, 255, 255, .55);
-  -webkit-backdrop-filter: blur(15px);
-  backdrop-filter: blur(15px);
+  background: var(--veil);
+  -webkit-backdrop-filter: var(--veil-blur);
+  backdrop-filter: var(--veil-blur);
   border-bottom: 1.2px solid var(--hair);
 }
 
@@ -490,6 +493,16 @@ html { overflow-x: clip; }
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='11' height='7'><path d='M1 1l4.5 4.5L10 1' stroke='%23111' stroke-width='1.6' fill='none'/></svg>");
   background-repeat: no-repeat;
   background-position: right 12px center;
+}
+
+/* 展開時箭頭改為向上。支援 :open 的瀏覽器走這條，其餘由 .is-open 補上；
+   兩條規則必須分開寫，合併後只要瀏覽器不認得 :open 就會整條失效。 */
+#dr-app select:open {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='11' height='7'><path d='M1 6l4.5-4.5L10 6' stroke='%23111' stroke-width='1.6' fill='none'/></svg>");
+}
+
+#dr-app select.is-open {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='11' height='7'><path d='M1 6l4.5-4.5L10 6' stroke='%23111' stroke-width='1.6' fill='none'/></svg>");
 }
 
 /* 原生日期欄位的固有寬度會撐破格線，改由外框決定寬度 */
@@ -1071,7 +1084,8 @@ html { overflow-x: clip; }
   transition: transform var(--ease);
 }
 
-#dr-app .item-card.collapsed .caret { transform: rotate(-90deg); }
+#dr-app .item-head .caret { transform: rotate(180deg); }
+#dr-app .item-card.collapsed .caret { transform: none; }
 
 #dr-app .item-body { padding: var(--space-5); }
 
@@ -1245,9 +1259,9 @@ html { overflow-x: clip; }
   bottom: 0;
   z-index: 40;
   padding: 0;
-  background: rgba(255, 255, 255, .7);
-  -webkit-backdrop-filter: blur(15px);
-  backdrop-filter: blur(15px);
+  background: var(--veil);
+  -webkit-backdrop-filter: var(--veil-blur);
+  backdrop-filter: var(--veil-blur);
   border-top: 1.2px solid var(--hair);
 }
 
