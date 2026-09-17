@@ -558,18 +558,20 @@ html { overflow-x: clip; }
 #dr-app .row > .field + .field { margin-top: 0; }
 
 /* 項目名稱與需求類型：固定 3:2，兩頁一致 */
+/* 並排欄位一律靠上對齊：輸入框被拉高時往下長，頂端不動。 */
 #dr-app .row.item-head-row,
 #dr-app .filterrow {
   display: grid;
   grid-template-columns: minmax(0, var(--col-major)) minmax(0, var(--col-minor));
   column-gap: var(--space-4);
-  align-items: end;
+  align-items: start;
 }
 
 #dr-app .copy4 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-4);
+  align-items: start;
   width: 100%;
 }
 
@@ -590,7 +592,7 @@ html { overflow-x: clip; }
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-4);
-  align-items: end;
+  align-items: start;
   width: 100%;
   margin-bottom: var(--space-4);
 }
@@ -601,7 +603,7 @@ html { overflow-x: clip; }
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--icon-btn);
   gap: var(--space-4);
-  align-items: end;
+  align-items: start;
   min-width: 0;
   width: 100%;
 }
@@ -613,7 +615,7 @@ html { overflow-x: clip; }
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-4);
-  align-items: end;
+  align-items: start;
   margin-bottom: var(--space-4);
 }
 
@@ -624,7 +626,7 @@ html { overflow-x: clip; }
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--icon-btn);
   gap: var(--space-4);
-  align-items: end;
+  align-items: start;
   min-width: 0;
   width: 100%;
 }
