@@ -15,7 +15,12 @@ html, body {
 }
 
 /* clip 而不是 hidden：hidden 會讓 html 變成捲動容器，表頭的 sticky 就會失效。 */
-html { overflow-x: clip; }
+/* scrollbar-gutter：永遠保留捲軸的位置，展開卡片時畫面才不會因為捲軸出現而整個往左跳。
+   在使用覆蓋式捲軸的系統（macOS、手機）上不佔任何空間，不影響版面。 */
+html {
+  overflow-x: clip;
+  scrollbar-gutter: stable;
+}
 
 /* 設計變數放在 :root，登入畫面與內頁共用同一套規則 */
 :root {
