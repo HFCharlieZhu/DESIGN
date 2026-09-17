@@ -1380,8 +1380,9 @@ html { overflow-x: clip; }
   #dr-app .preview .kv { grid-template-columns: 88px minmax(0, 1fr); }
 }
 
+/* 備註與按鈕是同一組：上方與預覽區隔 space-5，與按鈕之間 space-4（由按鈕的上邊距提供）。 */
 #dr-app .confirm-note {
-  margin: var(--space-5) 0 calc(var(--space-3) * -1);
+  margin: var(--space-5) 0 0;
   text-align: right;
   font-size: var(--fs-meta);
   line-height: 1.6;
