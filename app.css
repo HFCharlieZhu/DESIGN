@@ -29,7 +29,7 @@ html { overflow-x: clip; }
   --hair: #d8d6d0;
   --paper: #ffffff;
   /* 置頂表頭與置底統計列共用的霧面底色，兩者必須一致。 */
-  --veil: rgba(255, 255, 255, .7);
+  --veil: rgba(255, 255, 255, .55);
   --veil-blur: blur(15px);
   --tint: #eeeeee;
   --blue: #4aacfe;
