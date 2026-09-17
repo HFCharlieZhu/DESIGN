@@ -677,9 +677,10 @@ function hasError(rec) {
   });
 }
 
-/** 灰階：已刪除、取消、以及逾期且結案。 */
+/** 灰階：已刪除、取消、以及逾期且結案。範例案件不套用，永遠維持淺綠底。 */
 function isGrey(rec) {
   if (isDeleted(rec)) return true;
+  if (rec.isExample) return false;
   if (rec.status === "取消") return true;
   return rec.status === "結案" && !!parseDate(rec.data.deliveryDate) &&
     parseDate(rec.data.deliveryDate) < todayFromServer();
