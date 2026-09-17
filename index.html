@@ -48,7 +48,6 @@
   <div class="topbar">
     <div class="topbar-in">
       <div class="topbar-title">允禾發 設計需求表<span class="topbar-kind">申請</span></div>
-      <div class="topbar-sub" id="dr-datetime"></div>
       <div class="topbar-user">
         <div class="avatar" id="dr-avatar"></div>
         <span class="username" id="dr-username"></span>
@@ -524,7 +523,7 @@ function startHeartbeat() {
   clearInterval(heartbeatTimer);
   heartbeatTimer = setInterval(refreshSession, 20 * 60 * 1000);
   document.addEventListener("visibilitychange", function () {
-    if (!document.hidden) { refreshSession(); updateDateLabel(); }
+    if (!document.hidden) refreshSession();
   }, { passive: true });
   window.addEventListener("pageshow", refreshSession, { passive: true });
   window.addEventListener("online", refreshSession, { passive: true });
@@ -586,14 +585,15 @@ var PRINT_SIZES = [
 ];
 
 var TYPES = [
-  { id: "web_banner", label: "官網 Banner", mode: "normal", sizes: [{ label: "電腦版" }, { label: "手機版" }], extra: ["page"] },
-  { id: "web_subbanner", label: "官網分頁 Banner", mode: "normal", sizes: [{ label: "電腦版" }, { label: "手機版" }], extra: ["page"] },
+  { id: "web_banner", label: "官網 Banner", mode: "normal", sizes: [{ label: "電腦版" }, { label: "手機版" }] },
+  { id: "web_subbanner", label: "官網分頁 Banner", mode: "normal", sizes: [{ label: "電腦版" }, { label: "手機版" }] },
   { id: "blog", label: "部落格用圖", mode: "normal", sizes: [{ label: "部落格用圖", w: 800, h: 385, unit: "px" }] },
   { id: "thumb", label: "網頁縮圖", mode: "normal", sizes: [{ label: "網頁縮圖", w: 1020, h: 600, unit: "px" }] },
   { id: "social", label: "社群圖", mode: "normal", sizes: [
     { label: "IG 4:5", w: 1080, h: 1350, unit: "px" },
     { label: "FB 4:5", w: 1080, h: 1350, unit: "px" },
     { label: "FB 1:1", w: 1080, h: 1080, unit: "px" },
+    { label: "FB 封面", w: 2500, h: 963, unit: "px" },
     { label: "Line 多頁訊息", w: 2300, h: 1500, unit: "px" },
     { label: "Line 圖文訊息", w: 1040, h: 1040, unit: "px" }
   ] },
@@ -607,7 +607,7 @@ var TYPES = [
   { id: "product", label: "商品頁", mode: "notice", notice: "本項文案請前往《長條圖參考分配》填寫。" },
   { id: "print", label: "印刷品", mode: "normal", forcePrint: true, sizes: PRINT_SIZES },
   { id: "booth", label: "展場", mode: "notice", notice: "本項目需另行安排會議。" },
-  { id: "other", label: "其他", mode: "normal", sizes: [{ label: "自訂尺寸", custom: true }], showChannel: true }
+  { id: "other", label: "其他", mode: "normal", sizes: [{ label: "自訂尺寸", custom: true }], extra: ["page"], showChannel: true }
 ];
 
 function typeOf(id) {
@@ -800,7 +800,6 @@ function enterApp(data) {
   AUTH.set(AUTH.token(), { name: currentUser.name, email: currentUser.email, isAdmin: currentUser.isAdmin });
   gate.hidden = true;
   app.hidden = false;
-  updateDateLabel();
   offerDraft();
   render();
 }
@@ -900,7 +899,6 @@ $("dr-logout").addEventListener("click", function () {
    表單繪製
    ============================================================ */
 
-function updateDateLabel() { $("dr-datetime").textContent = fmtDate(new Date()); }
 
 function labelHtml(text, required, optText) {
   var lab = el("label");
@@ -1033,7 +1031,10 @@ function renderItemCard(item, idx) {
   var footer = el("div", "item-delete-footer");
   var del = el("button", "del-line", "刪除此項目");
   del.type = "button";
+  // 至少要有一個項目，最後一個不開放刪除（與尺寸列的刪除鈕同一條規則）
+  del.disabled = state.items.length <= 1;
   del.addEventListener("click", function () {
+    if (state.items.length <= 1) return;
     state.items = state.items.filter(function (x) { return x._id !== item._id; });
     render();
     saveDraft();
@@ -1127,7 +1128,7 @@ function buildItemBody(item) {
   if (t.sizes && t.sizes.length) frag.appendChild(buildSizeSection(item, t));
 
   if (itemHasPrint(item)) {
-    frag.appendChild(makeField("number", "數量", true, item.printQty, function (v) {
+    frag.appendChild(makeField("number", "數量", false, item.printQty, function (v) {
       item.printQty = v; updateLiveBits(); saveDraft();
     }));
   }
@@ -1446,27 +1447,35 @@ function checkMeetingWarn() {
   hint.hidden = !bad;
 }
 
-function refreshStats() {
-  $("dr-stat-items").textContent = state.items.length;
-  $("dr-stat-units").textContent = state.items.reduce(function (s, it) { return s + itemUnitCount(it); }, 0);
-
+/** 排程狀態：統計列提示與確認頁的急件標示共用同一個判斷。 */
+function scheduleState() {
   var today = new Date();
   today.setHours(0, 0, 0, 0);
   var dates = state.items
     .map(function (it) { return parseDate(it.useDate) || parseDate(state.deliveryDate); })
     .filter(Boolean);
   if (state.deliveryDate) dates.push(parseDate(state.deliveryDate));
+  if (!dates.length) return { note: "", urgent: false };
 
-  var note = "", urgent = false;
-  if (dates.length) {
-    var earliest = dates.reduce(function (a, b) { return a < b ? a : b; });
-    if (workingDaysBetween(today, earliest) >= URGENT_WORKING_DAYS) {
-      note = "請於 " + fmtDate(subtractWorkingDays(earliest, URGENT_WORKING_DAYS)) + " 前召開設計需求會議。";
-    } else {
-      note = "交付日距今工作天數不足，此需求將與主管共同排程，後續進一步確認。";
-      urgent = true;
-    }
+  var earliest = dates.reduce(function (a, b) { return a < b ? a : b; });
+  if (workingDaysBetween(today, earliest) >= URGENT_WORKING_DAYS) {
+    return {
+      note: "請於 " + fmtDate(subtractWorkingDays(earliest, URGENT_WORKING_DAYS)) + " 前召開設計需求會議。",
+      urgent: false
+    };
   }
+  return {
+    note: "交付日距今工作天數不足，此需求將與主管共同排程，後續進一步確認。",
+    urgent: true
+  };
+}
+
+function refreshStats() {
+  $("dr-stat-items").textContent = state.items.length;
+  $("dr-stat-units").textContent = state.items.reduce(function (s, it) { return s + itemUnitCount(it); }, 0);
+
+  var sched = scheduleState();
+  var note = sched.note, urgent = sched.urgent;
 
   var noteEl = $("dr-schedule-note");
   noteEl.textContent = note;
@@ -1631,7 +1640,6 @@ function collectErrors() {
   var errors = [];
   if (!String(state.name || "").trim()) errors.push({ msg: "需求名稱未填寫", focus: "f-name", field: "f-name-field" });
   if (!String(state.purpose || "").trim()) errors.push({ msg: "需求背景／說明未填寫", focus: "f-purpose", field: "f-purpose-field" });
-  if (!state.deliveryDate) errors.push({ msg: "總交付日未填寫", focus: "f-deliverydate", field: "f-deliverydate-field" });
   if (!state.items.length) errors.push({ msg: "尚未新增設計項目", focus: null });
 
   state.items.forEach(function (item, idx) {
@@ -1642,8 +1650,10 @@ function collectErrors() {
     var t = typeOf(item.typeId);
     if (t.mode === "notice" || t.mode === "structure") return;
     if (!t.forcePrint && !item.output.length) errors.push({ msg: label + "：輸出形式未選擇", focus: null });
-    if (itemHasPrint(item) && !String(item.printQty || "").trim()) errors.push({ msg: label + "：數量未填寫", focus: null });
   });
+
+  // 總交付日在畫面上屬於第 5 區「時程」，排在設計項目之後才與閱讀順序一致
+  if (!state.deliveryDate) errors.push({ msg: "總交付日未填寫", focus: "f-deliverydate", field: "f-deliverydate-field" });
   return errors;
 }
 
@@ -1671,10 +1681,12 @@ function showConfirmView() {
   $("dr-confirm").hidden = false;
 }
 
-function kvNode(k, v) {
+function kvNode(k, v, extra) {
   var row = el("div", "kv");
   row.appendChild(el("div", "k", k));
-  row.appendChild(el("div", "v", String(v)));
+  var val = el("div", "v", String(v));
+  if (extra) val.appendChild(extra);
+  row.appendChild(val);
   return row;
 }
 
@@ -1687,7 +1699,8 @@ function renderPreview() {
   p.appendChild(kvNode("申請人", currentUser ? currentUser.initials + "<" + currentUser.email + ">" : "—"));
   p.appendChild(kvNode("需求名稱", state.name || "—"));
   p.appendChild(kvNode("目標對象", state.audience || "未指定"));
-  p.appendChild(kvNode("總交付日", state.deliveryDate || "—"));
+  p.appendChild(kvNode("總交付日", state.deliveryDate || "—",
+    scheduleState().urgent ? el("span", "badge lv2 urgent", "急件") : null));
   p.appendChild(kvNode("會議日期", state.meetingDate || "—"));
 
   p.appendChild(el("h4", "", "設計項目（" + state.items.length + "）"));

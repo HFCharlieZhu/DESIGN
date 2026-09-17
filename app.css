@@ -17,7 +17,8 @@ html, body {
 /* clip 而不是 hidden：hidden 會讓 html 變成捲動容器，表頭的 sticky 就會失效。 */
 html { overflow-x: clip; }
 
-#dr-app {
+/* 設計變數放在 :root，登入畫面與內頁共用同一套規則 */
+:root {
   /* 色票：全部由品牌色與既定輔助色推導，不另外加深或變淺 */
   --brand: #f8b500;
   --brand-l: #fff3d1;
@@ -29,7 +30,7 @@ html { overflow-x: clip; }
   --hair: #d8d6d0;
   --paper: #ffffff;
   /* 置頂表頭與置底統計列共用的霧面底色，兩者必須一致。 */
-  --veil: rgba(255, 255, 255, .55);
+  --veil: rgba(255, 255, 255, .5);
   --veil-blur: blur(15px);
   --tint: #eeeeee;
   --blue: #4aacfe;
@@ -91,7 +92,9 @@ html { overflow-x: clip; }
   --fw-regular: 400;
   --fw-medium: 500;
   --fw-bold: 700;
+}
 
+#dr-app {
   font-family: 'Noto Sans TC', 'Noto Sans', system-ui, -apple-system, 'PingFang TC', 'Microsoft JhengHei', sans-serif;
   color: var(--ink);
   background: var(--tint);
@@ -143,7 +146,7 @@ html { overflow-x: clip; }
   margin: 0 auto;
   padding: var(--space-3) var(--gutter);
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-3);
 }
@@ -161,16 +164,6 @@ html { overflow-x: clip; }
   font-weight: var(--fw-regular);
   color: var(--body);
   letter-spacing: .06em;
-}
-
-#dr-app .topbar-sub {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--fs-meta);
-  font-weight: var(--fw-regular);
-  color: var(--muted);
 }
 
 #dr-app .topbar-user {
@@ -228,6 +221,8 @@ html { overflow-x: clip; }
 
 /* ---------- 3. 登入畫面 ---------- */
 
+/* 登入畫面：字級、字重、顏色、間距全部沿用內頁的同一套變數。
+   間距不用單一 gap，改為依關係給值：標題與說明相鄰、按鈕自成一段、註記另起一段。 */
 #dr-gate {
   width: 100%;
   min-height: 100dvh;
@@ -235,21 +230,21 @@ html { overflow-x: clip; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-4);
+  gap: 0;
   padding: var(--space-6) var(--space-5);
   text-align: center;
-  background: #eeeeee;
   font-family: 'Noto Sans TC', 'Noto Sans', system-ui, -apple-system, 'PingFang TC', 'Microsoft JhengHei', sans-serif;
-  color: #111111;
+  background: var(--tint);
+  color: var(--ink);
   line-height: 1.7;
   letter-spacing: .02em;
 }
 
 #dr-gate .g-title {
-  font-size: 20px;
+  font-size: var(--fs-title);
   line-height: 1.4;
-  font-weight: 700;
-  color: #111111;
+  font-weight: var(--fw-bold);
+  color: var(--ink);
 }
 
 #dr-gate .g-sub,
@@ -258,21 +253,30 @@ html { overflow-x: clip; }
 #dr-gate .inapp-tip {
   width: min(100%, 380px);
   margin: 0;
-  font-size: 12px;
+  font-size: var(--fs-meta);
   line-height: 1.6;
-  font-weight: 400;
+  font-weight: var(--fw-regular);
 }
 
-#dr-gate .g-sub { color: #666666; }
+#dr-gate .g-sub {
+  margin-top: var(--space-2);
+  color: var(--body);
+}
+
+#dr-gate .google-login-slot { margin-top: var(--space-5); }
+#dr-gate .inapp-tip { margin-top: var(--space-3); }
+#dr-gate .g-status { margin-top: var(--space-3); }
+#dr-gate .g-note { margin-top: var(--space-5); }
+
 #dr-gate .g-note,
-#dr-gate .inapp-tip { color: #9fa0a0; }
+#dr-gate .inapp-tip { color: var(--muted); }
 
 #dr-gate .g-status {
   min-height: 20px;
-  color: #666666;
+  color: var(--body);
 }
 
-#dr-gate .g-status.is-error { color: #ef8585; }
+#dr-gate .g-status.is-error { color: var(--red); }
 
 #dr-gate .google-login-slot {
   width: min(100%, 300px);
@@ -343,6 +347,8 @@ html { overflow-x: clip; }
   place-items: center;
   font-size: var(--fs-meta);
   font-weight: var(--fw-medium);
+  /* 行高必須歸 1，否則行框比圓圈高，文字會被壓到偏下 */
+  line-height: 1;
 }
 
 #dr-app .panel-title {
@@ -485,6 +491,10 @@ html { overflow-x: clip; }
   height: var(--entry-h1);
   max-height: calc(var(--entry-h1) * 3);
 }
+
+/* 唯讀欄位（例如總覽的部門）不提供拖曳，避免出現沒有作用的把手 */
+#dr-app textarea[disabled],
+#dr-app textarea[readonly] { resize: none; }
 
 #dr-app textarea.tall {
   height: var(--entry-h6);
@@ -886,6 +896,9 @@ html { overflow-x: clip; }
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  /* 行高歸 1，文字才會落在按鈕正中央 */
+  line-height: 1;
   text-decoration: none;
   transition: filter var(--ease), transform var(--ease);
 }
@@ -1016,6 +1029,8 @@ html { overflow-x: clip; }
   width: var(--half-btn);
   min-width: var(--half-btn);
   border-radius: 999px;
+  /* 與區塊的上下移動鈕同字級 */
+  font-size: 13px;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -1377,7 +1392,13 @@ html { overflow-x: clip; }
 }
 
 #dr-app .preview .kv .k { color: var(--muted); }
-#dr-app .preview .kv .v { color: var(--ink); }
+#dr-app .preview .kv .v {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  color: var(--ink);
+}
 
 #dr-app .preview .total {
   margin: var(--space-4) calc(var(--space-5) * -1) 0;
@@ -1978,7 +1999,6 @@ html { overflow-x: clip; }
     text-overflow: ellipsis;
   }
   #dr-app .btn-topbar { grid-column: 2; grid-row: 1; }
-  #dr-app .topbar-sub { display: none; }
   #dr-app .topbar-user {
     grid-column: 1 / -1;
     grid-row: 2;

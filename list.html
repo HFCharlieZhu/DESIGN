@@ -48,7 +48,6 @@
   <div class="topbar">
     <div class="topbar-in">
       <div class="topbar-title">允禾發 設計需求表<span class="topbar-kind">案件總覽</span></div>
-      <div class="topbar-sub" id="dr-datetime"></div>
       <div class="topbar-user">
         <div class="avatar" id="dr-avatar"></div>
         <span class="username" id="dr-username"></span>
@@ -416,7 +415,7 @@ function startHeartbeat() {
   clearInterval(heartbeatTimer);
   heartbeatTimer = setInterval(refreshSession, 20 * 60 * 1000);
   document.addEventListener("visibilitychange", function () {
-    if (!document.hidden) { refreshSession(); updateDateLabel(); }
+    if (!document.hidden) refreshSession();
   }, { passive: true });
   window.addEventListener("pageshow", refreshSession, { passive: true });
   window.addEventListener("online", refreshSession, { passive: true });
@@ -478,14 +477,15 @@ var PRINT_SIZES = [
 ];
 
 var TYPES = [
-  { id: "web_banner", label: "官網 Banner", mode: "normal", sizes: [{ label: "電腦版" }, { label: "手機版" }], extra: ["page"] },
-  { id: "web_subbanner", label: "官網分頁 Banner", mode: "normal", sizes: [{ label: "電腦版" }, { label: "手機版" }], extra: ["page"] },
+  { id: "web_banner", label: "官網 Banner", mode: "normal", sizes: [{ label: "電腦版" }, { label: "手機版" }] },
+  { id: "web_subbanner", label: "官網分頁 Banner", mode: "normal", sizes: [{ label: "電腦版" }, { label: "手機版" }] },
   { id: "blog", label: "部落格用圖", mode: "normal", sizes: [{ label: "部落格用圖", w: 800, h: 385, unit: "px" }] },
   { id: "thumb", label: "網頁縮圖", mode: "normal", sizes: [{ label: "網頁縮圖", w: 1020, h: 600, unit: "px" }] },
   { id: "social", label: "社群圖", mode: "normal", sizes: [
     { label: "IG 4:5", w: 1080, h: 1350, unit: "px" },
     { label: "FB 4:5", w: 1080, h: 1350, unit: "px" },
     { label: "FB 1:1", w: 1080, h: 1080, unit: "px" },
+    { label: "FB 封面", w: 2500, h: 963, unit: "px" },
     { label: "Line 多頁訊息", w: 2300, h: 1500, unit: "px" },
     { label: "Line 圖文訊息", w: 1040, h: 1040, unit: "px" }
   ] },
@@ -499,7 +499,7 @@ var TYPES = [
   { id: "product", label: "商品頁", mode: "notice", notice: "本項文案請前往《長條圖參考分配》填寫。" },
   { id: "print", label: "印刷品", mode: "normal", forcePrint: true, sizes: PRINT_SIZES },
   { id: "booth", label: "展場", mode: "notice", notice: "本項目需另行安排會議。" },
-  { id: "other", label: "其他", mode: "normal", sizes: [{ label: "自訂尺寸", custom: true }], showChannel: true }
+  { id: "other", label: "其他", mode: "normal", sizes: [{ label: "自訂尺寸", custom: true }], extra: ["page"], showChannel: true }
 ];
 
 function typeOf(id) {
@@ -677,7 +677,6 @@ function sameEmail(a, b) {
   return String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
 }
 
-function updateDateLabel() { $("dr-datetime").textContent = fmtDate(new Date()); }
 
 /* ---------- 權限 ---------- */
 
@@ -744,7 +743,6 @@ function hasError(rec) {
     if (!t) return true;
     if (!String(it.name || "").trim()) return true;
     if (t.mode === "normal" && !t.forcePrint && !(it.output || []).length) return true;
-    if (itemHasPrint(it) && !String(it.printQty || "").trim()) return true;
     return false;
   });
 }
@@ -798,7 +796,6 @@ function enterApp(user) {
   applyUser(user);
   gate.hidden = true;
   app.hidden = false;
-  updateDateLabel();
 }
 
 function onGoogleCredential(response) {
@@ -978,6 +975,7 @@ function saveListCache(json) {
 }
 
 function readListCache(email) {
+  if (!AUTH.token()) { clearListCache(); return null; }
   var raw = null;
   try { raw = localStorage.getItem(LIST_CACHE_KEY); } catch (e) { return null; }
   if (!raw) return null;
@@ -992,6 +990,14 @@ function readListCache(email) {
 function clearListCache() {
   try { localStorage.removeItem(LIST_CACHE_KEY); } catch (e) { }
 }
+
+/* 任何一個分頁登出，所有分頁的清單快取都要一起清掉，不留案件資料在瀏覽器裡。 */
+window.addEventListener("storage", function (e) {
+  if (e.key && e.key !== "dr_auth_v3") return;
+  var raw = null;
+  try { raw = localStorage.getItem("dr_auth_v3"); } catch (err) { raw = null; }
+  if (!raw) clearListCache();
+});
 
 /** 有快取就先畫出來，讓畫面不必等伺服器；沒有就維持原本的載入提示。 */
 function paintFromCache(email) {
@@ -1777,7 +1783,6 @@ function buildDetail(record, container) {
       if (!t || t.mode === "notice" || t.mode === "structure") return;
       normalizeItem(it);
       if (!t.forcePrint && !it.output.length) add(prefix + "：輸出形式", scope + ".item-output-field");
-      if (itemHasPrint(it) && !String(it.printQty || "").trim()) add(prefix + "：數量", scope + ".item-qty-field");
     });
     return errors;
   }
@@ -1968,11 +1973,13 @@ function buildDetail(record, container) {
         if (!canEdit) disableInputs(next);
       },
       function () {
+        if (work.data.items.length <= 1) return;
         work.data.items = work.data.items.filter(function (x) { return x !== item; });
         renderItems();
         markDirty();
       },
-      markDirty);
+      markDirty,
+      work.data.items.length);
     return node;
   }
 
@@ -2237,7 +2244,7 @@ function disableInputs(root) {
 
 /* ---------- 項目編輯 ---------- */
 
-function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange) {
+function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total) {
   var box = el("div", "item-block");
   box.dataset.itemIndex = String(idx);
 
@@ -2499,7 +2506,7 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange) {
       }
 
       if (itemHasPrint(item)) {
-        var qtyField = makeField("number", "數量", true, item.printQty, function (v) {
+        var qtyField = makeField("number", "數量", false, item.printQty, function (v) {
           item.printQty = v; onChange();
         });
         qtyField.classList.add("item-qty-field");
@@ -2570,7 +2577,12 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange) {
   var footer = el("div", "item-delete-footer");
   var delItem = el("button", "del-line", "刪除此項目");
   delItem.type = "button";
-  delItem.addEventListener("click", onDelete);
+  // 至少要有一個項目，最後一個不開放刪除（與申請表、尺寸列同一條規則）
+  delItem.disabled = total <= 1;
+  delItem.addEventListener("click", function () {
+    if (total <= 1) return;
+    onDelete();
+  });
   footer.appendChild(delItem);
   box.appendChild(footer);
 
