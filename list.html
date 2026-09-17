@@ -78,7 +78,16 @@
           <select id="f-status" aria-label="狀態篩選"><option value="">全部狀態</option></select>
         </div>
       </div>
-      <div class="chiprow" id="dr-quickchips"></div>
+      <div class="chiprow" id="dr-quickchips">
+        <button class="filter-reset" id="dr-filter-reset" type="button" hidden
+          aria-label="清除所有篩選條件" title="清除所有篩選條件">
+          <svg viewBox="0 0 14 14" aria-hidden="true">
+            <path d="M12 7a5 5 0 1 1-1.6-3.7M12 1.2V4h-2.8"
+              stroke="currentColor" stroke-width="1.3" fill="none"
+              stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
     </div>
 
     <div class="summarybar" id="dr-summary"></div>
@@ -1098,7 +1107,8 @@ function populateFilters() {
   if (STATUSES.indexOf(statusValue) >= 0) statusSel.value = statusValue;
 
   var quick = $("dr-quickchips");
-  quick.replaceChildren();
+  var resetBtn = $("dr-filter-reset");
+  quick.replaceChildren(resetBtn);
   [["overdue", "逾期"], ["error", "錯誤"]].forEach(function (pair) {
     var c = el("button", "chip c-" + pair[0], pair[1]);
     c.type = "button";
@@ -1111,9 +1121,27 @@ function populateFilters() {
       openCardId = null;
       renderAll();
     });
-    quick.appendChild(c);
+    quick.insertBefore(c, resetBtn);
   });
+  syncFilterReset();
 }
+
+/** 清除鈕只在真的有條件時出現，沒有條件時不佔用視覺重量。 */
+function syncFilterReset() {
+  $("dr-filter-reset").hidden = !hasActiveFilter();
+}
+
+function clearAllFilters() {
+  $("f-search").value = "";
+  $("f-dept").value = "";
+  $("f-status").value = "";
+  quickFilter.overdue = false;
+  quickFilter.error = false;
+  populateFilters();
+  refilter();
+}
+
+$("dr-filter-reset").addEventListener("click", clearAllFilters);
 
 function hasActiveFilter() {
   return !!($("f-search").value.trim() || $("f-dept").value || $("f-status").value ||
@@ -1194,6 +1222,7 @@ function monthGroupNode(title, list) {
 }
 
 function renderAll() {
+  syncFilterReset();
   var example = hasActiveFilter()
     ? null
     : (records.find(function (r) { return r && r.isExample; }) || null);
@@ -2594,7 +2623,7 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
    啟動
    ============================================================ */
 
-initTouchFeedback(".btn-topbar,.btn-sm,.pgbtn,.chip,.card-top,.subpanel,.item-block,.block,.add-line,.del-line,.rm,.inline-clear,.block-order button,.custom-purpose,input,textarea,select,.data-retry button");
+initTouchFeedback(".btn-topbar,.btn-sm,.pgbtn,.chip,.filter-reset,.archive-head,.arch-year-head,.arch-month-head,.card-top,.subpanel,.item-block,.block,.add-line,.del-line,.rm,.inline-clear,.block-order button,.custom-purpose,input,textarea,select,.data-retry button");
 startHeartbeat();
 startAuth();
 

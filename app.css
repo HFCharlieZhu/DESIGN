@@ -1542,6 +1542,31 @@ html { overflow-x: clip; }
 
 #dr-app .filterbar .chiprow { margin-top: var(--space-3); }
 
+/* 清除篩選：靠右，只有真的有條件時才出現。點擊區維持 28px，圖形 14px。 */
+#dr-app .filter-reset {
+  margin-left: auto;
+  width: var(--round-btn);
+  height: var(--round-btn);
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--body);
+  cursor: pointer;
+  transition: color var(--ease), background-color var(--ease);
+}
+
+#dr-app .filter-reset svg { width: 14px; height: 14px; }
+
+@media (hover: hover) and (pointer: fine) {
+  #dr-app .filter-reset:hover { color: var(--ink); background: var(--tint); }
+}
+
+#dr-app .filter-reset.is-touch-hover { color: var(--ink); background: var(--tint); }
+
 #dr-app .summarybar {
   display: flex;
   flex-wrap: wrap;
@@ -1588,6 +1613,9 @@ html { overflow-x: clip; }
 }
 
 #dr-app .card.is-deleted .card-top { cursor: default; }
+
+/* 已刪除的卡片沒有展開箭頭，說明文字要補到最右欄，才與其他卡片的右邊界切齊 */
+#dr-app .card.is-deleted .card-top .card-marks { grid-column: 4 / -1; }
 
 #dr-app .card-top .idcode {
   grid-column: 1;
@@ -1638,11 +1666,13 @@ html { overflow-x: clip; }
 
 #dr-app .card.open .caret { transform: rotate(180deg); }
 
-/* 卡片底色優先序：錯誤／退回／取消 > 逾期 > 白底 */
+/* 卡片底色優先序：已刪除 > 錯誤／退回／取消 > 逾期 > 白底 */
 #dr-app .card.bg-error > .card-top { background: var(--red-l); }
 #dr-app .card.bg-overdue > .card-top { background: var(--brand-l); }
 #dr-app .card.bg-example > .card-top { background: var(--green-l); }
 #dr-app .card.bg-normal > .card-top { background: var(--paper); }
+/* 已刪除：與過往資料的年份列同一個底色，表示它已經退出流程 */
+#dr-app .card.is-deleted > .card-top { background: var(--tint); }
 
 /* 灰階：逾期且結案、取消、已刪除 */
 #dr-app .card.is-grey:not(.open) { filter: grayscale(1); }
