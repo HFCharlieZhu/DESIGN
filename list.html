@@ -634,6 +634,7 @@ var STATUS_META = {
   "待確認": { bg: "var(--body)", fg: "#ffffff" },
   "已排程": { bg: "var(--blue)", fg: "var(--ink)" },
   "設計中": { bg: "var(--brand)", fg: "var(--ink)" },
+  "外包": { bg: "var(--green)", fg: "var(--ink)" },
   "完稿": { bg: "var(--brand)", fg: "var(--ink)" },
   "結案": { bg: "var(--green)", fg: "var(--ink)" },
   "退回": { bg: "var(--red)", fg: "var(--ink)" },
@@ -710,8 +711,10 @@ function todayFromServer() {
   return d;
 }
 
+/** 已結束的狀態不計逾期。外包＝已交給外部廠商，設計端不再負責。 */
 function isClosedStatus(status) {
-  return status === "完稿" || status === "結案" || status === "取消" || status === "退回";
+  return status === "完稿" || status === "結案" || status === "外包" ||
+    status === "取消" || status === "退回";
 }
 
 function isDeleted(rec) { return !!(rec && rec.deleted); }
@@ -761,8 +764,9 @@ function isGrey(rec) {
   if (isDeleted(rec)) return true;
   if (rec.isExample) return false;
   if (rec.status === "取消") return true;
-  return rec.status === "結案" && !!parseDate(rec.data.deliveryDate) &&
-    parseDate(rec.data.deliveryDate) < todayFromServer();
+  if (rec.status !== "結案" && rec.status !== "外包") return false;
+  var due = parseDate(rec.data.deliveryDate);
+  return !!due && due < todayFromServer();
 }
 
 /** 卡片底色與互動色：錯誤／退回／取消 > 逾期 > 狀態色。 */
