@@ -12,8 +12,10 @@ html, body {
   margin: 0;
   padding: 0;
   background: #eeeeee;
-  overflow-x: hidden;
 }
+
+/* clip 而不是 hidden：hidden 會讓 html 變成捲動容器，表頭的 sticky 就會失效。 */
+html { overflow-x: clip; }
 
 #dr-app {
   /* 色票：全部由品牌色與既定輔助色推導，不另外加深或變淺 */
@@ -37,14 +39,21 @@ html, body {
   /* 互動色：預設為品牌色，卡片內改由該案件狀態色接手 */
   --control-accent: var(--brand);
 
-  /* 間距階梯 */
-  --gap-tight: 6px;   /* 輸入框 ↔ 自身提示或錯誤訊息 */
-  --space-2: 8px;     /* 標籤 ↔ 輸入框、並排膠囊之間 */
-  --space-3: 12px;    /* 同一組內的元素 */
-  --space-4: 16px;    /* 欄位 ↔ 欄位、欄與欄 */
-  --space-5: 24px;    /* 群組 ↔ 群組、面板內距 */
-  --space-6: 32px;    /* 區段 ↔ 區段 */
-  --field-gap: 20px;  /* 表單問題之間的固定節奏 */
+  /* 間距階梯 —— 每一級只有一個用途，不另外微調：
+     gap-tight 輸入框 ↔ 自身提示或錯誤訊息
+     space-2   標籤 ↔ 輸入框、膠囊與徽章之間
+     space-3   標題列內部、巢狀區塊內部
+     space-4   所有並排欄位之間（水平與垂直）、面板內的群組之間
+     space-5   面板內距、面板之間
+     space-6   區段之間
+     field-gap 表單問題之間的固定節奏 */
+  --gap-tight: 6px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --field-gap: 20px;
   --gutter: 24px;
 
   /* 元件尺寸 */
@@ -56,6 +65,15 @@ html, body {
   --icon-btn: 44px;
   --round-btn: 28px;
   --ease: .18s;
+
+  /* 文字欄位高度：預設 1／2／6 行，一律可往下拖曳到三倍 */
+  --entry-h1: 44px;
+  --entry-h2: 80px;
+  --entry-h6: 168px;
+
+  /* 非對稱兩欄的固定比例：主欄 3、次欄 2，中間只隔一個 --space-3 */
+  --col-major: 3fr;
+  --col-minor: 2fr;
 
   /* 字級與字重 */
   --fs-meta: 12px;
@@ -183,7 +201,7 @@ html, body {
   text-align: center;
   font-size: var(--fs-meta);
   color: var(--body);
-  padding: var(--gap-tight) var(--space-3);
+  padding: var(--space-2) var(--gutter);
   overflow: hidden;
   max-height: 40px;
   opacity: 1;
@@ -388,6 +406,7 @@ html, body {
 #dr-app .hint { color: var(--muted); }
 #dr-app .errmsg { display: none; color: var(--red); }
 
+/* 必填未完成：兩頁共用同一組紅框與紅字標籤 */
 #dr-app .field.err > label { color: var(--red); }
 #dr-app .field.err input,
 #dr-app .field.err textarea,
@@ -445,15 +464,23 @@ html, body {
   cursor: not-allowed;
 }
 
+/* 文字欄位一律是可換行的多行欄位：預設高度維持原樣，可往下拖曳到三倍高。 */
 #dr-app textarea {
   resize: vertical;
-  min-height: 80px;
-  max-height: 192px;
+  line-height: 1.5;
+  height: var(--entry-h2);
+  min-height: var(--entry-h1);
+  max-height: calc(var(--entry-h2) * 3);
+}
+
+#dr-app textarea.h1 {
+  height: var(--entry-h1);
+  max-height: calc(var(--entry-h1) * 3);
 }
 
 #dr-app textarea.tall {
-  height: 168px;
-  max-height: 168px;
+  height: var(--entry-h6);
+  max-height: calc(var(--entry-h6) * 3);
 }
 
 #dr-app select {
@@ -486,7 +513,7 @@ html, body {
   height: 100%;
   min-height: 0;
   margin: 0;
-  padding: 9px 12px;
+  padding: 10px 12px;
   line-height: normal;
   overflow: hidden;
 }
@@ -531,26 +558,27 @@ html, body {
 #dr-app .row > .field + .field { margin-top: 0; }
 
 /* 項目名稱與需求類型：固定 3:2，兩頁一致 */
-#dr-app .row.item-head-row {
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+#dr-app .row.item-head-row,
+#dr-app .filterrow {
+  display: grid;
+  grid-template-columns: minmax(0, var(--col-major)) minmax(0, var(--col-minor));
+  column-gap: var(--space-4);
   align-items: end;
-  gap: var(--space-3);
 }
 
 #dr-app .copy4 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: var(--space-4);
-  row-gap: var(--space-3);
+  gap: var(--space-4);
   width: 100%;
 }
 
 #dr-app .copy4 > .field { margin: 0; }
-#dr-app .copy4 > .full { grid-column: 1 / -1; }
 
 @media (max-width: 700px) {
   #dr-app .row.c2,
   #dr-app .row.item-head-row,
+  #dr-app .filterrow,
   #dr-app .copy4 {
     grid-template-columns: minmax(0, 1fr);
     row-gap: var(--space-4);
@@ -583,33 +611,40 @@ html, body {
 /* 素材連結列：網址 ＋ 說明 ＋ 刪除 */
 #dr-app .ref-link-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) var(--icon-btn);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-4);
   align-items: end;
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 #dr-app .ref-link-row > .field { margin: 0; }
+
+/* 與尺寸列相同：刪除鈕併入右半欄，兩欄各佔一半 */
+#dr-app .link-value-group {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--icon-btn);
+  gap: var(--space-4);
+  align-items: end;
+  min-width: 0;
+  width: 100%;
+}
+
+#dr-app .link-value-group > .field { margin: 0; }
 
 @media (max-width: 700px) {
   #dr-app .size-row { grid-template-columns: minmax(0, 1fr); }
   #dr-app .size-row > .field,
   #dr-app .size-row > .size-value-group { grid-column: 1 / -1; }
-  #dr-app .ref-link-row {
-    grid-template-columns: minmax(0, 1fr) var(--icon-btn);
-    grid-template-rows: auto auto;
-    gap: var(--space-2) var(--space-4);
-  }
-  #dr-app .ref-link-row > .field:first-child { grid-column: 1 / -1; grid-row: 1; }
-  #dr-app .ref-link-row > .field:nth-child(2) { grid-column: 1; grid-row: 2; }
-  #dr-app .ref-link-row > .rm { grid-column: 2; grid-row: 2; }
+  #dr-app .ref-link-row { grid-template-columns: minmax(0, 1fr); }
+  #dr-app .ref-link-row > .field,
+  #dr-app .ref-link-row > .link-value-group { grid-column: 1 / -1; }
 }
 
 /* 自訂用途：原地轉為輸入框，外觀比照一般輸入框 */
 #dr-app .custom-purpose {
   display: flex;
   align-items: center;
-  gap: var(--gap-tight);
+  gap: var(--space-2);
   height: var(--control-h);
   padding: 0 4px 0 12px;
   border: 1.2px solid var(--line);
@@ -731,7 +766,6 @@ html, body {
 #dr-app .badge.digital { background: var(--blue); }
 #dr-app .badge.print { background: var(--brown); color: #ffffff; }
 #dr-app .badge.overdue { background: var(--brand-dk); }
-#dr-app .badge.urgent { background: var(--red); }
 
 /* 第二級：外框色，用於同區塊已有第一級膠囊時 */
 #dr-app .badge.lv2 { background: transparent; border-color: currentColor; }
@@ -740,6 +774,7 @@ html, body {
 #dr-app .badge.lv2.digital { color: var(--blue); }
 #dr-app .badge.lv2.print { color: var(--brown); }
 #dr-app .badge.lv2.example { color: #4f8f7b; border-color: var(--green); }
+#dr-app .badge.lv2.urgent { color: var(--red); }
 
 #dr-app .status-pill {
   display: inline-flex;
@@ -888,7 +923,7 @@ html, body {
 #dr-app .add-line {
   display: inline-flex;
   align-items: center;
-  gap: var(--gap-tight);
+  gap: var(--space-2);
   height: var(--btn-h-sm);
   padding: 0 14px;
   border: 1px dashed var(--line);
@@ -984,8 +1019,8 @@ html, body {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) auto 40px;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
   background: var(--tint);
   border-bottom: 1.2px solid var(--hair);
   cursor: pointer;
@@ -1022,7 +1057,7 @@ html, body {
 #dr-app .item-bar .badges {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--gap-tight);
+  gap: var(--space-2);
   justify-content: flex-end;
 }
 
@@ -1042,8 +1077,8 @@ html, body {
   #dr-app .item-head {
     grid-template-columns: 28px minmax(0, 1fr) 40px;
     grid-template-rows: auto auto;
-    gap: var(--space-2) var(--gap-tight);
-    padding: var(--space-3);
+    gap: var(--space-2) var(--space-3);
+    padding: var(--space-3) var(--space-4);
   }
   #dr-app .item-head .idx { grid-column: 1; grid-row: 1; }
   #dr-app .item-head .name { grid-column: 2; grid-row: 1; }
@@ -1057,7 +1092,7 @@ html, body {
 #dr-app .item-block {
   border: 1.2px solid var(--hair);
   border-radius: var(--r);
-  background: var(--tint);
+  background: var(--paper);
   padding: var(--space-4);
   margin-bottom: var(--space-3);
   transition: border-color var(--ease);
@@ -1085,7 +1120,7 @@ html, body {
 #dr-app .block {
   border: 1.2px solid var(--hair);
   border-radius: var(--r);
-  background: var(--paper);
+  background: var(--tint);
   padding: var(--space-3);
   transition: border-color var(--ease);
 }
@@ -1110,7 +1145,7 @@ html, body {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  margin-top: var(--gap-tight);
+  margin-top: var(--space-3);
   min-height: var(--round-btn);
 }
 
@@ -1118,7 +1153,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: var(--gap-tight);
+  gap: var(--space-2);
 }
 
 #dr-app .block-order button {
@@ -1164,7 +1199,6 @@ html, body {
   color: var(--body);
 }
 
-#dr-app .item-block .notice-box { background: var(--paper); }
 
 /* ---------- 12. 申請表：草稿列、統計列、確認頁、完成頁 ---------- */
 
@@ -1208,7 +1242,7 @@ html, body {
   position: sticky;
   bottom: 0;
   z-index: 40;
-  padding: var(--space-3) var(--gutter);
+  padding: 0;
   background: rgba(255, 255, 255, .7);
   -webkit-backdrop-filter: blur(15px);
   backdrop-filter: blur(15px);
@@ -1218,6 +1252,7 @@ html, body {
 #dr-app .statsbar-in {
   max-width: 1040px;
   margin: 0 auto;
+  padding: var(--space-3) var(--gutter);
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -1254,7 +1289,7 @@ html, body {
 }
 
 #dr-app .checklist li {
-  padding: var(--gap-tight) var(--space-5);
+  padding: var(--space-2) var(--space-5);
   border-bottom: 1px solid var(--hair);
 }
 
@@ -1304,7 +1339,7 @@ html, body {
   display: grid;
   grid-template-columns: 110px minmax(0, 1fr);
   gap: var(--space-3);
-  padding: var(--gap-tight) 0;
+  padding: var(--space-2) 0;
 }
 
 #dr-app .preview .kv .k { color: var(--muted); }
@@ -1329,11 +1364,20 @@ html, body {
   #dr-app .preview .kv { grid-template-columns: 88px minmax(0, 1fr); }
 }
 
+#dr-app .confirm-note {
+  margin: var(--space-5) 0 calc(var(--space-3) * -1);
+  text-align: right;
+  font-size: var(--fs-meta);
+  line-height: 1.6;
+  font-weight: var(--fw-regular);
+  color: var(--body);
+}
+
 #dr-app .confirm-actions {
   display: flex;
   justify-content: flex-end;
   gap: var(--space-3);
-  margin: var(--space-5) 0 var(--space-6);
+  margin: var(--space-4) 0 var(--space-6);
 }
 
 #dr-app .spinner {
@@ -1367,7 +1411,7 @@ html, body {
 }
 
 #dr-app .success .code {
-  margin: var(--space-3) 0 var(--gap-tight);
+  margin: var(--space-3) 0 var(--space-2);
   font-size: var(--fs-display);
   font-weight: var(--fw-bold);
   letter-spacing: .02em;
@@ -1399,6 +1443,7 @@ html, body {
 }
 
 @media (max-width: 700px) {
+  #dr-app .confirm-note { text-align: left; }
   #dr-app .confirm-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1429,11 +1474,14 @@ html, body {
   margin: var(--space-5) 0 var(--space-4);
 }
 
-#dr-app .filterrow {
+#dr-app .filterrow { align-items: center; }
+
+/* 次欄內部再平均切成兩個下拉，外層維持 3:2 */
+#dr-app .filterrow .filter-pair {
   display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 1fr) minmax(0, 1fr);
-  gap: var(--space-2);
-  align-items: center;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--space-4);
+  min-width: 0;
 }
 
 #dr-app .filterbar .chiprow { margin-top: var(--space-3); }
@@ -1515,7 +1563,7 @@ html, body {
   align-items: center;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: var(--gap-tight);
+  gap: var(--space-2);
 }
 
 #dr-app .card-top .caret {
@@ -1582,10 +1630,9 @@ html, body {
   max-height: 130px;
   overflow-y: auto;
   font-size: var(--fs-meta);
+  line-height: 1.9;
   color: var(--muted);
 }
-
-#dr-app .logbox .entry { padding: 2px 0; }
 
 #dr-app .detail-actions {
   display: grid;
@@ -1724,12 +1771,11 @@ html, body {
 
 @media (max-width: 700px) {
   #dr-app .filterbar { padding: var(--space-3); margin: var(--space-4) 0; }
-  #dr-app .filterrow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  #dr-app .filterrow > input { grid-column: 1 / -1; }
+  #dr-app .filterrow { row-gap: var(--space-2); }
   #dr-app .card-top {
     grid-template-columns: auto minmax(0, 1fr) 40px;
     grid-template-rows: auto auto;
-    gap: var(--gap-tight) var(--space-2);
+    gap: var(--space-2) var(--space-3);
     padding: var(--space-3);
   }
   #dr-app .card-top .idcode { grid-column: 1; grid-row: 1; }
@@ -1748,6 +1794,7 @@ html, body {
     grid-column: 1 / -1;
     grid-row: 3;
     justify-content: flex-end;
+    gap: var(--space-2);
   }
   #dr-app .card.is-deleted .card-top .card-marks { justify-content: flex-start; }
   #dr-app .card-detail { padding: var(--space-4) var(--space-3); }
@@ -1765,7 +1812,7 @@ html, body {
   #dr-app .topbar-kind { margin-left: 4px; }
   #dr-app .btn-topbar { padding: 0 12px; }
   #dr-app .topbar-user .username { max-width: 135px; }
-  #dr-app .filterrow { grid-template-columns: minmax(0, 1fr); }
+  #dr-app .filterrow .filter-pair { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-2); }
   #dr-app .detail-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 

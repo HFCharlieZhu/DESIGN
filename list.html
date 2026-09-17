@@ -45,8 +45,6 @@
 </div>
 
 <div id="dr-app" hidden>
-  <div class="systembar" id="dr-systembar" role="status" aria-live="polite"></div>
-
   <div class="topbar">
     <div class="topbar-in">
       <div class="topbar-title">允禾發 設計需求表<span class="topbar-kind">案件總覽</span></div>
@@ -59,6 +57,8 @@
       <a class="btn-topbar" href="index.html">＋ 新增申請</a>
     </div>
   </div>
+
+  <div class="systembar" id="dr-systembar" role="status" aria-live="polite"></div>
 
   <div class="wrap">
     <div class="data-retry" id="dr-data-retry" hidden>
@@ -74,8 +74,10 @@
     <div class="filterbar" id="dr-filterbar">
       <div class="filterrow">
         <input id="f-search" type="text" placeholder="搜尋需求名稱、申請人、編號…" aria-label="搜尋案件">
-        <select id="f-dept" aria-label="部門篩選"><option value="">全部部門</option></select>
-        <select id="f-status" aria-label="狀態篩選"><option value="">全部狀態</option></select>
+        <div class="filter-pair">
+          <select id="f-dept" aria-label="部門篩選"><option value="">全部部門</option></select>
+          <select id="f-status" aria-label="狀態篩選"><option value="">全部狀態</option></select>
+        </div>
       </div>
       <div class="chiprow" id="dr-quickchips"></div>
     </div>
@@ -105,7 +107,7 @@ var GOOGLE_CLIENT_ID = "610204517549-khmef2c4ejmeg0jrceg53385ptu2ns03.apps.googl
 var ALLOWED_DOMAIN = "harfunco.com";
 var URGENT_WORKING_DAYS = 5;
 var PAGE_SIZE = 20;
-var DEPTS = ["BAUI", "BAUII"];
+var DEPTS = ["BAUI", "BAUII", "BAUIII"];
 
 /* ============================================================
    共用區塊 A：登入狀態保存（兩頁完全相同，請一起更新）
@@ -917,13 +919,17 @@ $("dr-data-retry-btn").addEventListener("click", function () { loadList(false).c
 
 var NO_DEPT = "__none__";
 
-/** 部門選項＝固定兩個部門＋資料裡實際出現過的部門，確保任何案件都篩得到。 */
+/**
+ * 部門選項＝固定部門＋一般案件實際出現過的部門，確保任何案件都篩得到。
+ * 範例案件不列入選項，也不參與任何篩選。
+ */
 function deptOptions() {
   var seen = Object.create(null);
   var out = [];
   var hasBlank = false;
   DEPTS.forEach(function (d) { seen[d] = true; out.push(d); });
   records.forEach(function (r) {
+    if (r.isExample) return;
     var d = String((r.data && r.data.dept) || "").trim();
     if (!d) { hasBlank = true; return; }
     if (!seen[d]) { seen[d] = true; out.push(d); }
@@ -1120,7 +1126,7 @@ function buildCardMarks(rec) {
   }
 
   if (isOverdue(rec)) marks.appendChild(el("span", "badge overdue", "逾期"));
-  else if (isUrgent(rec)) marks.appendChild(el("span", "badge urgent", "急件"));
+  else if (isUrgent(rec)) marks.appendChild(el("span", "badge lv2 urgent", "急件"));
 
   if (rec.isExample) {
     marks.appendChild(el("span", "badge lv2 example", "範例"));
@@ -1293,27 +1299,43 @@ function labelNode(text, required, optText) {
   return lab;
 }
 
+/** 文字欄位一律是可換行、可拉高的多行欄位；日期與數量維持原生控制項。 */
+function textEntry(value, onChange, cls) {
+  var input = document.createElement("textarea");
+  if (cls) input.className = cls;
+  input.value = value || "";
+  input.addEventListener("input", function () { onChange(input.value); });
+  return input;
+}
+
 function makeField(kind, label, required, value, onChange, optText) {
   var f = el("div", "field");
   f.appendChild(labelNode(label, required, optText));
-  var input;
-  if (kind === "textarea") {
-    input = document.createElement("textarea");
-    f.appendChild(input);
-  } else if (kind === "date") {
+
+  if (kind === "date") {
     var wrap = el("div", "date-wrap");
-    input = document.createElement("input");
-    input.type = "date";
-    wrap.appendChild(input);
+    var dateInput = document.createElement("input");
+    dateInput.type = "date";
+    dateInput.value = value || "";
+    dateInput.addEventListener("input", function () { onChange(dateInput.value); });
+    wrap.appendChild(dateInput);
     f.appendChild(wrap);
-  } else {
-    input = document.createElement("input");
-    input.type = kind;
-    if (kind === "number") input.min = "0";
-    f.appendChild(input);
+    return f;
   }
-  input.value = value || "";
-  input.addEventListener("input", function () { onChange(input.value); });
+
+  if (kind === "number") {
+    var numInput = document.createElement("input");
+    numInput.type = "number";
+    numInput.min = "0";
+    numInput.value = value || "";
+    numInput.addEventListener("input", function () { onChange(numInput.value); });
+    f.appendChild(numInput);
+    return f;
+  }
+
+  var entry = textEntry(value, onChange, kind === "textarea" ? "" : "h1");
+  if (kind === "url") entry.inputMode = "url";
+  f.appendChild(entry);
   return f;
 }
 
@@ -1495,30 +1517,52 @@ function buildDetail(record, container) {
 
   function collectErrors() {
     var errors = [];
-    if (!String(work.data.name || "").trim()) errors.push("需求名稱");
-    if (!String(work.data.purpose || "").trim()) errors.push("需求背景／說明");
-    if (!String(work.data.deliveryDate || "").trim()) errors.push("總交付日");
-    if (!Array.isArray(work.data.items) || !work.data.items.length) errors.push("設計項目");
+    function add(label, sel) { errors.push({ label: label, sel: sel }); }
+
+    if (!String(work.data.name || "").trim()) add("需求名稱", ".request-name-field");
+    if (!String(work.data.purpose || "").trim()) add("需求背景／說明", ".purpose-field");
+    if (!String(work.data.deliveryDate || "").trim()) add("總交付日", ".delivery-field");
+    if (!Array.isArray(work.data.items) || !work.data.items.length) add("設計項目", null);
 
     (work.data.items || []).forEach(function (it, idx) {
       var prefix = "項目 " + (idx + 1);
-      if (!String(it.name || "").trim()) errors.push(prefix + "：項目名稱");
-      if (!it.typeId) { errors.push(prefix + "：需求類型"); return; }
+      var scope = '[data-item-index="' + idx + '"] ';
+      if (!String(it.name || "").trim()) add(prefix + "：項目名稱", scope + ".item-name-field");
+      if (!it.typeId) { add(prefix + "：需求類型", scope + ".item-type-field"); return; }
       var t = typeOf(it.typeId);
       if (!t || t.mode === "notice" || t.mode === "structure") return;
       normalizeItem(it);
-      if (!t.forcePrint && !it.output.length) errors.push(prefix + "：輸出形式");
-      if (itemHasPrint(it) && !String(it.printQty || "").trim()) errors.push(prefix + "：數量");
+      if (!t.forcePrint && !it.output.length) add(prefix + "：輸出形式", scope + ".item-output-field");
+      if (itemHasPrint(it) && !String(it.printQty || "").trim()) add(prefix + "：數量", scope + ".item-qty-field");
     });
     return errors;
   }
 
+  function clearFieldErrors() {
+    container.querySelectorAll(".field.err").forEach(function (n) { n.classList.remove("err"); });
+  }
+
   function guardRequired() {
     var errors = collectErrors();
+    clearFieldErrors();
     if (!errors.length) return true;
-    flash("必填未完成：" + errors.slice(0, 3).join("、") + (errors.length > 3 ? "…" : ""));
+    errors.forEach(function (e) {
+      if (!e.sel) return;
+      var node = container.querySelector(e.sel);
+      if (node) node.classList.add("err");
+    });
+    var labels = errors.map(function (e) { return e.label; });
+    flash("必填未完成：" + labels.slice(0, 3).join("、") + (labels.length > 3 ? "…" : ""));
+    var first = container.querySelector(".field.err");
+    if (first) first.scrollIntoView({ behavior: "smooth", block: "center" });
     return false;
   }
+
+  // 一開始補填就把紅框拿掉，行為與申請表一致
+  container.addEventListener("input", function (e) {
+    var field = e.target.closest && e.target.closest(".field.err");
+    if (field && String(e.target.value || "").trim()) field.classList.remove("err");
+  }, true);
 
   function buildPayload(labels, operationId) {
     var payload = { requestId: work.id, status: work.status, labels: labels, operationId: operationId };
@@ -1568,7 +1612,7 @@ function buildDetail(record, container) {
   var identityRow = el("div", "row c2");
   var deptField = makeField("text", "部門", null,
     work.data.department || work.data.dept || "不指定", function () { });
-  var deptInput = deptField.querySelector("input");
+  var deptInput = deptField.querySelector("textarea");
   deptInput.disabled = true;
   deptInput.classList.add("readonly");
   deptField.appendChild(el("div", "hint", "送出後不可變更，案件編號由部門與申請人組成。"));
@@ -1613,6 +1657,7 @@ function buildDetail(record, container) {
   var purposeField = makeField("textarea", "需求背景／說明", true, work.data.purpose, function (v) {
     work.data.purpose = v; markDirty();
   });
+  purposeField.classList.add("purpose-field");
   purposeField.querySelector("textarea").classList.add("tall");
   primary.appendChild(purposeField);
 
@@ -1623,9 +1668,11 @@ function buildDetail(record, container) {
   primary.appendChild(messageField);
 
   var row1 = el("div", "row c2");
-  row1.appendChild(makeField("date", "總交付日", true, work.data.deliveryDate, function (v) {
+  var deliveryField = makeField("date", "總交付日", true, work.data.deliveryDate, function (v) {
     work.data.deliveryDate = v; markDirty();
-  }));
+  });
+  deliveryField.classList.add("delivery-field");
+  row1.appendChild(deliveryField);
   var audienceField = el("div", "field");
   audienceField.appendChild(labelNode("目標對象", false));
   var audienceRow = el("div", "chiprow inline-h");
@@ -1728,24 +1775,20 @@ function buildDetail(record, container) {
       var row = el("div", "ref-link-row");
 
       var f1 = el("div", "field");
-      var i1 = document.createElement("input");
-      i1.type = "url";
+      var i1 = textEntry(link.url, function (v) { link.url = v; markDirty(); }, "h1");
       i1.placeholder = "網址";
-      i1.value = link.url || "";
+      i1.inputMode = "url";
       i1.setAttribute("aria-label", "素材連結網址");
-      i1.addEventListener("input", function () { link.url = i1.value; markDirty(); });
       f1.appendChild(i1);
       row.appendChild(f1);
 
+      var group = el("div", "link-value-group");
       var f2 = el("div", "field");
-      var i2 = document.createElement("input");
-      i2.type = "text";
+      var i2 = textEntry(link.note, function (v) { link.note = v; markDirty(); }, "h1");
       i2.placeholder = "說明";
-      i2.value = link.note || "";
       i2.setAttribute("aria-label", "素材連結說明");
-      i2.addEventListener("input", function () { link.note = i2.value; markDirty(); });
       f2.appendChild(i2);
-      row.appendChild(f2);
+      group.appendChild(f2);
 
       var rm = el("button", "rm", "✕");
       rm.type = "button";
@@ -1755,7 +1798,8 @@ function buildDetail(record, container) {
         renderRefLinks();
         markDirty();
       });
-      row.appendChild(rm);
+      group.appendChild(rm);
+      row.appendChild(group);
       refWrap.appendChild(row);
     });
     if (!canEdit) disableInputs(refWrap);
@@ -1815,13 +1859,9 @@ function buildDetail(record, container) {
       var result = await apiPost("updateRequest", buildPayload(labels, saveOpId), { timeout: 45000 });
       saveOpId = "";
       applyMutationResult(result);
-
-      if (result.exampleRestored) {
-        showSystemMessage("範例案件的空白欄位已自動恢復原始內容。", false, true);
-        buildDetail(JSON.parse(JSON.stringify(work)), container);
-        return;
-      }
-      flash("已儲存。");
+      flash(work.isExample && !currentUser.isAdmin
+        ? "已儲存。範例案件會在每天凌晨復原。"
+        : "已儲存。");
     } catch (err) {
       if (!handleAuthError(err)) flash("儲存失敗：" + err.message);
     } finally {
@@ -1939,6 +1979,7 @@ function disableInputs(root) {
 
 function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange) {
   var box = el("div", "item-block");
+  box.dataset.itemIndex = String(idx);
 
   var bar = el("div", "item-bar");
   bar.appendChild(el("div", "idx", String(idx + 1)));
@@ -1955,11 +1996,13 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange) {
   }
 
   var headRow = el("div", "row item-head-row");
-  headRow.appendChild(makeField("text", "項目名稱", true, item.name, function (v) {
+  var nameField = makeField("text", "項目名稱", true, item.name, function (v) {
     item.name = v; onChange();
-  }));
+  });
+  nameField.classList.add("item-name-field");
+  headRow.appendChild(nameField);
 
-  var typeField = el("div", "field");
+  var typeField = el("div", "field item-type-field");
   typeField.appendChild(labelNode("需求類型", true));
   var sel = document.createElement("select");
   sel.appendChild(el("option", "", "請選擇"));
@@ -2003,7 +2046,7 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange) {
         });
         b.appendChild(c4);
 
-        b.appendChild(makeField("text", "圖片說明", null, block.imgNote, function (v) {
+        b.appendChild(makeField("text", "畫面需求備註", null, block.imgNote, function (v) {
           block.imgNote = v; onChange();
         }));
         b.appendChild(makeField("text", "CTA／連結", null, block.link, function (v) {
@@ -2072,7 +2115,7 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange) {
       box.appendChild(dateRow);
     } else {
       if (!t.forcePrint) {
-        var outField = el("div", "field");
+        var outField = el("div", "field item-output-field");
         outField.appendChild(labelNode("輸出形式", true));
         var outRow = el("div", "chiprow");
         [["digital", "數位"], ["print", "印刷"]].forEach(function (pair) {
@@ -2159,15 +2202,11 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange) {
               if (options[j].label === row.purpose) { frozen = !!(options[j].w || options[j].note); break; }
             }
           }
-          var pxi = document.createElement("input");
-          pxi.type = "text";
+          var pxi = textEntry(row.px, function (v) { row.px = v; onChange(); }, "h1");
           pxi.placeholder = "實際尺寸";
-          pxi.value = row.px || "";
           if (frozen) {
             pxi.disabled = true;
             pxi.classList.add("readonly");
-          } else {
-            pxi.addEventListener("input", function () { row.px = pxi.value; onChange(); });
           }
           pxField.appendChild(pxi);
 
@@ -2200,9 +2239,11 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange) {
       }
 
       if (itemHasPrint(item)) {
-        box.appendChild(makeField("number", "數量", true, item.printQty, function (v) {
+        var qtyField = makeField("number", "數量", true, item.printQty, function (v) {
           item.printQty = v; onChange();
-        }));
+        });
+        qtyField.classList.add("item-qty-field");
+        box.appendChild(qtyField);
       }
 
       var expField = el("div", "field");

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>允禾發 設計需求表</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&amp;display=swap">
+<link rel="stylesheet" href="app.css">
+</head>
+
+<body>
+<div id="dr-gate">
+  <div class="g-title">找不到這個頁面</div>
+  <div class="g-sub" id="dr-404-msg">正在帶你回到申請表…</div>
+  <div class="google-login-slot">
+    <a class="login-retry-btn" href="index.html" id="dr-404-link">前往申請表</a>
+  </div>
+  <div class="g-note">若反覆看到這一頁，表示網址中的專案名稱大小寫不符，請改用書籤或原始連結開啟。</div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  // GitHub Pages 會把站內所有不存在的路徑導到這一頁。
+  // 只轉一次，避免 index.html 也不存在時在兩頁之間無限跳轉。
+  var KEY = "dr_404_bounced";
+  var bounced = false;
+  try { bounced = sessionStorage.getItem(KEY) === "1"; } catch (e) { }
+
+  if (bounced) {
+    try { sessionStorage.removeItem(KEY); } catch (e) { }
+    document.getElementById("dr-404-msg").textContent =
+      "網址不正確，請點下方按鈕或改用書籤開啟。";
+    return;
+  }
+
+  try { sessionStorage.setItem(KEY, "1"); } catch (e) { }
+  location.replace("index.html");
+})();
+</script>
+</body>
+</html>

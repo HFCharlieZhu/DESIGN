@@ -76,6 +76,7 @@
               <option value="">不指定</option>
               <option value="BAUI">BAUI</option>
               <option value="BAUII">BAUII</option>
+              <option value="BAUIII">BAUIII</option>
             </select>
             <div class="hint">留白時案件編號會省略部門，例如 CZ-0001。</div>
           </div>
@@ -177,6 +178,7 @@
         <div class="panel-title">申請單預覽</div>
         <div class="preview" id="dr-preview"></div>
       </div>
+      <div class="confirm-note">總交付日為初步填寫值，將於設計需求會議結束後由設計端與 Mentor 確認並更新。</div>
       <div class="confirm-actions">
         <button class="btn-ghost" id="dr-back-to-form" type="button">返回修改</button>
         <button class="btn-submit" id="dr-submit-btn" type="button">
@@ -864,37 +866,43 @@ function labelHtml(text, required, optText) {
   return lab;
 }
 
+/** 文字欄位一律是可換行、可拉高的多行欄位；日期與數量維持原生控制項。 */
+function textEntry(value, onChange, cls) {
+  var input = document.createElement("textarea");
+  if (cls) input.className = cls;
+  input.value = value || "";
+  input.addEventListener("input", function () { onChange(input.value); });
+  return input;
+}
+
 function makeField(kind, label, required, value, onChange, optText) {
   var f = el("div", "field");
   f.appendChild(labelHtml(label, required, optText));
-  var input;
-  if (kind === "textarea") {
-    input = document.createElement("textarea");
-  } else if (kind === "date") {
-    var wrap = el("div", "date-wrap");
-    input = document.createElement("input");
-    input.type = "date";
-    wrap.appendChild(input);
-    f.appendChild(wrap);
-  } else {
-    input = document.createElement("input");
-    input.type = kind;
-    if (kind === "number") input.min = "0";
-  }
-  input.value = value || "";
-  input.addEventListener("input", function () { onChange(input.value); });
-  if (kind !== "date") f.appendChild(input);
-  return f;
-}
 
-function miniField(label, value, onChange, full) {
-  var f = el("div", "field" + (full ? " full" : ""));
-  f.appendChild(labelHtml(label, null));
-  var input = document.createElement("input");
-  input.type = "text";
-  input.value = value || "";
-  input.addEventListener("input", function () { onChange(input.value); });
-  f.appendChild(input);
+  if (kind === "date") {
+    var wrap = el("div", "date-wrap");
+    var dateInput = document.createElement("input");
+    dateInput.type = "date";
+    dateInput.value = value || "";
+    dateInput.addEventListener("input", function () { onChange(dateInput.value); });
+    wrap.appendChild(dateInput);
+    f.appendChild(wrap);
+    return f;
+  }
+
+  if (kind === "number") {
+    var numInput = document.createElement("input");
+    numInput.type = "number";
+    numInput.min = "0";
+    numInput.value = value || "";
+    numInput.addEventListener("input", function () { onChange(numInput.value); });
+    f.appendChild(numInput);
+    return f;
+  }
+
+  var entry = textEntry(value, onChange, kind === "textarea" ? "" : "h1");
+  if (kind === "url") entry.inputMode = "url";
+  f.appendChild(entry);
   return f;
 }
 
@@ -1108,7 +1116,7 @@ function buildItemBody(item) {
   copyWrap.appendChild(labelHtml("文案", false, "選填，留白則標記為文案待補。"));
   var c4 = el("div", "copy4");
   [["head", "大標"], ["sub", "副標"], ["small", "小字"], ["other", "其他"]].forEach(function (pair) {
-    c4.appendChild(miniField(pair[1], item.copy[pair[0]], function (v) {
+    c4.appendChild(makeField("text", pair[1], null, item.copy[pair[0]], function (v) {
       item.copy[pair[0]] = v; updateLiveBits(); saveDraft();
     }));
   });
@@ -1199,15 +1207,11 @@ function buildSizeSection(item, type) {
         }
       }
     }
-    var pxi = document.createElement("input");
-    pxi.type = "text";
+    var pxi = textEntry(row.px, function (v) { row.px = v; saveDraft(); }, "h1");
     pxi.placeholder = "實際尺寸";
-    pxi.value = row.px || "";
     if (frozen) {
       pxi.disabled = true;
       pxi.classList.add("readonly");
-    } else {
-      pxi.addEventListener("input", function () { row.px = pxi.value; saveDraft(); });
     }
     pxField.appendChild(pxi);
 
@@ -1251,13 +1255,13 @@ function buildBlocks(item) {
 
     var c4 = el("div", "copy4");
     [["head", "大標"], ["sub", "副標"], ["small", "小字"], ["other", "其他"]].forEach(function (pair) {
-      c4.appendChild(miniField(pair[1], block[pair[0]], function (v) {
+      c4.appendChild(makeField("text", pair[1], null, block[pair[0]], function (v) {
         block[pair[0]] = v; updateLiveBits(); saveDraft();
       }));
     });
     b.appendChild(c4);
 
-    b.appendChild(makeField("text", "圖片說明", null, block.imgNote, function (v) {
+    b.appendChild(makeField("text", "畫面需求備註", null, block.imgNote, function (v) {
       block.imgNote = v; saveDraft();
     }));
     b.appendChild(makeField("text", "CTA／連結", null, block.link, function (v) {
@@ -1327,24 +1331,20 @@ function renderLinks() {
     var r = el("div", "ref-link-row");
 
     var f1 = el("div", "field");
-    var i1 = document.createElement("input");
-    i1.type = "url";
+    var i1 = textEntry(link.url, function (v) { link.url = v; saveDraft(); }, "h1");
     i1.placeholder = "網址";
-    i1.value = link.url || "";
+    i1.inputMode = "url";
     i1.setAttribute("aria-label", "素材連結網址");
-    i1.addEventListener("input", function () { link.url = i1.value; saveDraft(); });
     f1.appendChild(i1);
     r.appendChild(f1);
 
+    var group = el("div", "link-value-group");
     var f2 = el("div", "field");
-    var i2 = document.createElement("input");
-    i2.type = "text";
+    var i2 = textEntry(link.note, function (v) { link.note = v; saveDraft(); }, "h1");
     i2.placeholder = "說明";
-    i2.value = link.note || "";
     i2.setAttribute("aria-label", "素材連結說明");
-    i2.addEventListener("input", function () { link.note = i2.value; saveDraft(); });
     f2.appendChild(i2);
-    r.appendChild(f2);
+    group.appendChild(f2);
 
     var rm = el("button", "rm", "✕");
     rm.type = "button";
@@ -1354,7 +1354,8 @@ function renderLinks() {
       renderLinks();
       saveDraft();
     });
-    r.appendChild(rm);
+    group.appendChild(rm);
+    r.appendChild(group);
     wrap.appendChild(r);
   });
 }
