@@ -156,7 +156,14 @@
             <div class="errmsg">請填寫總交付日。</div>
             <div class="hint" id="f-deliverydate-warn" hidden>部分項目交付日晚於總交付日。</div>
           </div>
-          <div class="field" id="f-schedulenote-wrap" hidden>
+          <div class="field" id="f-meetingdate-field">
+            <label for="f-meetingdate">會議日期<span class="opt">選填</span></label>
+            <div class="date-wrap"><input id="f-meetingdate" type="date"></div>
+            <div class="hint" id="f-meetingdate-warn" hidden>會議日期晚於總交付日。</div>
+          </div>
+        </div>
+        <div class="row c2" id="f-schedulenote-row" hidden>
+          <div class="field">
             <label for="f-schedulenote">時程備註<span class="opt">選填</span></label>
             <textarea id="f-schedulenote"></textarea>
             <div class="hint" id="f-schedulenote-hint"></div>
@@ -736,7 +743,7 @@ var $ = function (id) { return document.getElementById(id); };
 
 var state = {
   dept: "", name: "", purpose: "", message: "", audience: "",
-  note1: "", note2: "", deliveryDate: "", scheduleNote: "",
+  note1: "", note2: "", deliveryDate: "", meetingDate: "", scheduleNote: "",
   refLinks: [], refNote: "", items: []
 };
 
@@ -1428,6 +1435,17 @@ function checkDeliveryWarn() {
   hint.hidden = !later;
 }
 
+/** 會議日期晚於總交付日通常是填錯，提醒但不擋送出。 */
+function checkMeetingWarn() {
+  var total = parseDate(state.deliveryDate);
+  var meet = parseDate(state.meetingDate);
+  var field = $("f-meetingdate-field");
+  var hint = $("f-meetingdate-warn");
+  var bad = !!(total && meet && meet > total);
+  field.classList.toggle("warn", bad);
+  hint.hidden = !bad;
+}
+
 function refreshStats() {
   $("dr-stat-items").textContent = state.items.length;
   $("dr-stat-units").textContent = state.items.reduce(function (s, it) { return s + itemUnitCount(it); }, 0);
@@ -1454,10 +1472,11 @@ function refreshStats() {
   noteEl.textContent = note;
   noteEl.className = "schedule-note" + (urgent ? " urgent" : "");
 
-  $("f-schedulenote-wrap").hidden = !urgent;
+  $("f-schedulenote-row").hidden = !urgent;
   $("f-schedulenote-hint").textContent = urgent ? note : "";
 
   checkDeliveryWarn();
+  checkMeetingWarn();
 }
 
 function render() {
@@ -1471,6 +1490,7 @@ function render() {
 var SCALAR_FIELDS = [
   ["f-dept", "dept"], ["f-name", "name"], ["f-purpose", "purpose"], ["f-message", "message"],
   ["f-note1", "note1"], ["f-note2", "note2"], ["f-deliverydate", "deliveryDate"],
+  ["f-meetingdate", "meetingDate"],
   ["f-refnote", "refNote"], ["f-schedulenote", "scheduleNote"]
 ];
 
@@ -1491,6 +1511,7 @@ SCALAR_FIELDS.forEach(function (pair) {
       field.classList.remove("err");
     }
     if (pair[1] === "deliveryDate") refreshStats();
+    if (pair[1] === "deliveryDate" || pair[1] === "meetingDate") checkMeetingWarn();
     saveDraft();
   }
   node.addEventListener("input", commit);
@@ -1667,6 +1688,7 @@ function renderPreview() {
   p.appendChild(kvNode("需求名稱", state.name || "—"));
   p.appendChild(kvNode("目標對象", state.audience || "未指定"));
   p.appendChild(kvNode("總交付日", state.deliveryDate || "—"));
+  p.appendChild(kvNode("會議日期", state.meetingDate || "—"));
 
   p.appendChild(el("h4", "", "設計項目（" + state.items.length + "）"));
   var units = 0;
@@ -1786,7 +1808,7 @@ $("dr-submit-btn").addEventListener("click", async function () {
     persistDraftNow();
 
     var data = await apiPost("createRequest",
-      { data: buildPayload(), operationId: pendingOperationId },
+      { data: buildPayload(), meetingDate: state.meetingDate || "", operationId: pendingOperationId },
       { timeout: 60000 });
 
     submitted = true;
