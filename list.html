@@ -1776,12 +1776,13 @@ function resetFieldOpened(requestId) {
 }
 
 /**
- * 選填欄位的展開／收合。三種狀態，靠輸入框當下的內容決定：
- *   有內容      → 沒有收合鍵，永遠展開（標題用原本的欄位標籤）
- *   空白、收起  → 只剩一行「標題　未填寫　∨」
- *   空白、展開  → 一行「標題　選填　∧」加上輸入框
- * 標題列永遠只有一行：有收合鍵時原本的標籤隱藏，由收合鍵那一行代替。
- * 編輯途中把內容刪光只會把收合鍵加回來，不會自動收起輸入框。
+ * 選填欄位的展開／收合。
+ * 標題列不論哪一種狀態都是同一個 <label>，不會換成另一個元件，所以畫面上
+ * 只會有兩件事在變：右邊的箭頭顯示或隱藏、收合時小字改成「未填寫」。
+ *   有內容      → 箭頭隱藏（位置仍保留），不能收合
+ *   空白、展開  → 箭頭朝上，小字維持原本的「選填」或提示文字
+ *   空白、收起  → 箭頭朝下，小字改成「未填寫」，其餘內容隱藏
+ * 編輯途中把內容刪光只會把箭頭顯示回來，不會自動收起。
  */
 function collapseIfEmpty(field, label, required, opts) {
   if (required) return field;
@@ -1790,7 +1791,18 @@ function collapseIfEmpty(field, label, required, opts) {
   var key = opts.key || "";
   /* 只取這一層自己的標籤，不能抓到內層小欄位的標籤 */
   var labelEl = field.querySelector(":scope > label");
-  var toggle = null;
+  if (!labelEl) return field;
+
+  var optEl = labelEl.querySelector(".opt");
+  if (!optEl) {
+    optEl = el("span", "opt", "選填");
+    labelEl.appendChild(optEl);
+  }
+  var optText = optEl.textContent;
+
+  labelEl.classList.add("field-head");
+  var caret = caretIcon();
+  labelEl.appendChild(caret);
 
   function inputNode() { return field.querySelector("textarea, input, select"); }
 
@@ -1805,53 +1817,47 @@ function collapseIfEmpty(field, label, required, opts) {
   function markOpened() { if (key) FIELD_OPENED[key] = true; }
   function markClosed() { if (key) delete FIELD_OPENED[key]; }
 
-  function syncToggle() {
-    if (!toggle) return;
+  /** 只更新會變的那兩件事：小字的內容與箭頭的可見度。 */
+  function paint() {
+    var canCollapse = field.classList.contains("can-collapse");
     var collapsed = field.classList.contains("is-collapsed");
-    toggle.querySelector(".ft-sub").textContent = collapsed ? "未填寫" : "選填";
-    toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
-  }
-
-  function addToggle(collapsed) {
-    if (toggle) {
-      field.classList.toggle("is-collapsed", !!collapsed);
-      syncToggle();
-      return;
+    optEl.textContent = collapsed ? "未填寫" : optText;
+    if (canCollapse) {
+      labelEl.setAttribute("role", "button");
+      labelEl.setAttribute("tabindex", "0");
+      labelEl.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    } else {
+      labelEl.removeAttribute("role");
+      labelEl.removeAttribute("tabindex");
+      labelEl.removeAttribute("aria-expanded");
     }
-    toggle = document.createElement("button");
-    toggle.type = "button";
-    toggle.className = "field-toggle";
-    toggle.appendChild(el("span", "ft-label", label));
-    toggle.appendChild(el("span", "ft-sub", ""));
-    toggle.appendChild(caretIcon());
-    toggle.addEventListener("click", function () {
-      var nowCollapsed = field.classList.toggle("is-collapsed");
-      syncToggle();
-      if (nowCollapsed) { markClosed(); return; }
-      markOpened();
-      var node = inputNode();
-      if (node && !node.disabled) node.focus();
-    });
-    field.insertBefore(toggle, field.firstChild);
-    if (labelEl) labelEl.hidden = true;
-    field.classList.toggle("is-collapsed", !!collapsed);
-    syncToggle();
   }
 
-  function removeToggle() {
-    field.classList.remove("is-collapsed");
-    if (labelEl) labelEl.hidden = false;
-    if (!toggle) return;
-    toggle.remove();
-    toggle = null;
+  function setState(canCollapse, collapsed) {
+    field.classList.toggle("can-collapse", !!canCollapse);
+    field.classList.toggle("is-collapsed", !!(canCollapse && collapsed));
+    paint();
   }
 
-  if (isEmpty()) addToggle(!(key && FIELD_OPENED[key]));
+  labelEl.addEventListener("click", function () {
+    if (!field.classList.contains("can-collapse")) return;
+    var nowCollapsed = !field.classList.contains("is-collapsed");
+    setState(true, nowCollapsed);
+    if (nowCollapsed) { markClosed(); return; }
+    markOpened();
+    var node = inputNode();
+    if (node && !node.disabled) node.focus();
+  });
+  labelEl.addEventListener("keydown", function (ev) {
+    if (!field.classList.contains("can-collapse")) return;
+    if (ev.key !== "Enter" && ev.key !== " " && ev.key !== "Spacebar") return;
+    ev.preventDefault();
+    labelEl.click();
+  });
 
-  function sync() {
-    if (isEmpty()) addToggle(false);
-    else removeToggle();
-  }
+  setState(isEmpty(), !(key && FIELD_OPENED[key]));
+
+  function sync() { setState(isEmpty(), false); }
 
   field.addEventListener("input", sync);
   field.addEventListener("change", sync);
@@ -1863,7 +1869,7 @@ function collapseIfEmpty(field, label, required, opts) {
   }
   if (opts.watchClick) {
     field.addEventListener("click", function (ev) {
-      if (ev.target.closest && ev.target.closest(".field-toggle")) return;
+      if (ev.target === labelEl || (ev.target.closest && ev.target.closest(".field-head"))) return;
       sync();
     });
   }
@@ -2888,9 +2894,16 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
         chip.type = "button";
         chip.setAttribute("aria-pressed", item.exposure === pair[0] ? "true" : "false");
         chip.addEventListener("click", function () {
+          var hadModel = item.exposure === "reveal";
           item.exposure = item.exposure === pair[0] ? "" : pair[0];
           if (item.exposure !== "reveal") item.exposureModel = "";
-          onStructuralChange();
+          /* 只有「商品型號」要多出來或收掉時才重畫整個項目；其餘情況原地更新，
+             收合鍵的加上與移除才會跟按箭頭走同一套，畫面不會整塊重排。 */
+          if (hadModel !== (item.exposure === "reveal")) { onStructuralChange(); onChange(); return; }
+          expRow.querySelectorAll(".chip").forEach(function (x) {
+            x.setAttribute("aria-pressed", "false");
+          });
+          if (item.exposure === pair[0]) chip.setAttribute("aria-pressed", "true");
           onChange();
         });
         expRow.appendChild(chip);
@@ -2965,7 +2978,7 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
    啟動
    ============================================================ */
 
-initTouchFeedback(".btn-topbar,.btn-sm,.pgbtn,.chip,.filter-reset,.field-toggle,.archive-head,.arch-year-head,.arch-month-head,.card-top,.subpanel,.item-block,.block,.add-line,.del-line,.rm,.inline-clear,.block-order button,.custom-purpose,input,textarea,select,.data-retry button");
+initTouchFeedback(".btn-topbar,.btn-sm,.pgbtn,.chip,.filter-reset,.field-head,.archive-head,.arch-year-head,.arch-month-head,.card-top,.subpanel,.item-block,.block,.add-line,.del-line,.rm,.inline-clear,.block-order button,.custom-purpose,input,textarea,select,.data-retry button");
 startHeartbeat();
 startAuth();
 

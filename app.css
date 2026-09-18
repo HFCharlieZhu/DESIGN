@@ -406,7 +406,10 @@ html {
 
 #dr-app .field > label {
   display: block;
-  margin-bottom: var(--space-2);
+  /* 標籤本身補到 28px 高（可收合的欄位整列都要能點），多出來的部分用負邊距
+     收回，版面上仍然等於「一行字 ＋ 標籤與輸入框之間的間距」。兩頁共用同一條規則。 */
+  padding-bottom: var(--toggle-pad);
+  margin-bottom: calc(var(--space-2) - var(--toggle-pad));
   font-size: var(--fs-meta);
   line-height: 1.5;
   font-weight: var(--fw-medium);
@@ -433,73 +436,41 @@ html {
 #dr-app .errmsg { display: none; color: var(--red); }
 
 /* 選填且還沒填寫的欄位收成一行，點開才展開輸入框 */
-#dr-app .field.is-collapsed > *:not(.field-toggle) { display: none; }
-/* 收合列的版面必須與一般標籤一模一樣：同樣一行字高、同樣的下方間距，
-   這樣同一個子題在「有箭頭」與「沒箭頭」之間切換時，標題、小字與下面的
-   輸入框都不會位移，畫面上只有箭頭本身出現或消失。 */
-/* 列高 28px（好按），多出來的 2px 用負邊距收回，
-   版面上就等於「一行標籤 ＋ 標籤與輸入框之間的間距」。 */
-#dr-app .field > .field-toggle,
-#dr-app .field.is-collapsed > .field-toggle {
-  margin-bottom: calc(var(--space-2) - var(--toggle-pad));
+#dr-app .field.is-collapsed > *:not(label) { display: none; }
+
+/* 可收合欄位的標題列：不論有沒有內容，都是同一個標籤元素，
+   不會換成另一個元件，所以狀態切換時只有「小字換字」與「箭頭顯示／隱藏」，
+   標題、小字、下面的內容都不會移動。 */
+#dr-app .field > label.field-head {
+  display: flex;
+  align-items: center;
 }
 
-#dr-app .field-toggle {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) 11px;
-  /* 標題貼齊上緣，與一般標籤同一條基線；多出來的高度全部留在下方 */
-  align-items: start;
-  gap: 0;
-  width: 100%;
-  /* 高度＝一行標籤（12px × 1.5）＋ 補到 28px 的下內距，整列都是可點擊區 */
-  padding: 0 0 var(--toggle-pad);
-  border: 0;
-  background: none;
-  font-family: inherit;
-  text-align: left;
-  cursor: pointer;
-  color: var(--body);
-}
+#dr-app .field.can-collapse > label.field-head { cursor: pointer; }
 
-/* 與一般欄位標籤完全同一組字級字重，展開收合時標題不會跳動 */
-#dr-app .field-toggle .ft-label {
-  font-size: var(--fs-meta);
-  line-height: 1.5;
-  font-weight: var(--fw-medium);
-  color: var(--ink);
-  letter-spacing: .02em;
-}
-
-/* 與標籤後面的「選填」同一個樣式，連左邊距都相同 */
-#dr-app .field-toggle .ft-sub {
-  margin-left: 4px;
-  font-size: var(--fs-meta);
-  line-height: 1.5;
-  font-weight: var(--fw-regular);
-  color: var(--muted);
-  justify-self: start;
-}
-
-#dr-app .field-toggle .caret {
+/* 箭頭的位置永遠保留，只切換可見度，所以顯示與隱藏都不會推擠版面 */
+#dr-app .field > label.field-head > .caret {
+  flex: 0 0 auto;
   width: 11px;
   height: 7px;
-  /* 對齊標題那一行的中線 */
-  margin-top: calc((var(--fs-meta) * 1.5 - 7px) / 2);
-  justify-self: end;
+  margin-left: auto;
   color: var(--body);
+  visibility: hidden;
+  /* 展開狀態朝上是預設值，連隱藏著的時候也一樣，
+     這樣箭頭顯示出來的當下就已經是正確方向，不會先朝下再轉上去。 */
+  transform: rotate(180deg);
   transition: transform var(--ease);
 }
 
-/* 收合時朝下、展開時朝上，與全站箭頭同一條規則 */
-#dr-app .field:not(.is-collapsed) > .field-toggle .caret { transform: rotate(180deg); }
+#dr-app .field.can-collapse > label.field-head > .caret { visibility: visible; }
+/* 收合時朝下，與全站箭頭同一條規則 */
+#dr-app .field.is-collapsed > label.field-head > .caret { transform: none; }
 
 @media (hover: hover) and (pointer: fine) {
-  #dr-app .field-toggle:hover .ft-label,
-  #dr-app .field-toggle:hover .ft-sub { color: var(--ink); }
+  #dr-app .field.can-collapse > label.field-head:hover .opt { color: var(--ink); }
 }
 
-#dr-app .field-toggle.is-touch-hover .ft-label,
-#dr-app .field-toggle.is-touch-hover .ft-sub { color: var(--ink); }
+#dr-app .field.can-collapse > label.field-head.is-touch-hover .opt { color: var(--ink); }
 
 /* 必填未完成：兩頁共用同一組紅框與紅字標籤 */
 #dr-app .field.err > label { color: var(--red); }
