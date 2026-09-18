@@ -581,7 +581,7 @@ var PRINT_SIZES = [
   { label: "A3", note: "29.7×42cm" },
   { label: "A2", note: "42×59.4cm" },
   { label: "A5", note: "14.8×21cm" },
-  { label: "自訂尺寸", custom: true }
+  { label: "自訂版位", custom: true }
 ];
 
 var TYPES = [
@@ -604,11 +604,11 @@ var TYPES = [
   ] },
   { id: "edm", label: "EDM", mode: "structure" },
   { id: "landing", label: "活動頁", mode: "structure" },
-  { id: "product_image", label: "商品圖", mode: "normal", sizes: [{ label: "自訂尺寸", custom: true }], extra: ["page"], showChannel: true },
+  { id: "product_image", label: "商品圖", mode: "normal", sizes: [{ label: "自訂版位", custom: true }], extra: ["page"], showChannel: true },
   { id: "product", label: "商品頁", mode: "notice", notice: "本項文案請前往《長條圖參考分配》填寫。" },
   { id: "print", label: "印刷品", mode: "normal", forcePrint: true, sizes: PRINT_SIZES },
   { id: "booth", label: "展場", mode: "notice", notice: "本項目需另行安排會議。" },
-  { id: "other", label: "其他", mode: "normal", sizes: [{ label: "自訂尺寸", custom: true }], extra: ["page"], showChannel: true }
+  { id: "other", label: "其他", mode: "normal", sizes: [{ label: "自訂版位", custom: true }], extra: ["page"], showChannel: true }
 ];
 
 function typeOf(id) {
@@ -652,7 +652,7 @@ function joinSize(w, h) {
  * 尺寸的寬、高兩格：中間放乘號，格內右側常駐「寬」「高」標示。
  * 對外仍然只回傳一個字串（寬×高），文件與試算表不受影響。
  */
-function sizePairField(value, frozen, onChange) {
+function sizePairField(value, frozen, onChange, lockNote) {
   var parts = splitSize(value);
   var pair = el("div", "size-pair");
 
@@ -663,6 +663,7 @@ function sizePairField(value, frozen, onChange) {
     if (frozen) {
       input.disabled = true;
       input.classList.add("readonly");
+      if (lockNote) input.title = lockNote;
     }
     field.appendChild(input);
     field.appendChild(el("span", "unit-tag", unit));
@@ -1369,13 +1370,13 @@ function buildSizeSection(item, type) {
       box.appendChild(el("span", "prefix", "自訂："));
       var ci = document.createElement("input");
       ci.type = "text";
-      ci.placeholder = "輸入用途名稱";
+      ci.placeholder = "輸入版位名稱";
       ci.value = row.customText || "";
       ci.addEventListener("input", function () { row.customText = ci.value; saveDraft(); });
       box.appendChild(ci);
       var back = el("button", "inline-clear", "✕");
       back.type = "button";
-      back.setAttribute("aria-label", "取消自訂用途");
+      back.setAttribute("aria-label", "取消自訂版位");
       back.addEventListener("click", function () {
         row.purpose = ""; row.customText = ""; row.px = "";
         renderItem(item); saveDraft();
@@ -1384,8 +1385,8 @@ function buildSizeSection(item, type) {
       purposeField.appendChild(box);
     } else {
       var sel = document.createElement("select");
-      /* 提示列必須明確給空值，否則選回提示列會把「用途／版位」當成使用者填的用途存起來 */
-      var selPlaceholder = el("option", "", "用途／版位");
+      /* 提示列必須明確給空值，否則選回提示列會把「版位」當成使用者填的用途存起來 */
+      var selPlaceholder = el("option", "", "版位");
       selPlaceholder.value = "";
       sel.appendChild(selPlaceholder);
       options.forEach(function (opt) {
@@ -1410,7 +1411,8 @@ function buildSizeSection(item, type) {
     }
     r.appendChild(purposeField);
 
-    var frozen = false;
+    /* 尺寸要先選版位才填得了：版位決定尺寸，固定尺寸的版位則直接帶出來鎖住 */
+    var frozen = !row.purpose;
     if (row.purpose && row.purpose !== "__custom__") {
       for (var j = 0; j < options.length; j++) {
         if (options[j].label === row.purpose) {
@@ -1419,13 +1421,14 @@ function buildSizeSection(item, type) {
         }
       }
     }
-    var pxField = sizePairField(row.px, frozen, function (v) { row.px = v; saveDraft(); });
+    var pxField = sizePairField(row.px, frozen, function (v) { row.px = v; saveDraft(); },
+      row.purpose ? "" : "請先選擇版位");
 
     var group = el("div", "size-value-group");
     group.appendChild(pxField);
     var rm = el("button", "rm", "✕");
     rm.type = "button";
-    rm.setAttribute("aria-label", "刪除此尺寸");
+    rm.setAttribute("aria-label", "刪除此版位");
     rm.disabled = item.sizeRows.length <= 1;
     rm.addEventListener("click", function () {
       if (item.sizeRows.length <= 1) return;
@@ -1438,7 +1441,7 @@ function buildSizeSection(item, type) {
     wrap.appendChild(r);
   });
 
-  var add = el("button", "add-line", "＋ 新增尺寸");
+  var add = el("button", "add-line", "＋ 新增版位");
   add.type = "button";
   add.addEventListener("click", function () {
     item.sizeRows.push(newSizeRow());
@@ -1875,7 +1878,7 @@ function renderPreview() {
   p.appendChild(kvNode("部門", state.dept || "無部門"));
   p.appendChild(kvNode("申請人", currentUser ? currentUser.initials + "<" + currentUser.email + ">" : "—"));
   p.appendChild(kvNode("需求名稱", state.name || "—"));
-  p.appendChild(kvNode("目標對象", state.audience || "未指定"));
+  p.appendChild(kvNode("目標對象", state.audience || "未選擇"));
   p.appendChild(kvNode("總交付日", state.deliveryDate || "—",
     scheduleState().urgent ? el("span", "badge lv2 urgent", "急件") : null));
   p.appendChild(kvNode("會議日期", state.meetingDate || "—"));
@@ -1887,7 +1890,7 @@ function renderPreview() {
     units += itemUnitCount(item);
     var line = (idx + 1) + ". " + (item.name || "未命名") + "　" + (t ? t.label : "—");
     if (t && !t.forcePrint && t.mode !== "notice" && t.mode !== "structure") {
-      line += "　" + (item.output.map(function (o) { return o === "print" ? "印刷" : "數位"; }).join("＋") || "未選");
+      line += "　" + (item.output.map(function (o) { return o === "print" ? "印刷" : "數位"; }).join("＋") || "未選擇");
     }
     p.appendChild(kvNode("項目 " + (idx + 1), line));
   });
@@ -2002,7 +2005,7 @@ $("dr-submit-btn").addEventListener("click", async function () {
   errBox.style.display = "none";
 
   try {
-    if (!AUTH.token() && !googleCredential) throw new Error("登入已失效，請重新登入。");
+    if (!AUTH.token() && !googleCredential) throw new Error("登入已逾時，請重新登入。");
     if (!pendingOperationId) pendingOperationId = makeOperationId();
     persistDraftNow();
 

@@ -482,7 +482,7 @@ var PRINT_SIZES = [
   { label: "A3", note: "29.7×42cm" },
   { label: "A2", note: "42×59.4cm" },
   { label: "A5", note: "14.8×21cm" },
-  { label: "自訂尺寸", custom: true }
+  { label: "自訂版位", custom: true }
 ];
 
 var TYPES = [
@@ -505,11 +505,11 @@ var TYPES = [
   ] },
   { id: "edm", label: "EDM", mode: "structure" },
   { id: "landing", label: "活動頁", mode: "structure" },
-  { id: "product_image", label: "商品圖", mode: "normal", sizes: [{ label: "自訂尺寸", custom: true }], extra: ["page"], showChannel: true },
+  { id: "product_image", label: "商品圖", mode: "normal", sizes: [{ label: "自訂版位", custom: true }], extra: ["page"], showChannel: true },
   { id: "product", label: "商品頁", mode: "notice", notice: "本項文案請前往《長條圖參考分配》填寫。" },
   { id: "print", label: "印刷品", mode: "normal", forcePrint: true, sizes: PRINT_SIZES },
   { id: "booth", label: "展場", mode: "notice", notice: "本項目需另行安排會議。" },
-  { id: "other", label: "其他", mode: "normal", sizes: [{ label: "自訂尺寸", custom: true }], extra: ["page"], showChannel: true }
+  { id: "other", label: "其他", mode: "normal", sizes: [{ label: "自訂版位", custom: true }], extra: ["page"], showChannel: true }
 ];
 
 function typeOf(id) {
@@ -553,7 +553,7 @@ function joinSize(w, h) {
  * 尺寸的寬、高兩格：中間放乘號，格內右側常駐「寬」「高」標示。
  * 對外仍然只回傳一個字串（寬×高），文件與試算表不受影響。
  */
-function sizePairField(value, frozen, onChange) {
+function sizePairField(value, frozen, onChange, lockNote) {
   var parts = splitSize(value);
   var pair = el("div", "size-pair");
 
@@ -564,6 +564,7 @@ function sizePairField(value, frozen, onChange) {
     if (frozen) {
       input.disabled = true;
       input.classList.add("readonly");
+      if (lockNote) input.title = lockNote;
     }
     field.appendChild(input);
     field.appendChild(el("span", "unit-tag", unit));
@@ -1866,6 +1867,7 @@ function collapseIfEmpty(field, label, required, opts) {
   if (key) {
     field.addEventListener("pointerdown", markOpened, true);
     field.addEventListener("focusin", markOpened, true);
+    field.addEventListener("change", markOpened, true);
   }
   if (opts.watchClick) {
     field.addEventListener("click", function (ev) {
@@ -2482,11 +2484,13 @@ function buildDetail(record, container) {
       var savedMsg = work.isExample && !currentUser.isAdmin
         ? "已儲存。範例案件會在每天凌晨復原。"
         : "已儲存。";
+      // 雲端的 Google 文件由後端在背景重做，這裡先告知，避免有人馬上去 Drive 看到舊版本。
+      var docMsg = result.documentUpdated ? "Google 文件更新中，約一分鐘內完成。" : "";
       // 儲存後一律用伺服器回傳的內容重畫，畫面才等於實際存下來的版本，
       // 欄位的展開／收合也回到「有內容展開、沒內容收起」的規則。
-      pendingDetailFlash = (typoChanged || (result.request && JSON.stringify(result.request.data) !== sent))
+      pendingDetailFlash = ((typoChanged || (result.request && JSON.stringify(result.request.data) !== sent))
         ? savedMsg + "文字已套用校正。"
-        : savedMsg;
+        : savedMsg) + docMsg;
       buildDetail(work, container);
       return;
     } catch (err) {
@@ -2790,13 +2794,13 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
             cw.appendChild(el("span", "prefix", "自訂："));
             var ci = document.createElement("input");
             ci.type = "text";
-            ci.placeholder = "輸入用途名稱";
+            ci.placeholder = "輸入版位名稱";
             ci.value = row.customText || "";
             ci.addEventListener("input", function () { row.customText = ci.value; onChange(); });
             cw.appendChild(ci);
             var back = el("button", "inline-clear", "✕");
             back.type = "button";
-            back.setAttribute("aria-label", "取消自訂用途");
+            back.setAttribute("aria-label", "取消自訂版位");
             back.addEventListener("click", function () {
               row.purpose = ""; row.customText = ""; row.px = "";
               onStructuralChange();
@@ -2806,8 +2810,8 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
             purposeField.appendChild(cw);
           } else {
             var s = document.createElement("select");
-            /* 提示列必須明確給空值，否則選回提示列會把「用途／版位」當成使用者填的用途存起來 */
-            var sPlaceholder = el("option", "", "用途／版位");
+            /* 提示列必須明確給空值，否則選回提示列會把「版位」當成使用者填的用途存起來 */
+            var sPlaceholder = el("option", "", "版位");
             sPlaceholder.value = "";
             s.appendChild(sPlaceholder);
             options.forEach(function (opt) {
@@ -2832,19 +2836,21 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
           }
           r.appendChild(purposeField);
 
-          var frozen = false;
+          /* 尺寸要先選版位才填得了：版位決定尺寸，固定尺寸的版位則直接帶出來鎖住 */
+          var frozen = !row.purpose;
           if (row.purpose && row.purpose !== "__custom__") {
             for (var j = 0; j < options.length; j++) {
               if (options[j].label === row.purpose) { frozen = !!(options[j].w || options[j].note); break; }
             }
           }
-          var pxField = sizePairField(row.px, frozen, function (v) { row.px = v; onChange(); });
+          var pxField = sizePairField(row.px, frozen, function (v) { row.px = v; onChange(); },
+            row.purpose ? "" : "請先選擇版位");
 
           var group = el("div", "size-value-group");
           group.appendChild(pxField);
           var rm = el("button", "rm", "✕");
           rm.type = "button";
-          rm.setAttribute("aria-label", "刪除此尺寸");
+          rm.setAttribute("aria-label", "刪除此版位");
           rm.disabled = item.sizeRows.length <= 1;
           rm.addEventListener("click", function () {
             if (item.sizeRows.length <= 1) return;
@@ -2857,7 +2863,7 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
           sizeWrap.appendChild(r);
         });
 
-        var addSize = el("button", "add-line", "＋ 新增尺寸");
+        var addSize = el("button", "add-line", "＋ 新增版位");
         addSize.type = "button";
         addSize.addEventListener("click", function () {
           item.sizeRows.push({ purpose: "", customText: "", px: "" });
