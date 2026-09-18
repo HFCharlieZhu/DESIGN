@@ -524,6 +524,9 @@ function sizeOptionsFor(item, type) {
       if (!options.some(function (x) { return x.label === opt.label; })) options.push(opt);
     });
   }
+  /* 每一種需求類型都能自訂版位：清單裡沒有的版位自己填，固定排在最後一個。 */
+  options = options.filter(function (x) { return !x.custom; });
+  options.push({ label: "自訂版位", custom: true });
   return options;
 }
 

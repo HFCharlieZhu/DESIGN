@@ -1177,6 +1177,8 @@ html {
   place-items: center;
   font-size: var(--fs-meta);
   font-weight: var(--fw-medium);
+  /* 行高必須歸 1，否則行框比圓圈高，數字會被壓到偏下 */
+  line-height: 1;
 }
 
 #dr-app .item-head .name {
