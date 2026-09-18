@@ -1765,6 +1765,16 @@ function caretIcon() {
   return svg;
 }
 
+/* 目前這一輪被使用者打開過的收合欄位，key 開頭一律是案件編號，重畫該案件時清掉。 */
+var FIELD_OPENED = {};
+
+function resetFieldOpened(requestId) {
+  var prefix = requestId + "|";
+  Object.keys(FIELD_OPENED).forEach(function (k) {
+    if (k.indexOf(prefix) === 0) delete FIELD_OPENED[k];
+  });
+}
+
 /**
  * 選填欄位的展開／收合。三種狀態，靠輸入框當下的內容決定：
  *   有內容      → 沒有收合鍵，永遠展開（標題用原本的欄位標籤）
@@ -1773,18 +1783,27 @@ function caretIcon() {
  * 標題列永遠只有一行：有收合鍵時原本的標籤隱藏，由收合鍵那一行代替。
  * 編輯途中把內容刪光只會把收合鍵加回來，不會自動收起輸入框。
  */
-function collapseIfEmpty(field, label, required) {
+function collapseIfEmpty(field, label, required, opts) {
   if (required) return field;
+  opts = opts || {};
 
-  var labelEl = field.querySelector("label");
+  var key = opts.key || "";
+  /* 只取這一層自己的標籤，不能抓到內層小欄位的標籤 */
+  var labelEl = field.querySelector(":scope > label");
   var toggle = null;
 
   function inputNode() { return field.querySelector("textarea, input, select"); }
 
   function isEmpty() {
+    if (opts.isEmpty) return !!opts.isEmpty();
     var node = inputNode();
     return !node || !String(node.value || "").trim();
   }
+
+  /* 使用者動過的欄位記起來：像膠囊、尺寸這種按一下會整塊重畫的欄位，
+     重畫後才不會因為當下是空的就自己收起來。 */
+  function markOpened() { if (key) FIELD_OPENED[key] = true; }
+  function markClosed() { if (key) delete FIELD_OPENED[key]; }
 
   function syncToggle() {
     if (!toggle) return;
@@ -1808,7 +1827,8 @@ function collapseIfEmpty(field, label, required) {
     toggle.addEventListener("click", function () {
       var nowCollapsed = field.classList.toggle("is-collapsed");
       syncToggle();
-      if (nowCollapsed) return;
+      if (nowCollapsed) { markClosed(); return; }
+      markOpened();
       var node = inputNode();
       if (node && !node.disabled) node.focus();
     });
@@ -1826,16 +1846,27 @@ function collapseIfEmpty(field, label, required) {
     toggle = null;
   }
 
-  if (isEmpty()) addToggle(true);
+  if (isEmpty()) addToggle(!(key && FIELD_OPENED[key]));
 
-  field.addEventListener("input", function () {
+  function sync() {
     if (isEmpty()) addToggle(false);
     else removeToggle();
-  });
-  field.addEventListener("change", function () {
-    if (isEmpty()) addToggle(false);
-    else removeToggle();
-  });
+  }
+
+  field.addEventListener("input", sync);
+  field.addEventListener("change", sync);
+  /* 膠囊、尺寸、素材連結這種用按鈕操作的欄位：點下去就算「正在編輯這一欄」，
+     捕捉階段先記起來，之後就算整塊重畫也維持展開。 */
+  if (key) {
+    field.addEventListener("pointerdown", markOpened, true);
+    field.addEventListener("focusin", markOpened, true);
+  }
+  if (opts.watchClick) {
+    field.addEventListener("click", function (ev) {
+      if (ev.target.closest && ev.target.closest(".field-toggle")) return;
+      sync();
+    });
+  }
 
   return field;
 }
@@ -1924,6 +1955,8 @@ var pendingDetailFlash = "";
 function buildDetail(record, container) {
   var work = JSON.parse(JSON.stringify(record));
   if (typeof work.meetingDate !== "string") work.meetingDate = "";
+  /* 整份重畫＝回到「有內容展開、沒內容收起」的規則，先忘掉上一輪手動打開的紀錄 */
+  resetFieldOpened(record.id);
   (work.data.items || []).forEach(normalizeItem);
 
   var serverData = JSON.stringify(work.data);
@@ -2232,7 +2265,11 @@ function buildDetail(record, container) {
     audienceRow.appendChild(chip);
   });
   audienceField.appendChild(audienceRow);
-  row1.appendChild(audienceField);
+  row1.appendChild(collapseIfEmpty(audienceField, "目標對象", false, {
+    key: work.id + "|audience",
+    isEmpty: function () { return !work.data.audience; },
+    watchClick: true
+  }));
   primary.appendChild(row1);
 
   primary.appendChild(makeField("textarea", "時程備註", false, work.data.scheduleNote, function (v) {
@@ -2273,7 +2310,8 @@ function buildDetail(record, container) {
         markDirty();
       },
       markDirty,
-      work.data.items.length);
+      work.data.items.length,
+      work.id + "|item" + idx);
     return node;
   }
 
@@ -2375,7 +2413,15 @@ function buildDetail(record, container) {
     markDirty();
   });
   refField.appendChild(addRef);
-  refPanel.appendChild(refField);
+  refPanel.appendChild(collapseIfEmpty(refField, "素材連結", false, {
+    key: work.id + "|refLinks",
+    isEmpty: function () {
+      return !(work.data.refLinks || []).some(function (x) {
+        return String(x.url || "").trim() || String(x.note || "").trim();
+      });
+    },
+    watchClick: true
+  }));
   refPanel.appendChild(makeField("textarea", "參考說明", false, work.data.refNote, function (v) {
     work.data.refNote = v; markDirty();
   }));
@@ -2559,7 +2605,7 @@ function disableInputs(root) {
 
 /* ---------- 項目編輯 ---------- */
 
-function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total) {
+function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total, keyPrefix) {
   var box = el("div", "item-block");
   box.dataset.itemIndex = String(idx);
 
@@ -2754,7 +2800,10 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
             purposeField.appendChild(cw);
           } else {
             var s = document.createElement("select");
-            s.appendChild(el("option", "", "用途／版位"));
+            /* 提示列必須明確給空值，否則選回提示列會把「用途／版位」當成使用者填的用途存起來 */
+            var sPlaceholder = el("option", "", "用途／版位");
+            sPlaceholder.value = "";
+            s.appendChild(sPlaceholder);
             options.forEach(function (opt) {
               var o = el("option", "", opt.label);
               o.value = opt.custom ? "__custom__" : opt.label;
@@ -2810,7 +2859,17 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
           onChange();
         });
         sizeWrap.appendChild(addSize);
-        box.appendChild(sizeWrap);
+        box.appendChild(collapseIfEmpty(sizeWrap, "尺寸", false, {
+          key: keyPrefix + "|size",
+          isEmpty: function () {
+            return !(item.sizeRows || []).some(function (row) {
+              return String(row.purpose || "").trim() ||
+                String(row.customText || "").trim() ||
+                String(row.px || "").trim();
+            });
+          },
+          watchClick: true
+        }));
       }
 
       if (itemHasPrint(item)) {
@@ -2837,7 +2896,11 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
         expRow.appendChild(chip);
       });
       expField.appendChild(expRow);
-      box.appendChild(expField);
+      box.appendChild(collapseIfEmpty(expField, "商品曝光", false, {
+        key: keyPrefix + "|exposure",
+        isEmpty: function () { return !item.exposure; },
+        watchClick: true
+      }));
 
       if (item.exposure === "reveal") {
         box.appendChild(makeField("text", "商品型號", false, item.exposureModel, function (v) {

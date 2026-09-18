@@ -1384,7 +1384,10 @@ function buildSizeSection(item, type) {
       purposeField.appendChild(box);
     } else {
       var sel = document.createElement("select");
-      sel.appendChild(el("option", "", "用途／版位"));
+      /* 提示列必須明確給空值，否則選回提示列會把「用途／版位」當成使用者填的用途存起來 */
+      var selPlaceholder = el("option", "", "用途／版位");
+      selPlaceholder.value = "";
+      sel.appendChild(selPlaceholder);
       options.forEach(function (opt) {
         var o = el("option", "", opt.label);
         o.value = opt.custom ? "__custom__" : opt.label;
