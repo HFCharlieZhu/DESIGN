@@ -430,6 +430,66 @@ html {
 #dr-app .hint { color: var(--muted); }
 #dr-app .errmsg { display: none; color: var(--red); }
 
+/* 選填且還沒填寫的欄位收成一行，點開才展開輸入框 */
+#dr-app .field.is-collapsed > *:not(.field-toggle) { display: none; }
+/* 展開時標題列與一般欄位的標籤位置一致 */
+#dr-app .field > .field-toggle { margin-bottom: var(--space-2); }
+#dr-app .field.is-collapsed > .field-toggle { margin-bottom: 0; }
+
+#dr-app .field-toggle {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 11px;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  /* 收合列也要有足夠的點擊高度，與其他文字型控制項同一級 */
+  min-height: var(--round-btn);
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  color: var(--body);
+}
+
+/* 與一般欄位標籤完全同一組字級字重，展開收合時標題不會跳動 */
+#dr-app .field-toggle .ft-label {
+  font-size: var(--fs-meta);
+  line-height: 1.5;
+  font-weight: var(--fw-medium);
+  color: var(--ink);
+  letter-spacing: .02em;
+}
+
+/* 與標籤後面的「選填」同一個樣式 */
+#dr-app .field-toggle .ft-sub {
+  font-size: var(--fs-meta);
+  line-height: 1.5;
+  font-weight: var(--fw-regular);
+  color: var(--muted);
+  justify-self: start;
+}
+
+#dr-app .field-toggle .caret {
+  width: 11px;
+  height: 7px;
+  justify-self: end;
+  color: var(--body);
+  transition: transform var(--ease);
+}
+
+/* 收合時朝下、展開時朝上，與全站箭頭同一條規則 */
+#dr-app .field:not(.is-collapsed) > .field-toggle .caret { transform: rotate(180deg); }
+
+@media (hover: hover) and (pointer: fine) {
+  #dr-app .field-toggle:hover .ft-label,
+  #dr-app .field-toggle:hover .ft-sub { color: var(--ink); }
+}
+
+#dr-app .field-toggle.is-touch-hover .ft-label,
+#dr-app .field-toggle.is-touch-hover .ft-sub { color: var(--ink); }
+
 /* 必填未完成：兩頁共用同一組紅框與紅字標籤 */
 #dr-app .field.err > label { color: var(--red); }
 #dr-app .field.err input,
@@ -647,6 +707,41 @@ html {
 }
 
 #dr-app .size-value-group > .field { margin: 0; }
+
+/* 尺寸：寬、高兩格中間一個乘號，格內右側常駐單位標示 */
+#dr-app .size-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+#dr-app .size-pair > .size-part { position: relative; margin: 0; min-width: 0; }
+
+/* 讓出右側標示的位置，文字不會壓到「寬」「高」；尺寸是短值，不提供拖曳 */
+#dr-app .size-pair textarea { padding-right: 30px; resize: none; }
+
+#dr-app .unit-tag {
+  position: absolute;
+  top: 0;
+  right: 12px;
+  height: var(--entry-h1);
+  display: flex;
+  align-items: center;
+  font-size: var(--fs-meta);
+  font-weight: var(--fw-regular);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+#dr-app .size-times {
+  height: var(--entry-h1);
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--fs-body);
+  color: var(--body);
+}
 
 /* 素材連結列：網址 ＋ 說明 ＋ 刪除 */
 #dr-app .ref-link-row {
@@ -1127,8 +1222,8 @@ html {
   transition: transform var(--ease);
 }
 
-#dr-app .item-head .caret { transform: rotate(180deg); }
-#dr-app .item-card.collapsed .caret { transform: none; }
+#dr-app .item-card > .item-head > .caret { transform: rotate(180deg); }
+#dr-app .item-card.collapsed > .item-head > .caret { transform: none; }
 
 #dr-app .item-body { padding: var(--space-5); }
 
@@ -1674,7 +1769,8 @@ html {
   color: var(--body);
 }
 
-#dr-app .card.open .caret { transform: rotate(180deg); }
+/* 只轉卡片自己的箭頭，不要連帶轉到卡片內部其他元件的箭頭 */
+#dr-app .card.open > .card-top > .caret { transform: rotate(180deg); }
 
 /* 卡片底色優先序：已刪除 > 錯誤／退回／取消 > 逾期 > 白底 */
 #dr-app .card.bg-error > .card-top { background: var(--red-l); }

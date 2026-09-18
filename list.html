@@ -505,6 +505,7 @@ var TYPES = [
   ] },
   { id: "edm", label: "EDM", mode: "structure" },
   { id: "landing", label: "活動頁", mode: "structure" },
+  { id: "product_image", label: "商品圖", mode: "normal", sizes: [{ label: "自訂尺寸", custom: true }], extra: ["page"], showChannel: true },
   { id: "product", label: "商品頁", mode: "notice", notice: "本項文案請前往《長條圖參考分配》填寫。" },
   { id: "print", label: "印刷品", mode: "normal", forcePrint: true, sizes: PRINT_SIZES },
   { id: "booth", label: "展場", mode: "notice", notice: "本項目需另行安排會議。" },
@@ -524,6 +525,60 @@ function sizeOptionsFor(item, type) {
     });
   }
   return options;
+}
+
+/**
+ * 尺寸只用一個字串儲存（寬×高），介面上拆成兩格填寫。
+ * 拆的時候以「×」為準，沒有「×」時才容錯處理 x／*，避免把文字誤切。
+ */
+function splitSize(value) {
+  var text = String(value || "").trim();
+  if (!text) return { w: "", h: "" };
+  var i = text.indexOf("\u00D7");
+  if (i >= 0) return { w: text.slice(0, i).trim(), h: text.slice(i + 1).trim() };
+  var m = text.match(/^([0-9][0-9.,]*\s*[A-Za-z%]*)\s*[xX*]\s*([0-9].*)$/);
+  if (m) return { w: m[1].trim(), h: m[2].trim() };
+  return { w: text, h: "" };
+}
+
+function joinSize(w, h) {
+  w = String(w || "").trim();
+  h = String(h || "").trim();
+  if (!w) return h;
+  if (!h) return w;
+  return w + "\u00D7" + h;
+}
+
+/**
+ * 尺寸的寬、高兩格：中間放乘號，格內右側常駐「寬」「高」標示。
+ * 對外仍然只回傳一個字串（寬×高），文件與試算表不受影響。
+ */
+function sizePairField(value, frozen, onChange) {
+  var parts = splitSize(value);
+  var pair = el("div", "size-pair");
+
+  function box(initial, unit, label) {
+    var field = el("div", "field size-part");
+    var input = textEntry(initial, function () { commit(); }, "h1");
+    input.setAttribute("aria-label", label);
+    if (frozen) {
+      input.disabled = true;
+      input.classList.add("readonly");
+    }
+    field.appendChild(input);
+    field.appendChild(el("span", "unit-tag", unit));
+    pair.appendChild(field);
+    return input;
+  }
+
+  var wInput = box(parts.w, "\u5BEC", "\u5BEC");
+  var times = el("span", "size-times", "\u00D7");
+  times.setAttribute("aria-hidden", "true");
+  pair.appendChild(times);
+  var hInput = box(parts.h, "\u9AD8", "\u9AD8");
+
+  function commit() { onChange(joinSize(wInput.value, hInput.value)); }
+  return pair;
 }
 
 function sizeValueOf(def) {
@@ -585,6 +640,116 @@ function workingDaysBetween(from, to) {
     if (wd !== 0 && wd !== 6) count++;
   }
   return count;
+}
+
+/* ============================================================
+   共用區塊 H：文字校正（兩頁完全相同，並與後端 Code.gs 一致）
+   送出或儲存時才套用，打字過程不干擾。
+   ============================================================ */
+
+var TYPO_CJK = "\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\u3005\u3006\u3007";
+var TYPO_OPEN = "\uE000";
+var TYPO_CLOSE = "\uE001";
+
+function normalizeTypographyText(value) {
+  var text = String(value === null || value === undefined ? "" : value);
+  if (!text) return text;
+
+  /* ---- 1. 把不能動的片段換成佔位符 ---- */
+  var saved = [];
+  function keep(token) {
+    saved.push(token);
+    return TYPO_OPEN + (saved.length - 1) + TYPO_CLOSE;
+  }
+  text = text.replace(/(?:[a-zA-Z][a-zA-Z0-9+.-]*:\/\/|www\.)[^\s　]+/g, keep);
+  text = text.replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, keep);
+  text = text.replace(/[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+(?:\/[^\s　]*)?/g, keep);
+  text = text.replace(/\d+(?::\d+)+/g, keep);
+  text = text.replace(/\d+(?:,\d{3})+/g, keep);
+
+  var cjk = TYPO_CJK;
+  /* 佔位符在後續規則裡當成英數看待，兩側的空格才補得出來 */
+  var WORD = "A-Za-z0-9" + TYPO_OPEN + TYPO_CLOSE;
+
+  /* ---- 2. 括號成對處理，內容有中文才用全形 ---- */
+  text = text.replace(/[(（]([^()（）]*)[)）]/g, function (_, inner) {
+    var hasCjk = new RegExp("[" + cjk + "]").test(inner);
+    return hasCjk ? "（" + inner + "）" : "(" + inner + ")";
+  });
+
+  /* ---- 3. 其餘標點的全形／半形 ---- */
+  var FULL = { ",": "，", ".": "。", ";": "；", ":": "：", "?": "？", "!": "！" };
+  var HALF = { "，": ",", "。": ".", "；": ";", "：": ":", "？": "?", "！": "!" };
+
+  text = text.replace(new RegExp("([" + cjk + "])([,.;:?!])", "g"),
+    function (_, a, p) { return a + FULL[p]; });
+  text = text.replace(new RegExp("([,.;:?!])([" + cjk + "])", "g"),
+    function (_, p, b) { return FULL[p] + b; });
+  text = text.replace(new RegExp("([" + WORD + "])([，。；：？！])(?=[" + WORD + "\\s]|$)", "g"),
+    function (_, a, p) { return a + HALF[p]; });
+
+  /* ---- 4. 全形標點自帶間距，前後不再補空格 ---- */
+  text = text.replace(/([，。；：？！、）])[ \t]+/g, "$1");
+  text = text.replace(/[ \t]+([（])/g, "$1");
+
+  /* ---- 5. 英文標點後補一個空格 ---- */
+  text = text.replace(new RegExp("([A-Za-z])([,.;:?!])(?=[" + WORD + "(])", "g"), "$1$2 ");
+  text = text.replace(new RegExp("([" + WORD + "])([,;:?!])(?=[" + WORD + "(])", "g"), "$1$2 ");
+
+  /* ---- 6. 半形左括號前補空格（英文排版慣例） ---- */
+  text = text.replace(new RegExp("([" + WORD + "])(\\()", "g"), "$1 $2");
+
+  /* ---- 7. 中文與英數（含半形括號）之間補一個空格 ---- */
+  text = text.replace(new RegExp("([" + cjk + "])([" + WORD + "(])", "g"), "$1 $2");
+  text = text.replace(new RegExp("([" + WORD + ")%])([" + cjk + "])", "g"), "$1 $2");
+
+  /* ---- 8. 收尾 ---- */
+  text = text.replace(/[ \t]{2,}/g, " ");
+  text = text.replace(/[ \t]+$/gm, "");
+
+  for (var i = 0; i < saved.length; i++) {
+    text = text.replace(TYPO_OPEN + i + TYPO_CLOSE, saved[i]);
+  }
+  return text;
+}
+
+/** 只有純文字欄位需要校正；網址與連結類欄位一律原樣保留。 */
+function typoText(value) { return normalizeTypographyText(value); }
+
+/**
+ * 依後端 normalizeRequestData_ 的同一份清單套用校正。
+ * 連結類欄位（素材連結網址、CTA／連結）與尺寸一律不動。
+ */
+function normalizeRequestTypography(data) {
+  if (!data || typeof data !== "object") return data;
+  ["name", "purpose", "message", "note1", "note2", "scheduleNote", "refNote"]
+    .forEach(function (k) { if (typeof data[k] === "string") data[k] = typoText(data[k]); });
+
+  (data.refLinks || []).forEach(function (link) {
+    if (link && typeof link.note === "string") link.note = typoText(link.note);
+  });
+
+  (data.items || []).forEach(function (item) {
+    if (!item) return;
+    ["name", "exposureModel", "channel", "note", "page"].forEach(function (k) {
+      if (typeof item[k] === "string") item[k] = typoText(item[k]);
+    });
+    (item.sizeRows || []).forEach(function (row) {
+      if (row && typeof row.customText === "string") row.customText = typoText(row.customText);
+    });
+    if (item.copy) {
+      ["head", "sub", "small", "other"].forEach(function (k) {
+        if (typeof item.copy[k] === "string") item.copy[k] = typoText(item.copy[k]);
+      });
+    }
+    (item.blocks || []).forEach(function (block) {
+      if (!block) return;
+      ["head", "sub", "small", "other", "imgNote"].forEach(function (k) {
+        if (typeof block[k] === "string") block[k] = typoText(block[k]);
+      });
+    });
+  });
+  return data;
 }
 
 /* ============================================================
@@ -1091,7 +1256,7 @@ function populateFilters() {
     deptSel.appendChild(o);
   });
   if (opts.hasBlank) {
-    var none = el("option", "", "未指定部門");
+    var none = el("option", "", "無部門");
     none.value = NO_DEPT;
     deptSel.appendChild(none);
   }
@@ -1591,6 +1756,90 @@ function textEntry(value, onChange, cls) {
   return input;
 }
 
+function caretIcon() {
+  var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "caret");
+  svg.setAttribute("viewBox", "0 0 11 7");
+  svg.setAttribute("aria-hidden", "true");
+  svg.innerHTML = '<path d="M1 1l4.5 4.5L10 1" stroke="currentColor" stroke-width="1.6" fill="none"/>';
+  return svg;
+}
+
+/**
+ * 選填欄位的展開／收合。三種狀態，靠輸入框當下的內容決定：
+ *   有內容      → 沒有收合鍵，永遠展開（標題用原本的欄位標籤）
+ *   空白、收起  → 只剩一行「標題　未填寫　∨」
+ *   空白、展開  → 一行「標題　選填　∧」加上輸入框
+ * 標題列永遠只有一行：有收合鍵時原本的標籤隱藏，由收合鍵那一行代替。
+ * 編輯途中把內容刪光只會把收合鍵加回來，不會自動收起輸入框。
+ */
+function collapseIfEmpty(field, label, required) {
+  if (required) return field;
+
+  var labelEl = field.querySelector("label");
+  var toggle = null;
+
+  function inputNode() { return field.querySelector("textarea, input, select"); }
+
+  function isEmpty() {
+    var node = inputNode();
+    return !node || !String(node.value || "").trim();
+  }
+
+  function syncToggle() {
+    if (!toggle) return;
+    var collapsed = field.classList.contains("is-collapsed");
+    toggle.querySelector(".ft-sub").textContent = collapsed ? "未填寫" : "選填";
+    toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  }
+
+  function addToggle(collapsed) {
+    if (toggle) {
+      field.classList.toggle("is-collapsed", !!collapsed);
+      syncToggle();
+      return;
+    }
+    toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "field-toggle";
+    toggle.appendChild(el("span", "ft-label", label));
+    toggle.appendChild(el("span", "ft-sub", ""));
+    toggle.appendChild(caretIcon());
+    toggle.addEventListener("click", function () {
+      var nowCollapsed = field.classList.toggle("is-collapsed");
+      syncToggle();
+      if (nowCollapsed) return;
+      var node = inputNode();
+      if (node && !node.disabled) node.focus();
+    });
+    field.insertBefore(toggle, field.firstChild);
+    if (labelEl) labelEl.hidden = true;
+    field.classList.toggle("is-collapsed", !!collapsed);
+    syncToggle();
+  }
+
+  function removeToggle() {
+    field.classList.remove("is-collapsed");
+    if (labelEl) labelEl.hidden = false;
+    if (!toggle) return;
+    toggle.remove();
+    toggle = null;
+  }
+
+  if (isEmpty()) addToggle(true);
+
+  field.addEventListener("input", function () {
+    if (isEmpty()) addToggle(false);
+    else removeToggle();
+  });
+  field.addEventListener("change", function () {
+    if (isEmpty()) addToggle(false);
+    else removeToggle();
+  });
+
+  return field;
+}
+
 function makeField(kind, label, required, value, onChange, optText) {
   var f = el("div", "field");
   f.appendChild(labelNode(label, required, optText));
@@ -1603,7 +1852,7 @@ function makeField(kind, label, required, value, onChange, optText) {
     dateInput.addEventListener("input", function () { onChange(dateInput.value); });
     wrap.appendChild(dateInput);
     f.appendChild(wrap);
-    return f;
+    return collapseIfEmpty(f, label, required);
   }
 
   if (kind === "number") {
@@ -1613,13 +1862,13 @@ function makeField(kind, label, required, value, onChange, optText) {
     numInput.value = value || "";
     numInput.addEventListener("input", function () { onChange(numInput.value); });
     f.appendChild(numInput);
-    return f;
+    return collapseIfEmpty(f, label, required);
   }
 
   var entry = textEntry(value, onChange, kind === "textarea" ? "" : "h1");
   if (kind === "url") entry.inputMode = "url";
   f.appendChild(entry);
-  return f;
+  return collapseIfEmpty(f, label, required);
 }
 
 function newItemData() {
@@ -1668,6 +1917,9 @@ function itemBadgeNodes(item) {
   }
   return frag;
 }
+
+/* 重畫明細後要顯示的提示（重畫會換掉原本的提示節點，所以先寄放在這裡）。 */
+var pendingDetailFlash = "";
 
 function buildDetail(record, container) {
   var work = JSON.parse(JSON.stringify(record));
@@ -1893,7 +2145,7 @@ function buildDetail(record, container) {
   // 部門與申請人在送出後固定（案件編號由兩者組成），此處僅顯示，不可修改。
   var identityRow = el("div", "row c2");
   var deptField = makeField("text", "部門", null,
-    work.data.department || work.data.dept || "不指定", function () { });
+    work.data.department || work.data.dept || "無部門", function () { });
   var deptInput = deptField.querySelector("textarea");
   deptInput.disabled = true;
   deptInput.classList.add("readonly");
@@ -1951,7 +2203,16 @@ function buildDetail(record, container) {
 
   var row1 = el("div", "row c2");
   var deliveryField = makeField("date", "總交付日", true, work.data.deliveryDate, function (v) {
-    work.data.deliveryDate = v; markDirty();
+    work.data.deliveryDate = v;
+    // 只補還沒填交付日的項目，已經排過日期的一律不動
+    var filled = false;
+    (work.data.items || []).forEach(function (item) {
+      if (!v || String(item.useDate || "").trim()) return;
+      item.useDate = v;
+      filled = true;
+    });
+    if (filled) renderItems();
+    markDirty();
   });
   deliveryField.classList.add("delivery-field");
   row1.appendChild(deliveryField);
@@ -2156,12 +2417,26 @@ function buildDetail(record, container) {
       if (!labels.length) labels.push("內容更新");
       if (!saveOpId) saveOpId = makeOperationId();
 
+      // 先在本機套用與後端相同的文字校正，送出的就是最終版本
+      var beforeTypo = JSON.stringify(work.data);
+      normalizeRequestTypography(work.data);
+      var typoChanged = JSON.stringify(work.data) !== beforeTypo;
+
+      var sent = JSON.stringify(buildPayload(labels, saveOpId).data);
       var result = await apiPost("updateRequest", buildPayload(labels, saveOpId), { timeout: 45000 });
       saveOpId = "";
       applyMutationResult(result);
-      flash(work.isExample && !currentUser.isAdmin
+
+      var savedMsg = work.isExample && !currentUser.isAdmin
         ? "已儲存。範例案件會在每天凌晨復原。"
-        : "已儲存。");
+        : "已儲存。";
+      // 儲存後一律用伺服器回傳的內容重畫，畫面才等於實際存下來的版本，
+      // 欄位的展開／收合也回到「有內容展開、沒內容收起」的規則。
+      pendingDetailFlash = (typoChanged || (result.request && JSON.stringify(result.request.data) !== sent))
+        ? savedMsg + "文字已套用校正。"
+        : savedMsg;
+      buildDetail(work, container);
+      return;
     } catch (err) {
       if (!handleAuthError(err)) flash("儲存失敗：" + err.message);
     } finally {
@@ -2260,6 +2535,7 @@ function buildDetail(record, container) {
   frag.appendChild(actions);
 
   container.replaceChildren(frag);
+
   if (!canEdit) {
     disableInputs(primary);
     disableInputs(itemsPanel);
@@ -2267,6 +2543,12 @@ function buildDetail(record, container) {
   }
   if (restoredFromDraft) flash("已回復未儲存的編輯內容。");
   else renderStatus();
+  /* 重畫前留下的提示（例如剛儲存完）要壓在最後，才不會被 renderStatus 蓋掉 */
+  if (pendingDetailFlash) {
+    var carried = pendingDetailFlash;
+    pendingDetailFlash = "";
+    flash(carried);
+  }
 }
 
 function disableInputs(root) {
@@ -2495,20 +2777,13 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
           }
           r.appendChild(purposeField);
 
-          var pxField = el("div", "field");
           var frozen = false;
           if (row.purpose && row.purpose !== "__custom__") {
             for (var j = 0; j < options.length; j++) {
               if (options[j].label === row.purpose) { frozen = !!(options[j].w || options[j].note); break; }
             }
           }
-          var pxi = textEntry(row.px, function (v) { row.px = v; onChange(); }, "h1");
-          pxi.placeholder = "實際尺寸";
-          if (frozen) {
-            pxi.disabled = true;
-            pxi.classList.add("readonly");
-          }
-          pxField.appendChild(pxi);
+          var pxField = sizePairField(row.px, frozen, function (v) { row.px = v; onChange(); });
 
           var group = el("div", "size-value-group");
           group.appendChild(pxField);
@@ -2627,7 +2902,7 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
    啟動
    ============================================================ */
 
-initTouchFeedback(".btn-topbar,.btn-sm,.pgbtn,.chip,.filter-reset,.archive-head,.arch-year-head,.arch-month-head,.card-top,.subpanel,.item-block,.block,.add-line,.del-line,.rm,.inline-clear,.block-order button,.custom-purpose,input,textarea,select,.data-retry button");
+initTouchFeedback(".btn-topbar,.btn-sm,.pgbtn,.chip,.filter-reset,.field-toggle,.archive-head,.arch-year-head,.arch-month-head,.card-top,.subpanel,.item-block,.block,.add-line,.del-line,.rm,.inline-clear,.block-order button,.custom-purpose,input,textarea,select,.data-retry button");
 startHeartbeat();
 startAuth();
 
