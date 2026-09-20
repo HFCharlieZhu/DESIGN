@@ -1278,7 +1278,8 @@ function buildItemBody(item) {
     frag.appendChild(buildBlocks(item));
     var dateRow = el("div", "row c2");
     dateRow.appendChild(makeField("date", "交付日", false, item.useDate, function (v) {
-      item.useDate = v; item._dateTouched = true; checkDeliveryWarn(); saveDraft();
+      // 項目交付日也會影響急件判斷與時程提示，所以整組統計一起重算
+      item.useDate = v; item._dateTouched = true; refreshStats(); saveDraft();
     }));
     dateRow.appendChild(el("div", "field"));
     frag.appendChild(dateRow);
@@ -1364,7 +1365,8 @@ function buildItemBody(item) {
     }));
   }
   row2.appendChild(makeField("date", "交付日", false, item.useDate, function (v) {
-    item.useDate = v; item._dateTouched = true; checkDeliveryWarn(); saveDraft();
+    // 項目交付日也會影響急件判斷與時程提示，所以整組統計一起重算
+    item.useDate = v; item._dateTouched = true; refreshStats(); saveDraft();
   }));
   if (!t.showChannel) row2.appendChild(el("div", "field"));
   frag.appendChild(row2);
@@ -2072,6 +2074,48 @@ $("dr-refill").addEventListener("click", function () { window.location.reload();
    ============================================================ */
 
 if (!state.items.length) state.items.push(newItem());
+/* ------------------------------------------------------------
+   橡皮筋彈跳時的表頭保護
+   iOS 在彈跳時會把 backdrop-filter 的模糊層與 bar 的底色文字拆開各走各的，
+   結果就是表頭與統計列看起來消失、原地只留一塊模糊。
+   這裡在「正在彈跳」的那一瞬間替 <html> 加上記號，CSS 會把 bar 換成等效的
+   不透明底色：沒有模糊層就沒有東西可以分家。平常捲動仍是毛玻璃。
+   ------------------------------------------------------------ */
+function initOverscrollGuard() {
+  var root = document.documentElement;
+  var on = false;
+
+  function check() {
+    var y = window.scrollY || root.scrollTop || 0;
+    var max = Math.max(0, (root.scrollHeight || 0) - window.innerHeight);
+    var over = y < 0 || y > max + 1;
+    if (over === on) return;
+    on = over;
+    root.classList.toggle("is-overscroll", over);
+  }
+
+  window.addEventListener("scroll", check, { passive: true });
+  window.addEventListener("touchmove", check, { passive: true });
+  window.addEventListener("touchend", check, { passive: true });
+  window.addEventListener("touchcancel", check, { passive: true });
+  check();
+}
+
+initOverscrollGuard();
+
+/* 點標題＝重新載入這一頁。連到同一個網址在某些瀏覽器（特別是加到主畫面的模式）
+   不一定會真的重新載入，所以這裡明確呼叫一次；按住 ⌘／Ctrl 另開分頁的行為保留。 */
+function initTitleReload() {
+  var title = document.querySelector(".topbar-title");
+  if (!title) return;
+  title.addEventListener("click", function (e) {
+    if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    location.reload();
+  });
+}
+
+initTitleReload();
 initTouchFeedback(".btn-topbar,.btn-primary,.btn-submit,.btn-ghost,.draftbar button,input,textarea,select,.chip,.item-card,.block,.rm,.add-line,.del-line,.inline-clear,.block-order button,.custom-purpose");
 startHeartbeat();
 startAuth();

@@ -37,6 +37,8 @@ html {
   /* 置頂表頭與置底統計列共用的霧面底色，兩者必須一致。 */
   --veil: rgba(255, 255, 255, .5);
   --veil-blur: blur(15px);
+  /* 觸控裝置改用的不透明底色：等於 --veil 疊在頁面底色上的結果 */
+  --veil-solid: #f6f6f6;
   --tint: #eeeeee;
   --blue: #4aacfe;
   --brown: #ac6a27;
@@ -213,6 +215,21 @@ html {
   font-weight: var(--fw-medium);
 }
 
+/* 表頭與統計列平常是毛玻璃。
+   但 iOS 在橡皮筋彈跳時，會把 backdrop-filter 的模糊層與 bar 的底色文字拆成兩層
+   各走各的，看起來就是「表頭不見了，原地留一塊模糊」。
+   所以只在「正在彈跳」或「正在下拉重整」的那一瞬間換成等效的不透明底色：
+   模糊層不存在，就沒有東西可以跟 bar 分家。平常捲動完全不受影響。
+   （底色刻意取 --veil 疊在頁面底色上的結果，切換時看不出差別。） */
+html.is-overscroll #dr-app .topbar,
+html.is-overscroll #dr-app .statsbar,
+html.is-pulling #dr-app .topbar,
+html.is-pulling #dr-app .statsbar {
+  background: var(--veil-solid);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
 #dr-app .systembar {
   background: var(--tint);
   border-bottom: 1.2px solid var(--hair);
@@ -340,28 +357,31 @@ html {
 
 /* ---------- 手機下拉重新整理 ---------- */
 
-/* 有下拉重整的頁面關掉瀏覽器內建的下拉重整與回彈，避免兩個同時觸發 */
-html.has-ptr { overscroll-behavior-y: none; }
+/* 只擋掉瀏覽器自己的「下拉重新整理」，橡皮筋彈跳保留。 */
+html.has-ptr { overscroll-behavior-y: contain; }
 
-/* 跟手機原生的下拉重整一樣：整頁（含表頭）往下移，轉圈出現在表頭上方新拉出來的空間。
-   轉圈放在 #dr-app 外面，頁面位移時它不會跟著跑。 */
+/* 重整區是表頭往上的延伸：同一個底色、蓋在所有內容之上，
+   所以捲動中的卡片不可能穿過它。高度由手指決定。 */
 .ptr {
   position: fixed;
-  left: 50%;
   top: 0;
-  z-index: 200;
-  width: 20px;
-  height: 20px;
-  margin-left: -10px;
-  opacity: 0;
+  left: 0;
+  right: 0;
+  z-index: 150;
+  height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--veil-solid);
   pointer-events: none;
 }
 
 .ptr > .session-spinner { display: block; }
 .ptr:not(.is-loading) > .session-spinner { animation: none; }
 
-.ptr.is-settling,
-#dr-app.is-settling { transition: transform .2s ease, opacity .2s ease, top .2s ease; }
+.ptr.is-settling { transition: height .24s ease; }
+#dr-app.is-settling { transition: transform .24s ease; }
 
 /* ---------- 4. 面板與區段標題 ---------- */
 
