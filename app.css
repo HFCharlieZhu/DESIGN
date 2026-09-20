@@ -904,6 +904,15 @@ html {
 #dr-app .badge.lv2.urgent { color: var(--red); }
 #dr-app .badge.lv2.overdue { color: var(--brand-dk); }
 
+/* 申請單預覽裡的單項急件：一顆紅點就好，不佔空間也不搶膠囊的位置 */
+#dr-app .urgent-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+}
+
 #dr-app .status-pill {
   display: inline-flex;
   align-items: center;

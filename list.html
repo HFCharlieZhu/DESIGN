@@ -3045,7 +3045,7 @@ function initPullToRefresh() {
     window.navigator.standalone === true;
   if (!standalone) return;
 
-  var TRIGGER = 130;   // 要拉到這麼長才算數，避免一般捲動誤觸
+  var TRIGGER = 250;   // 要拉到這麼長才算數，避免一般捲動誤觸
   var startY = 0, pulling = false;
 
   function atTop() {

@@ -1291,8 +1291,8 @@ function buildItemBody(item) {
     frag.appendChild(buildBlocks(item));
     var dateRow = el("div", "row c2");
     dateRow.appendChild(makeField("date", "交付日", false, item.useDate, function (v) {
-      // 項目交付日也會影響急件判斷與時程提示，所以整組統計一起重算
-      item.useDate = v; item._dateTouched = true; refreshStats(); saveDraft();
+      // 項目交付日會影響這一項的急件標記與統計列提示，兩邊一起更新
+      item.useDate = v; item._dateTouched = true; updateLiveBits(); saveDraft();
     }));
     dateRow.appendChild(el("div", "field"));
     frag.appendChild(dateRow);
@@ -1378,8 +1378,8 @@ function buildItemBody(item) {
     }));
   }
   row2.appendChild(makeField("date", "交付日", false, item.useDate, function (v) {
-    // 項目交付日也會影響急件判斷與時程提示，所以整組統計一起重算
-    item.useDate = v; item._dateTouched = true; refreshStats(); saveDraft();
+    // 項目交付日會影響這一項的急件標記與統計列提示，兩邊一起更新
+    item.useDate = v; item._dateTouched = true; updateLiveBits(); saveDraft();
   }));
   if (!t.showChannel) row2.appendChild(el("div", "field"));
   frag.appendChild(row2);
@@ -1665,26 +1665,39 @@ function fillItemDates() {
   if (changed) { render(); saveDraft(); }
 }
 
-/** 排程狀態：統計列提示與確認頁的急件標示共用同一個判斷。 */
+/**
+ * 排程狀態。
+ *   urgent     整張案件是不是急件：只看總交付日（與總覽卡片的判斷同一套）。
+ *   itemUrgent 有沒有哪一個項目自己的交付日更早而且時間不足。
+ *   note       統計列的提示；只要有任何一邊來不及就改成要跟主管排程。
+ */
 function scheduleState() {
   var today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  var main = parseDate(state.deliveryDate);
   var dates = state.items
-    .map(function (it) { return parseDate(it.useDate) || parseDate(state.deliveryDate); })
+    .map(function (it) { return parseDate(it.useDate) || main; })
     .filter(Boolean);
-  if (state.deliveryDate) dates.push(parseDate(state.deliveryDate));
-  if (!dates.length) return { note: "", urgent: false };
+  if (main) dates.push(main);
+  if (!dates.length) return { note: "", urgent: false, itemUrgent: false };
+
+  var mainWd = main === null ? null : workingDaysBetween(today, main);
+  var caseUrgent = mainWd !== null && mainWd < URGENT_WORKING_DAYS;
+  var itemUrgent = state.items.some(isItemUrgent);
 
   var earliest = dates.reduce(function (a, b) { return a < b ? a : b; });
-  if (workingDaysBetween(today, earliest) >= URGENT_WORKING_DAYS) {
+  if (!caseUrgent && !itemUrgent) {
     return {
       note: "請於 " + fmtDate(subtractWorkingDays(earliest, URGENT_WORKING_DAYS)) + " 前召開設計需求會議。",
-      urgent: false
+      urgent: false,
+      itemUrgent: false
     };
   }
   return {
     note: "交付日距今工作天數不足，此需求將與主管共同排程，後續進一步確認。",
-    urgent: true
+    urgent: caseUrgent,
+    itemUrgent: itemUrgent
   };
 }
 
@@ -1693,14 +1706,15 @@ function refreshStats() {
   $("dr-stat-units").textContent = state.items.reduce(function (s, it) { return s + itemUnitCount(it); }, 0);
 
   var sched = scheduleState();
-  var note = sched.note, urgent = sched.urgent;
+  // 整案或任何一個項目來不及，都要提醒並請對方補時程備註
+  var tight = sched.urgent || sched.itemUrgent;
 
   var noteEl = $("dr-schedule-note");
-  noteEl.textContent = note;
-  noteEl.className = "schedule-note" + (urgent ? " urgent" : "");
+  noteEl.textContent = sched.note;
+  noteEl.className = "schedule-note" + (tight ? " urgent" : "");
 
   // 提示文字統計列已經用紅字寫了，這裡不重複一次
-  $("f-schedulenote-row").hidden = !urgent;
+  $("f-schedulenote-row").hidden = !tight;
 
   checkDeliveryWarn();
   checkMeetingWarn();
@@ -1737,7 +1751,8 @@ SCALAR_FIELDS.forEach(function (pair) {
     if (field && field.classList.contains("err") && String(node.value).trim()) {
       field.classList.remove("err");
     }
-    if (pair[1] === "deliveryDate") { fillItemDates(); refreshStats(); }
+    // 總交付日會改變各項目的急件判斷，所以連項目上的標記一起更新
+    if (pair[1] === "deliveryDate") { fillItemDates(); updateLiveBits(); }
     if (pair[1] === "deliveryDate" || pair[1] === "meetingDate") checkMeetingWarn();
     saveDraft();
   }
@@ -1917,6 +1932,7 @@ function renderPreview() {
   p.appendChild(kvNode("申請人", currentUser ? currentUser.initials + "<" + currentUser.email + ">" : "—"));
   p.appendChild(kvNode("需求名稱", state.name || "—"));
   p.appendChild(kvNode("目標對象", state.audience || "未選擇"));
+  // 總交付日只看它自己：項目自己比較趕的話，紅點標在下面那一項
   p.appendChild(kvNode("總交付日", state.deliveryDate || "—",
     scheduleState().urgent ? el("span", "badge lv2 urgent", "急件") : null));
   p.appendChild(kvNode("會議日期", state.meetingDate || "—"));
@@ -1930,7 +1946,13 @@ function renderPreview() {
     if (t && !t.forcePrint && t.mode !== "notice" && t.mode !== "structure") {
       line += "　" + (item.output.map(function (o) { return o === "print" ? "印刷" : "數位"; }).join("＋") || "未選擇");
     }
-    p.appendChild(kvNode("項目 " + (idx + 1), line));
+    var dot = null;
+    if (isItemUrgent(item)) {
+      dot = el("span", "urgent-dot");
+      dot.title = "這一項的交付日比總交付日早，時間不足";
+      dot.setAttribute("aria-label", "急件");
+    }
+    p.appendChild(kvNode("項目 " + (idx + 1), line, dot));
   });
 
   p.appendChild(el("div", "total", "合計：" + state.items.length + " 個項目・" + units + " 張／區塊"));
