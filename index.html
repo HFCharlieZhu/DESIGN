@@ -47,7 +47,7 @@
 <div id="dr-app" hidden>
   <div class="topbar">
     <div class="topbar-in">
-      <div class="topbar-title">允禾發 設計需求表<span class="topbar-kind">申請</span></div>
+      <a class="topbar-title" href="index.html" title="重新載入這一頁">允禾發 設計需求表<span class="topbar-kind">申請</span></a>
       <div class="topbar-user">
         <div class="avatar" id="dr-avatar"></div>
         <span class="username" id="dr-username"></span>
@@ -77,7 +77,7 @@
               <option value="BAUII">BAUII</option>
               <option value="BAUIII">BAUIII</option>
             </select>
-            <div class="hint">留白時案件編號會省略部門，例如 CZ-0001。</div>
+            <div class="hint" id="f-dept-hint">留白時案件編號會省略部門。</div>
           </div>
           <div class="field">
             <label>申請人</label>
@@ -934,7 +934,19 @@ function newSizeRow() { return { purpose: "", customText: "", px: "" }; }
 function newBlock() { blockSeq++; return { _id: "bk" + blockSeq, head: "", sub: "", small: "", other: "", imgNote: "", link: "" }; }
 function newLink() { linkSeq++; return { _id: "lk" + linkSeq, url: "", note: "" }; }
 
-function initialsOf(name) {
+/* 姓名簡稱：案件編號、頭像、申請人、異動紀錄共用同一個算法。
+   特別指定的簡稱（例如 Larry 固定是 L）由後端在登入時一併提供，兩邊結果才會一致。 */
+var INITIALS_OVERRIDE = {};
+
+function rememberInitialsOverride(user) {
+  if (user && user.initialsOverride && typeof user.initialsOverride === "object") {
+    INITIALS_OVERRIDE = user.initialsOverride;
+  }
+}
+
+function initialsOf(name, email) {
+  var fixed = INITIALS_OVERRIDE[String(email || "").trim().toLowerCase()];
+  if (fixed) return String(fixed).toUpperCase();
   var parts = String(name || "").trim().split(/\s+/).filter(Boolean);
   if (parts.length >= 2) return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
@@ -953,20 +965,28 @@ function makeOperationId() {
 
 function applyUser(data) {
   if (!data || !data.email) throw new Error("帳戶資料未完整回傳，請重新登入。");
+  rememberInitialsOverride(data);
   currentUser = {
     name: data.name || data.email,
     email: data.email,
     isAdmin: data.isAdmin === true,
-    initials: initialsOf(data.name || data.email)
+    initials: initialsOf(data.name || data.email, data.email)
   };
   $("dr-username").textContent = currentUser.name;
   $("dr-avatar").textContent = currentUser.initials || "・";
   $("f-applicant").textContent = currentUser.initials + "<" + currentUser.email + ">";
+  // 範例跟著登入的人：Larry 看到的是 L-0001，Charlie 看到的是 CZ-0001
+  $("f-dept-hint").textContent = currentUser.initials
+    ? "留白時案件編號會省略部門，例如 " + currentUser.initials + "-0001。"
+    : "留白時案件編號會省略部門。";
 }
 
 function enterApp(data) {
   applyUser(data);
-  AUTH.set(AUTH.token(), { name: currentUser.name, email: currentUser.email, isAdmin: currentUser.isAdmin });
+  AUTH.set(AUTH.token(), {
+    name: currentUser.name, email: currentUser.email, isAdmin: currentUser.isAdmin,
+    initialsOverride: INITIALS_OVERRIDE
+  });
   gate.hidden = true;
   app.hidden = false;
   offerDraft();

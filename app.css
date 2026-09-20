@@ -159,7 +159,9 @@ html {
   gap: var(--space-3);
 }
 
+/* 標題本身就是「重新載入這一頁」的連結，外觀維持純文字 */
 #dr-app .topbar-title {
+  display: block;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -167,6 +169,9 @@ html {
   font-size: var(--fs-heading);
   font-weight: var(--fw-bold);
   letter-spacing: .04em;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 #dr-app .topbar-kind {
@@ -300,7 +305,10 @@ html {
 
 #dr-gate .google-login-slot > div { max-width: 100% !important; }
 
-#dr-gate .session-spinner {
+/* 登入畫面的轉圈；手機下拉重整用的是同一條規則，外觀保證一模一樣 */
+#dr-gate .session-spinner,
+.ptr > .session-spinner {
+  box-sizing: border-box;
   flex: 0 0 20px;
   width: 20px;
   height: 20px;
@@ -329,6 +337,31 @@ html {
 }
 
 @keyframes dr-spin { to { transform: rotate(360deg); } }
+
+/* ---------- 手機下拉重新整理 ---------- */
+
+/* 有下拉重整的頁面關掉瀏覽器內建的下拉重整與回彈，避免兩個同時觸發 */
+html.has-ptr { overscroll-behavior-y: none; }
+
+/* 跟手機原生的下拉重整一樣：整頁（含表頭）往下移，轉圈出現在表頭上方新拉出來的空間。
+   轉圈放在 #dr-app 外面，頁面位移時它不會跟著跑。 */
+.ptr {
+  position: fixed;
+  left: 50%;
+  top: 0;
+  z-index: 200;
+  width: 20px;
+  height: 20px;
+  margin-left: -10px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ptr > .session-spinner { display: block; }
+.ptr:not(.is-loading) > .session-spinner { animation: none; }
+
+.ptr.is-settling,
+#dr-app.is-settling { transition: transform .2s ease, opacity .2s ease, top .2s ease; }
 
 /* ---------- 4. 面板與區段標題 ---------- */
 

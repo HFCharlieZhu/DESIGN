@@ -47,7 +47,7 @@
 <div id="dr-app" hidden>
   <div class="topbar">
     <div class="topbar-in">
-      <div class="topbar-title">允禾發 設計需求表<span class="topbar-kind">案件總覽</span></div>
+      <a class="topbar-title" href="list.html" title="重新載入這一頁">允禾發 設計需求表<span class="topbar-kind">案件總覽</span></a>
       <div class="topbar-user">
         <div class="avatar" id="dr-avatar"></div>
         <span class="username" id="dr-username"></span>
@@ -840,10 +840,23 @@ function isRecent(rec, cutoff) {
 }
 var quickFilter = { overdue: false, error: false };
 
-function initialsOf(name) {
+/* 姓名簡稱：案件編號、頭像、申請人、異動紀錄共用同一個算法。
+   特別指定的簡稱（例如 Larry 固定是 L）由後端在登入時一併提供，兩邊結果才會一致。 */
+var INITIALS_OVERRIDE = {};
+
+function rememberInitialsOverride(user) {
+  if (user && user.initialsOverride && typeof user.initialsOverride === "object") {
+    INITIALS_OVERRIDE = user.initialsOverride;
+  }
+}
+
+function initialsOf(name, email) {
+  var fixed = INITIALS_OVERRIDE[String(email || "").trim().toLowerCase()];
+  if (fixed) return String(fixed).toUpperCase();
   var parts = String(name || "").trim().split(/\s+/).filter(Boolean);
   if (parts.length >= 2) return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
-  return String(name || "").replace(/\s+/g, "").slice(0, 2).toUpperCase();
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return "";
 }
 
 function makeOperationId() {
@@ -963,15 +976,19 @@ function applyCardVisual(card, rec) {
 
 function applyUser(user) {
   if (!user || !user.email) throw new Error("帳戶資料未完整回傳。");
+  rememberInitialsOverride(user);
   currentUser = {
     name: user.name || user.email,
     email: user.email,
-    initials: initialsOf(user.name || user.email),
+    initials: initialsOf(user.name || user.email, user.email),
     isAdmin: user.isAdmin === true
   };
   $("dr-username").textContent = currentUser.name;
   $("dr-avatar").textContent = currentUser.initials || "・";
-  AUTH.set(AUTH.token(), { name: currentUser.name, email: currentUser.email, isAdmin: currentUser.isAdmin });
+  AUTH.set(AUTH.token(), {
+    name: currentUser.name, email: currentUser.email, isAdmin: currentUser.isAdmin,
+    initialsOverride: INITIALS_OVERRIDE
+  });
 }
 
 function enterApp(user) {
@@ -1237,33 +1254,29 @@ var NO_DEPT = "__none__";
 function deptOptions() {
   var seen = Object.create(null);
   var out = [];
-  var hasBlank = false;
   DEPTS.forEach(function (d) { seen[d] = true; out.push(d); });
   records.forEach(function (r) {
     if (r.isExample) return;
     var d = String((r.data && r.data.dept) || "").trim();
-    if (!d) { hasBlank = true; return; }
-    if (!seen[d]) { seen[d] = true; out.push(d); }
+    if (d && !seen[d]) { seen[d] = true; out.push(d); }
   });
-  return { list: out, hasBlank: hasBlank };
+  return out;
 }
 
 function populateFilters() {
   var deptSel = $("f-dept");
   var deptValue = deptSel.value;
-  var opts = deptOptions();
   deptSel.replaceChildren(el("option", "", "全部部門"));
   deptSel.firstChild.value = "";
-  opts.list.forEach(function (d) {
+  deptOptions().forEach(function (d) {
     var o = el("option", "", d);
     o.value = d;
     deptSel.appendChild(o);
   });
-  if (opts.hasBlank) {
-    var none = el("option", "", "無部門");
-    none.value = NO_DEPT;
-    deptSel.appendChild(none);
-  }
+  /* 「無部門」跟各部門一樣是固定選項，不論目前有沒有這類案件都列出來 */
+  var none = el("option", "", "無部門");
+  none.value = NO_DEPT;
+  deptSel.appendChild(none);
   if (Array.prototype.some.call(deptSel.options, function (o) { return o.value === deptValue; })) {
     deptSel.value = deptValue;
   }
@@ -2036,7 +2049,7 @@ function buildDetail(record, container) {
 
   function logText(entry) {
     return stamp(new Date(entry.time)) + "　" +
-      initialsOf((entry.user || "").split("@")[0].replace(/[._-]+/g, " ")) +
+      initialsOf((entry.user || "").split("@")[0].replace(/[._-]+/g, " "), entry.user) +
       "<" + entry.user + ">　" + (entry.text || "內容更新");
   }
 
@@ -2199,7 +2212,7 @@ function buildDetail(record, container) {
   var applicantField = el("div", "field");
   applicantField.appendChild(labelNode("申請人", null));
   applicantField.appendChild(el("div", "idblock",
-    initialsOf(work.submitter.name || work.submitter.email) + "<" + (work.submitter.email || "") + ">"));
+    initialsOf(work.submitter.name || work.submitter.email, work.submitter.email) + "<" + (work.submitter.email || "") + ">"));
   identityRow.appendChild(applicantField);
   primary.appendChild(identityRow);
 
@@ -2987,6 +3000,107 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
    啟動
    ============================================================ */
 
+/* ------------------------------------------------------------
+   手機下拉重新整理
+   跟手機原生的一樣：整頁（含表頭）跟著手指往下移，表頭上方拉出一段空間，
+   轉圈就在那段空間裡；放開後重新向伺服器要一次案件清單，做完整頁回到原位。
+   只在觸控裝置、頁面捲到最上面、沒有展開中的案件時啟用（避免編輯到一半被重畫）。
+   捲動位置、篩選條件、過往資料的展開都不變。轉圈與登入畫面是同一條樣式規則。
+   ------------------------------------------------------------ */
+function initPullToRefresh() {
+  if (!window.matchMedia || !window.matchMedia("(pointer: coarse)").matches) return;
+  // 關掉瀏覽器內建的下拉重整與回彈，否則會跟這裡的重整疊在一起
+  document.documentElement.classList.add("has-ptr");
+
+  var ind = el("div", "ptr");
+  ind.setAttribute("aria-hidden", "true");
+  ind.appendChild(el("div", "session-spinner"));
+  document.body.appendChild(ind);
+
+  var TRIGGER = 64;   // 拉超過這個距離放開才會重整
+  var MAX = 110;      // 最多拉到這裡，再拉也不會繼續往下
+  var REST = 56;      // 重整中頁面停住的位置（表頭上方留出的空間）
+  var SIZE = 20;      // 轉圈直徑
+  var startY = 0, pull = 0, tracking = false, busy = false, settleTimer = 0;
+
+  /** gap：表頭上方拉出來的高度。轉圈永遠置中在這段空間裡。 */
+  function place(gap, rotate, opacity, animate) {
+    clearTimeout(settleTimer);
+    app.classList.toggle("is-settling", !!animate);
+    ind.classList.toggle("is-settling", !!animate);
+    app.style.transform = gap > 0 ? "translateY(" + gap + "px)" : "translateY(0)";
+    ind.style.top = Math.max(0, (gap - SIZE) / 2) + "px";
+    ind.style.opacity = String(opacity);
+    ind.style.transform = "rotate(" + rotate + "deg)";
+    if (gap <= 0) {
+      // 回到原位後拿掉位移，避免殘留的 transform 影響頁面裡其他元素
+      settleTimer = setTimeout(function () {
+        if (!tracking && !busy) {
+          app.style.transform = "";
+          app.classList.remove("is-settling");
+          ind.classList.remove("is-settling");
+        }
+      }, animate ? 220 : 0);
+    }
+  }
+
+  function hide() { place(0, 0, 0, true); }
+
+  function scrolledTop() {
+    return (window.scrollY || document.documentElement.scrollTop || 0) <= 0;
+  }
+
+  function canStart(target) {
+    if (busy || !gate.hidden || app.hidden || openCardId) return false;
+    if (!scrolledTop()) return false;
+    if (target && target.closest && target.closest("textarea, input, select, .logbox")) return false;
+    return true;
+  }
+
+  window.addEventListener("touchstart", function (e) {
+    tracking = e.touches.length === 1 && canStart(e.target);
+    if (!tracking) return;
+    pull = 0;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+
+  window.addEventListener("touchmove", function (e) {
+    if (!tracking) return;
+    var dy = e.touches[0].clientY - startY;
+    if (dy <= 0 || !scrolledTop()) { pull = 0; place(0, 0, 0, false); return; }
+    pull = Math.min(MAX, dy * 0.5);
+    var progress = Math.min(1, pull / TRIGGER);
+    place(pull, Math.round(progress * 270), progress, false);
+  }, { passive: true });
+
+  window.addEventListener("touchend", function () {
+    if (!tracking) return;
+    tracking = false;
+    if (pull < TRIGGER) { hide(); return; }
+
+    busy = true;
+    ind.classList.add("is-loading");
+    place(REST, 0, 1, true);
+    var before = JSON.stringify(records);
+    loadList(false, true).then(function () {
+      if (JSON.stringify(records) !== before) showSystemMessage("案件清單已更新。", false, true);
+    }).catch(function () {
+      // 錯誤訊息已由 loadList 顯示在表頭下方
+    }).then(function () {
+      busy = false;
+      ind.classList.remove("is-loading");
+      hide();
+    });
+  });
+
+  window.addEventListener("touchcancel", function () {
+    if (!tracking) return;
+    tracking = false;
+    hide();
+  });
+}
+
+initPullToRefresh();
 initTouchFeedback(".btn-topbar,.btn-sm,.pgbtn,.chip,.filter-reset,.field-head,.archive-head,.arch-year-head,.arch-month-head,.card-top,.subpanel,.item-block,.block,.add-line,.del-line,.rm,.inline-clear,.block-order button,.custom-purpose,input,textarea,select,.data-retry button");
 startHeartbeat();
 startAuth();
