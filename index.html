@@ -29,7 +29,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://raw.githubusercontent.com/HFCharlieZhu/DESIGN/main/graphic-design-brief-logo_1020.png">
 
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&amp;family=Noto+Sans:wght@400;500;700&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&amp;family=Noto+Sans:wght@400;500;700&amp;display=optional">
 <link rel="stylesheet" href="app.css">
 <script id="dr-gsi-bootstrap" async defer src="https://accounts.google.com/gsi/client"></script>
 </head>
@@ -165,7 +165,6 @@
           <div class="field">
             <label for="f-schedulenote">時程備註<span class="opt">選填</span></label>
             <textarea id="f-schedulenote"></textarea>
-            <div class="hint" id="f-schedulenote-hint"></div>
           </div>
         </div>
       </div>
@@ -1137,10 +1136,24 @@ function makeField(kind, label, required, value, onChange, optText) {
   return f;
 }
 
+/* 單一項目的急件：它自己的交付日比總交付日早，而且從今天算起工作天不足。
+   沒另外填、或不比總交付日早的項目，就是整張案件的事，不在項目上重複標。 */
+function isItemUrgent(item) {
+  var d = parseDate(item && item.useDate);
+  if (!d) return false;
+  var main = parseDate(state.deliveryDate);
+  if (main && d >= main) return false;
+  var today = new Date();
+  today.setHours(0, 0, 0, 0);
+  var wd = workingDaysBetween(today, d);
+  return wd !== null && wd < URGENT_WORKING_DAYS;
+}
+
 function buildBadges(item) {
   var frag = document.createDocumentFragment();
   var t = typeOf(item.typeId);
   if (!t) return frag;
+  if (isItemUrgent(item)) frag.appendChild(el("span", "badge lv2 urgent", "急件"));
   if (t.forcePrint) {
     frag.appendChild(el("span", "badge print", "印刷"));
   } else if (t.mode !== "notice" && t.mode !== "structure") {
@@ -1686,8 +1699,8 @@ function refreshStats() {
   noteEl.textContent = note;
   noteEl.className = "schedule-note" + (urgent ? " urgent" : "");
 
+  // 提示文字統計列已經用紅字寫了，這裡不重複一次
   $("f-schedulenote-row").hidden = !urgent;
-  $("f-schedulenote-hint").textContent = urgent ? note : "";
 
   checkDeliveryWarn();
   checkMeetingWarn();
@@ -2074,34 +2087,6 @@ $("dr-refill").addEventListener("click", function () { window.location.reload();
    ============================================================ */
 
 if (!state.items.length) state.items.push(newItem());
-/* ------------------------------------------------------------
-   橡皮筋彈跳時的表頭保護
-   iOS 在彈跳時會把 backdrop-filter 的模糊層與 bar 的底色文字拆開各走各的，
-   結果就是表頭與統計列看起來消失、原地只留一塊模糊。
-   這裡在「正在彈跳」的那一瞬間替 <html> 加上記號，CSS 會把 bar 換成等效的
-   不透明底色：沒有模糊層就沒有東西可以分家。平常捲動仍是毛玻璃。
-   ------------------------------------------------------------ */
-function initOverscrollGuard() {
-  var root = document.documentElement;
-  var on = false;
-
-  function check() {
-    var y = window.scrollY || root.scrollTop || 0;
-    var max = Math.max(0, (root.scrollHeight || 0) - window.innerHeight);
-    var over = y < 0 || y > max + 1;
-    if (over === on) return;
-    on = over;
-    root.classList.toggle("is-overscroll", over);
-  }
-
-  window.addEventListener("scroll", check, { passive: true });
-  window.addEventListener("touchmove", check, { passive: true });
-  window.addEventListener("touchend", check, { passive: true });
-  window.addEventListener("touchcancel", check, { passive: true });
-  check();
-}
-
-initOverscrollGuard();
 
 /* 點標題＝重新載入這一頁。連到同一個網址在某些瀏覽器（特別是加到主畫面的模式）
    不一定會真的重新載入，所以這裡明確呼叫一次；按住 ⌘／Ctrl 另開分頁的行為保留。 */

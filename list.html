@@ -29,7 +29,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://raw.githubusercontent.com/HFCharlieZhu/DESIGN/main/graphic-design-brief-logo_1020.png">
 
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&amp;family=Noto+Sans:wght@400;500;700&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&amp;family=Noto+Sans:wght@400;500;700&amp;display=optional">
 <link rel="stylesheet" href="app.css">
 <script id="dr-gsi-bootstrap" async defer src="https://accounts.google.com/gsi/client"></script>
 </head>
@@ -914,13 +914,21 @@ function isOverdue(rec) {
 function isUrgent(rec) {
   if (isDeleted(rec)) return false;
   if (rec.flags && typeof rec.flags.urgent === "boolean") return rec.flags.urgent;
-  var days = [parseDate(rec.data.deliveryDate)];
-  (rec.data.items || []).forEach(function (it) { days.push(parseDate(it && it.useDate)); });
-  days = days.filter(Boolean);
+  var d = parseDate(rec.data.deliveryDate);
   var from = dayOf(rec.submittedAt);
-  if (!days.length || !from) return false;
-  var earliest = days.reduce(function (a, b) { return a < b ? a : b; });
-  var wd = workingDaysBetween(from, earliest);
+  if (!d || !from) return false;
+  var wd = workingDaysBetween(from, d);
+  return wd !== null && wd < URGENT_WORKING_DAYS;
+}
+
+/* 單一項目的急件：它自己的交付日比總交付日早，而且從送出日算起工作天不足。
+   沒另外填交付日、或不比總交付日早的項目，就是整張案件的事，不在項目上重複標。 */
+function isItemUrgent(item, fromDay, mainDelivery) {
+  var d = parseDate(item && item.useDate);
+  if (!d || !fromDay) return false;
+  var main = parseDate(mainDelivery);
+  if (main && d >= main) return false;
+  var wd = workingDaysBetween(fromDay, d);
   return wd !== null && wd < URGENT_WORKING_DAYS;
 }
 
@@ -1140,12 +1148,11 @@ function setListLoading(loading) {
   }
 }
 
-function applyListPayload(json, resetView, quiet) {
+function applyListPayload(json, resetView) {
   if (json.user) applyUser(json.user);
   serverNow = json.serverNow ? new Date(json.serverNow) : new Date();
 
   var next = Array.isArray(json.requests) ? json.requests : [];
-  var changed = JSON.stringify(next) !== JSON.stringify(records);
 
   // 只丟掉內容確實變動過的明細快取，其餘保留以免重新展開時再打一次 API。
   var byId = Object.create(null);
@@ -1158,8 +1165,8 @@ function applyListPayload(json, resetView, quiet) {
 
   $("dr-data-retry").hidden = true;
   setListLoading(false);
-  // 先用快取畫出來時不報「已更新」；背景對完發現沒變也不報，避免畫面無故閃動。
-  if (!quiet && changed) showSystemMessage("案件清單已更新。", false, true);
+  /* 重新整理成功不另外提示：清單本身就是結果，
+     而且它出現的時機（有變動才跳）反而讓人覺得時有時無。錯誤訊息照舊顯示。 */
 
   if (resetView !== false) { currentPage = 1; openCardId = null; resetArchive(); }
   populateFilters();
@@ -1214,7 +1221,7 @@ window.addEventListener("storage", function (e) {
 function paintFromCache(email) {
   var cached = readListCache(email);
   if (!cached) return false;
-  applyListPayload(cached, true, true);
+  applyListPayload(cached, true);
   return true;
 }
 
@@ -1234,7 +1241,7 @@ function loadList(resetView, quiet) {
 
   return apiPost("listRequests", {}, { retries: 1, timeout: 45000 }).then(function (json) {
     saveListCache(json);
-    applyListPayload(json, resetView !== false, quiet);
+    applyListPayload(json, resetView !== false);
     return json;
   }).catch(function (err) {
     if (err && err.code === "AUTH_REQUIRED") {
@@ -1969,10 +1976,13 @@ function normalizeItem(item) {
   }
 }
 
-function itemBadgeNodes(item) {
+function itemBadgeNodes(item, fromDay, mainDelivery) {
   var frag = document.createDocumentFragment();
   var t = typeOf(item && item.typeId);
   if (!t) return frag;
+  if (isItemUrgent(item, fromDay, mainDelivery)) {
+    frag.appendChild(el("span", "badge lv2 urgent", "急件"));
+  }
   if (t.forcePrint) {
     frag.appendChild(el("span", "badge lv2 print", "印刷"));
   } else if (t.mode !== "notice" && t.mode !== "structure") {
@@ -2282,7 +2292,8 @@ function buildDetail(record, container) {
       item.useDate = v;
       filled = true;
     });
-    if (filled) renderItems();
+    // 總交付日會影響項目的急件判斷，一律重畫項目區
+    renderItems();
     markDirty();
   });
   deliveryField.classList.add("delivery-field");
@@ -2349,7 +2360,8 @@ function buildDetail(record, container) {
       },
       markDirty,
       work.data.items.length,
-      work.id + "|item" + idx);
+      work.id + "|item" + idx,
+      work);
     return node;
   }
 
@@ -2645,19 +2657,23 @@ function disableInputs(root) {
 
 /* ---------- 項目編輯 ---------- */
 
-function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total, keyPrefix) {
+function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total, keyPrefix, owner) {
+  function urgentNow() {
+    return itemBadgeNodes(item, dayOf(owner && owner.submittedAt),
+      owner && owner.data ? owner.data.deliveryDate : "");
+  }
   var box = el("div", "item-block");
   box.dataset.itemIndex = String(idx);
 
   var bar = el("div", "item-bar");
   bar.appendChild(el("div", "idx", String(idx + 1)));
   var badges = el("div", "badges");
-  badges.appendChild(itemBadgeNodes(item));
+  badges.appendChild(urgentNow());
   bar.appendChild(badges);
   box.appendChild(bar);
 
   function refreshBadges() {
-    badges.replaceChildren(itemBadgeNodes(item));
+    badges.replaceChildren(urgentNow());
     var primaries = box.querySelectorAll(".copy-primary-field");
     primaries.forEach(function (f) { f.classList.remove("copy-pending-target"); });
     if (!itemHasCopy(item) && primaries.length) primaries[0].classList.add("copy-pending-target");
@@ -3015,191 +3031,46 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
    ============================================================ */
 
 /* ------------------------------------------------------------
-   手機下拉重新整理
+   下拉重新整理
 
-   想達到的手感：跟系統一樣，往上滑到底就順著同一個動作繼續拉出重整區，
-   中間不會卡住，重整區是表頭往上的延伸，內容不可能蓋過去。
+   瀏覽器自己就有下拉重新整理（Safari 分頁、Chrome 都有），畫面與手感都是系統的，
+   所以這裡什麼都不做，完全交給它。
 
-   兩種拉法都支援，避免不同瀏覽器行為不一致：
-     手指一開始就在最上面 → 由這裡接手（擋掉預設捲動），自己把頁面往下推，
-                            拉的阻尼與回彈都由這裡畫，等於自製的橡皮筋。
-     滑到一半才碰到最上面 → 這時手勢已經交給瀏覽器，就改用系統的彈跳距離
-                            （scrollY 為負）當作拉的距離，不另外推頁面。
-   iOS 在彈跳時連固定元素都會被往下推，所以重整區每一幀都會量自己的實際位置，
-   被推多少就補回多少，畫面上永遠貼齊螢幕最上緣。
+   只有「加到主畫面」的全螢幕模式沒有這個功能，才由這裡補上：
+   同樣靠系統的橡皮筋彈跳當作視覺回饋（不自己畫任何東西，也不移動頁面），
+   拉過門檻放開就重新載入整頁，等於系統原生的那一下。
    ------------------------------------------------------------ */
 function initPullToRefresh() {
-  if (!window.matchMedia || !window.matchMedia("(pointer: coarse)").matches) return;
-  document.documentElement.classList.add("has-ptr");
+  var standalone = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+    window.navigator.standalone === true;
+  if (!standalone) return;
 
-  var strip = el("div", "ptr");
-  strip.setAttribute("aria-hidden", "true");
-  var spinner = el("div", "session-spinner");
-  strip.appendChild(spinner);
-  document.body.appendChild(strip);
+  var TRIGGER = 130;   // 要拉到這麼長才算數，避免一般捲動誤觸
+  var startY = 0, pulling = false;
 
-  var TRIGGER = 64;    // 拉超過這個距離放開才重整
-  var MAX = 110;       // 拉到底的距離
-  var REST = 56;       // 重整中停住的高度
-  var mode = "";       // "" 沒在拉／"self" 由這裡接手／"native" 用系統彈跳
-  var startY = 0, gap = 0, shift = 0, busy = false, decided = false;
-
-  function scrollTop() {
-    return window.scrollY || document.documentElement.scrollTop || 0;
-  }
-
-  /** 橡皮筋的阻尼：一開始跟手，越拉越沉，最多到 MAX。 */
-  function resist(dy) {
-    return MAX * (1 - Math.exp(-Math.max(0, dy) / (MAX * 0.9)));
-  }
-
-  /** 手指所在位置底下有沒有「正在捲動中的內容」（例如翻到一半的異動紀錄）。 */
-  function insideScrolled(node) {
-    for (var n = node; n && n !== document.body; n = n.parentElement) {
-      if (n.scrollHeight > n.clientHeight + 1 && n.scrollTop > 0) {
-        var oy = getComputedStyle(n).overflowY;
-        if (oy === "auto" || oy === "scroll") return true;
-      }
-    }
-    return false;
-  }
-
-  function usable(target) {
-    if (busy || !gate.hidden || app.hidden || openCardId) return false;
-    return !(target && insideScrolled(target));
-  }
-
-  /** px：重整區高度。spin：是否轉圈。animate：是否要有收合動畫。 */
-  function paint(px, spin, animate) {
-    px = Math.max(0, px);
-    gap = px;
-    strip.classList.toggle("is-settling", !!animate);
-    app.classList.toggle("is-settling", !!animate);
-    // 拉動期間 bar 也跟著移動，同樣要避開模糊層分家的問題
-    document.documentElement.classList.toggle("is-pulling", px > 0);
-    strip.style.height = px + "px";
-    strip.classList.toggle("is-loading", !!spin);
-    spinner.style.transform = spin
-      ? ""
-      : "rotate(" + Math.round(Math.min(1, px / TRIGGER) * 270) + "deg)";
-    app.style.transform = (mode === "self" || busy) && px > 0 ? "translateY(" + px + "px)" : "";
-
-    if (px > 0) {
-      // iOS 彈跳時固定元素也會被推下去：量到偏移多少就補回來
-      var off = strip.getBoundingClientRect().top;
-      if (Math.abs(off) > 0.5) {
-        shift -= off;
-        strip.style.transform = "translateY(" + shift + "px)";
-      }
-    } else if (shift) {
-      shift = 0;
-      strip.style.transform = "";
-    }
-  }
-
-  function reset(animate) {
-    mode = "";
-    decided = false;
-    paint(0, false, animate !== false);
-  }
-
-  function refresh() {
-    busy = true;
-    mode = "";
-    paint(REST, true, true);
-    var before = JSON.stringify(records);
-    loadList(false, true).then(function () {
-      if (JSON.stringify(records) !== before) showSystemMessage("案件清單已更新。", false, true);
-    }).catch(function () {
-      // 錯誤訊息由 loadList 顯示在表頭下方
-    }).then(function () {
-      busy = false;
-      reset(true);
-    });
+  function atTop() {
+    return (window.scrollY || document.documentElement.scrollTop || 0) <= 0;
   }
 
   window.addEventListener("touchstart", function (e) {
-    if (e.touches.length !== 1 || !usable(e.target)) { mode = ""; decided = true; return; }
-    startY = e.touches[0].clientY;
-    decided = false;
-    mode = scrollTop() <= 0 ? "self" : "";
+    pulling = e.touches.length === 1 && atTop() && gate.hidden && !app.hidden && !openCardId;
+    if (pulling) startY = e.touches[0].clientY;
   }, { passive: true });
 
   window.addEventListener("touchmove", function (e) {
-    if (busy || e.touches.length !== 1) return;
-    var dy = e.touches[0].clientY - startY;
-
-    if (!decided) {
-      // 第一次移動就決定這個手勢歸誰：往下拉而且已經在最上面才由這裡接手
-      decided = true;
-      if (mode === "self" && dy <= 0) mode = "";
+    if (!pulling) return;
+    if (!atTop() || e.touches.length !== 1) { pulling = false; return; }
+    if (e.touches[0].clientY - startY > TRIGGER) {
+      pulling = false;
+      location.reload();
     }
-
-    if (mode === "self") {
-      if (dy <= 0 || scrollTop() > 0) { reset(false); mode = ""; return; }
-      if (e.cancelable) e.preventDefault();   // 擋掉預設捲動，避免跟自己畫的彈跳疊在一起
-      paint(resist(dy), false, false);
-      return;
-    }
-
-    // 滑到一半才碰到最上面：用系統彈跳的距離當作拉的距離
-    var over = -scrollTop();
-    if (over > 0 && usable(e.target)) {
-      mode = "native";
-      paint(Math.min(MAX, over), false, false);
-    } else if (mode === "native") {
-      paint(0, false, false);
-      mode = "";
-    }
-  }, { passive: false });
-
-  function release() {
-    if (busy) return;
-    if (mode && gap >= TRIGGER) { refresh(); return; }
-    if (mode) reset(true);
-    mode = "";
-    decided = false;
-  }
-
-  window.addEventListener("touchend", release);
-  window.addEventListener("touchcancel", release);
-
-  // 系統彈跳結束、或使用者用其他方式捲動時，收掉殘留的重整區
-  window.addEventListener("scroll", function () {
-    if (busy || mode === "self") return;
-    if (scrollTop() >= 0 && gap > 0 && mode !== "native") paint(0, false, false);
   }, { passive: true });
+
+  window.addEventListener("touchend", function () { pulling = false; }, { passive: true });
+  window.addEventListener("touchcancel", function () { pulling = false; }, { passive: true });
 }
 
 initPullToRefresh();
-/* ------------------------------------------------------------
-   橡皮筋彈跳時的表頭保護
-   iOS 在彈跳時會把 backdrop-filter 的模糊層與 bar 的底色文字拆開各走各的，
-   結果就是表頭與統計列看起來消失、原地只留一塊模糊。
-   這裡在「正在彈跳」的那一瞬間替 <html> 加上記號，CSS 會把 bar 換成等效的
-   不透明底色：沒有模糊層就沒有東西可以分家。平常捲動仍是毛玻璃。
-   ------------------------------------------------------------ */
-function initOverscrollGuard() {
-  var root = document.documentElement;
-  var on = false;
-
-  function check() {
-    var y = window.scrollY || root.scrollTop || 0;
-    var max = Math.max(0, (root.scrollHeight || 0) - window.innerHeight);
-    var over = y < 0 || y > max + 1;
-    if (over === on) return;
-    on = over;
-    root.classList.toggle("is-overscroll", over);
-  }
-
-  window.addEventListener("scroll", check, { passive: true });
-  window.addEventListener("touchmove", check, { passive: true });
-  window.addEventListener("touchend", check, { passive: true });
-  window.addEventListener("touchcancel", check, { passive: true });
-  check();
-}
-
-initOverscrollGuard();
 
 /* 點標題＝重新載入這一頁。連到同一個網址在某些瀏覽器（特別是加到主畫面的模式）
    不一定會真的重新載入，所以這裡明確呼叫一次；按住 ⌘／Ctrl 另開分頁的行為保留。 */
