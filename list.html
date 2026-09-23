@@ -1137,6 +1137,14 @@ function showSystemMessage(text, isError, autoHide) {
   if (autoHide) systemTimer = setTimeout(function () { bar.classList.add("is-hiding"); }, 4000);
 }
 
+/** 收起系統訊息列；載入成功時要呼叫，否則「正在載入案件清單…」會一直留著。 */
+function hideSystemMessage() {
+  var bar = $("dr-systembar");
+  clearTimeout(systemTimer);
+  bar.classList.add("is-hiding");
+  bar.classList.remove("is-error");
+}
+
 function setListLoading(loading) {
   $("dr-list-loading").hidden = !loading;
   $("dr-filterbar").hidden = !!loading;
@@ -1165,6 +1173,7 @@ function applyListPayload(json, resetView) {
 
   $("dr-data-retry").hidden = true;
   setListLoading(false);
+  hideSystemMessage();
   /* 重新整理成功不另外提示：清單本身就是結果，
      而且它出現的時機（有變動才跳）反而讓人覺得時有時無。錯誤訊息照舊顯示。 */
 
