@@ -319,6 +319,10 @@ html {
 #dr-gate .login-retry-btn {
   height: 36px;
   padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
   border: 1.2px solid #bababa;
   border-radius: 999px;
   background: #ffffff;
@@ -332,6 +336,39 @@ html {
 
 @media (hover: hover) and (pointer: fine) {
   #dr-gate .login-retry-btn:hover { border-color: #f8b500; }
+}
+
+/* 找不到頁面時的「為什麼？」展開說明 */
+#dr-gate .g-why { margin-top: var(--space-2); }
+
+#dr-gate .g-why > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  color: var(--body);
+  list-style: none;
+}
+
+#dr-gate .g-why > summary::-webkit-details-marker { display: none; }
+#dr-gate .g-why[open] > summary { margin-bottom: var(--space-2); }
+
+/* 箭頭與全站同一條規則：收合時朝下，展開時朝上 */
+#dr-gate .g-why > summary > .caret {
+  flex: 0 0 auto;
+  width: 11px;
+  height: 7px;
+  margin-left: auto;
+  transition: transform var(--ease);
+}
+
+#dr-gate .g-why[open] > summary > .caret { transform: rotate(180deg); }
+/* 登入畫面的小字是 12px，方框裡的字跟著一致，不用內頁的 14px */
+#dr-gate .g-why.notice-box {
+  margin-bottom: 0;
+  font-size: var(--fs-meta);
+  line-height: 1.6;
+  text-align: left;
 }
 
 @keyframes dr-spin { to { transform: rotate(360deg); } }
@@ -1340,7 +1377,8 @@ html {
   color: var(--body);
 }
 
-#dr-app .notice-box {
+#dr-app .notice-box,
+#dr-gate .notice-box {
   padding: var(--space-4);
   margin-bottom: var(--field-gap);
   background: var(--tint);
