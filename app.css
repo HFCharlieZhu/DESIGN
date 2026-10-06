@@ -353,6 +353,9 @@ html {
 #dr-gate .g-why > summary::-webkit-details-marker { display: none; }
 #dr-gate .g-why[open] > summary { margin-bottom: var(--space-2); }
 
+/* 展開說明時改成從上方固定位置往下排，上面的文字就不會被推高 */
+#dr-gate.is-anchored { justify-content: flex-start; }
+
 /* 箭頭與全站同一條規則：收合時朝下，展開時朝上 */
 #dr-gate .g-why > summary > .caret {
   flex: 0 0 auto;

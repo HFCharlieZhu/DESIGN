@@ -53,6 +53,31 @@
   }
   tick();
 })();
+
+/* 展開「說明」時，把整塊內容釘在目前的位置，讓方框往下長，
+   上面的標題與按鈕不會被推高；收合後再回到垂直置中。 */
+(function () {
+  "use strict";
+  var gate = document.getElementById("dr-gate");
+  var why = document.querySelector(".g-why");
+  if (!gate || !why) return;
+  var topBeforeToggle = 0;
+
+  why.querySelector("summary").addEventListener("click", function () {
+    var first = gate.firstElementChild;
+    topBeforeToggle = first ? first.getBoundingClientRect().top : 0;
+  });
+
+  why.addEventListener("toggle", function () {
+    if (why.open) {
+      gate.style.paddingTop = Math.max(0, topBeforeToggle) + "px";
+      gate.classList.add("is-anchored");
+    } else {
+      gate.classList.remove("is-anchored");
+      gate.style.paddingTop = "";
+    }
+  });
+})();
 </script>
 </body>
 </html>
