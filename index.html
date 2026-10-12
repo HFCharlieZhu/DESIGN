@@ -69,18 +69,19 @@
       <div class="panel">
         <div class="panel-head"><div class="panel-num">1</div><div class="panel-title">申請人資料</div></div>
         <div class="row c2">
-          <div class="field">
-            <label for="f-dept">部門<span class="opt">選填</span></label>
+          <div class="field" id="f-dept-field">
+            <label for="f-dept">部門<span class="req">*</span></label>
             <select id="f-dept">
-              <option value="">無部門</option>
+              <option value="">部門</option>
               <option value="BAUI">BAUI</option>
               <option value="BAUII">BAUII</option>
               <option value="BAUIII">BAUIII</option>
+              <option value="__none__">無部門</option>
             </select>
-            <div class="hint" id="f-dept-hint">留白時案件編號會省略部門。</div>
+            <div class="hint" id="f-dept-hint">案件編號會帶入部門。</div>
           </div>
           <div class="field">
-            <label>申請人</label>
+            <label>申請人<span class="req">*</span></label>
             <div class="idblock" id="f-applicant"></div>
             <div class="hint">由登入帳戶自動帶入。</div>
           </div>
@@ -974,10 +975,22 @@ function applyUser(data) {
   $("dr-username").textContent = currentUser.name;
   $("dr-avatar").textContent = currentUser.initials || "・";
   $("f-applicant").textContent = currentUser.initials + "<" + currentUser.email + ">";
-  // 範例跟著登入的人：Larry 看到的是 L-0001，Charlie 看到的是 CZ-0001
-  $("f-dept-hint").textContent = currentUser.initials
-    ? "留白時案件編號會省略部門，例如 " + currentUser.initials + "-0001。"
-    : "留白時案件編號會省略部門。";
+  updateDeptHint();
+}
+
+/** 編號範例跟著登入的人與選到的部門：Charlie 選 BAUI 看到的是 BAUI-CZ-0001。 */
+function updateDeptHint() {
+  var hint = $("f-dept-hint");
+  if (!hint) return;
+  var dept = String(state.dept || "").trim();
+  if (!currentUser.initials) { hint.textContent = "案件編號會帶入部門。"; return; }
+  if (dept === NO_DEPT) {
+    hint.textContent = "選無部門時案件編號會省略部門，例如 " + currentUser.initials + "-0001。";
+    return;
+  }
+  hint.textContent = dept
+    ? "案件編號會帶入部門，例如 " + dept + "-" + currentUser.initials + "-0001。"
+    : "案件編號會帶入部門，例如 BAUI-" + currentUser.initials + "-0001。";
 }
 
 function enterApp(data) {
@@ -1740,6 +1753,7 @@ function applyStateToForm() {
     var node = $(pair[0]);
     if (node) node.value = state[pair[1]] || "";
   });
+  updateDeptHint();
 }
 
 SCALAR_FIELDS.forEach(function (pair) {
@@ -1752,6 +1766,7 @@ SCALAR_FIELDS.forEach(function (pair) {
       field.classList.remove("err");
     }
     // 總交付日會改變各項目的急件判斷，所以連項目上的標記一起更新
+    if (pair[1] === "dept") updateDeptHint();
     if (pair[1] === "deliveryDate") { fillItemDates(); updateLiveBits(); }
     if (pair[1] === "deliveryDate" || pair[1] === "meetingDate") checkMeetingWarn();
     saveDraft();
@@ -1869,8 +1884,17 @@ window.addEventListener("beforeunload", flushDraft);
    驗證、確認頁與送出
    ============================================================ */
 
+/** 「無部門」是明確選項，送到後端時仍然是空字串（編號省略部門段）。 */
+var NO_DEPT = "__none__";
+
+function deptValue() {
+  var dept = String(state.dept || "").trim();
+  return dept === NO_DEPT ? "" : dept;
+}
+
 function collectErrors() {
   var errors = [];
+  if (!String(state.dept || "").trim()) errors.push({ msg: "部門未選擇", focus: "f-dept", field: "f-dept-field" });
   if (!String(state.name || "").trim()) errors.push({ msg: "需求名稱未填寫", focus: "f-name", field: "f-name-field" });
   if (!String(state.purpose || "").trim()) errors.push({ msg: "需求背景／說明未填寫", focus: "f-purpose", field: "f-purpose-field" });
   if (!state.items.length) errors.push({ msg: "尚未新增設計項目", focus: null });
@@ -1928,7 +1952,7 @@ function renderPreview() {
   p.replaceChildren();
 
   p.appendChild(el("h4", "", "基本資訊"));
-  p.appendChild(kvNode("部門", state.dept || "無部門"));
+  p.appendChild(kvNode("部門", deptValue() || "無部門"));
   p.appendChild(kvNode("申請人", currentUser ? currentUser.initials + "<" + currentUser.email + ">" : "—"));
   p.appendChild(kvNode("需求名稱", state.name || "—"));
   p.appendChild(kvNode("目標對象", state.audience || "未選擇"));
@@ -2017,7 +2041,7 @@ $("dr-back-to-form").addEventListener("click", function () {
 
 function buildPayload() {
   return {
-    department: state.dept || "",
+    department: deptValue(),
     name: state.name || "",
     purpose: state.purpose || "",
     message: state.message || "",
