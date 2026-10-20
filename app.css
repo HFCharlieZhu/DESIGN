@@ -1474,6 +1474,56 @@ html {
 #dr-app .schedule-note.urgent { color: var(--red); font-weight: var(--fw-medium); }
 #dr-app .statsbar .go { margin-left: auto; flex: 0 0 auto; }
 
+/* 復原／重做：與區塊上下移動鈕同一套圓鈕樣式，字級對齊「張／區塊」 */
+#dr-app .statsbar .history {
+  margin-left: auto;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+#dr-app .statsbar .history + .go { margin-left: var(--space-3); }
+
+#dr-app .hist-btn {
+  width: var(--round-btn);
+  height: var(--round-btn);
+  padding: 0;
+  border: 1.2px solid var(--ink);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color var(--ease), opacity var(--ease);
+}
+
+#dr-app .hist-btn svg {
+  width: var(--fs-body);
+  height: var(--fs-body);
+  display: block;
+}
+
+#dr-app .hist-btn[disabled] { opacity: .25; cursor: not-allowed; }
+
+@media (hover: hover) and (pointer: fine) {
+  #dr-app .hist-btn:not([disabled]):hover { border-color: var(--control-accent, var(--brand)); }
+}
+
+/* 復原／重做之後，被改動的地方閃一下，讓人看得到變化 */
+#dr-app .just-changed {
+  animation: dr-changed 1.2s var(--ease);
+  border-radius: var(--r);
+}
+
+@keyframes dr-changed {
+  0% { background: var(--brand-l); }
+  70% { background: var(--brand-l); }
+  100% { background: transparent; }
+}
+
 #dr-app .checklist {
   list-style: none;
   margin: 0 calc(var(--space-5) * -1);
@@ -1657,6 +1707,9 @@ html {
   }
   #dr-app .statsbar .schedule-note { grid-column: 1 / -1; grid-row: 2; }
   #dr-app .statsbar .go { grid-column: 3; grid-row: 1; justify-self: end; margin-left: 0; }
+  /* 手機版不提供復原／重做 */
+  #dr-app .statsbar .history { display: none; }
+  #dr-app .statsbar .history + .go { margin-left: 0; }
 }
 
 @media (max-width: 390px) {

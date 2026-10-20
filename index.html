@@ -210,6 +210,14 @@
       <div class="stat"><b id="dr-stat-items">0</b> 個項目</div>
       <div class="stat"><b id="dr-stat-units">0</b> 張／區塊</div>
       <div class="schedule-note" id="dr-schedule-note"></div>
+      <div class="history" id="dr-history">
+        <button class="hist-btn" id="dr-undo" type="button" aria-label="復原" disabled>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 4.5L2.5 7.5L5.5 10.5M2.5 7.5h6.2a4 4 0 0 1 0 8H6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="hist-btn" id="dr-redo" type="button" aria-label="重做" disabled>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 4.5L13.5 7.5L10.5 10.5M13.5 7.5H7.3a4 4 0 0 0 0 8H10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
       <button class="btn-primary go" id="dr-goto-confirm" type="button">下一步：確認內容</button>
     </div>
   </div>
@@ -1003,6 +1011,7 @@ function enterApp(data) {
   app.hidden = false;
   offerDraft();
   render();
+  histReset();
 }
 
 function onGoogleCredential(response) {
@@ -1796,6 +1805,174 @@ $("dr-add-link").addEventListener("click", function () {
 });
 
 /* ============================================================
+   復原／重做
+   ------------------------------------------------------------
+   一段連續輸入收成一步：同一欄連打不會每個字都是一步，
+   停下來（HISTORY_IDLE）、離開欄位、或按下任何按鈕與選單時封口。
+   歷史只存在這個分頁，重新整理後從當下內容重新開始；手機版不提供。
+   ============================================================ */
+
+var HISTORY_MAX = 50;      // 最多記幾步
+var HISTORY_IDLE = 700;    // 連續輸入停多久算一步（毫秒）
+
+var histUndo = [], histRedo = [];
+var histBase = "";         // 目前這一步的內容
+var histTimer = null;      // 還沒封口的輸入
+var histDirty = false;     // 有改動但還沒收成一步
+var histApplying = false;  // 正在套用歷史，期間的變動不再記錄
+
+function histSnapshot() { return JSON.stringify(state); }
+
+function histReset() {
+  clearTimeout(histTimer);
+  histTimer = null;
+  histDirty = false;
+  histUndo = [];
+  histRedo = [];
+  histBase = histSnapshot();
+  updateHistoryButtons();
+}
+
+/** 把還沒封口的輸入收成一步。 */
+function histCommit() {
+  clearTimeout(histTimer);
+  histTimer = null;
+  if (histApplying) return;
+  var now = histSnapshot();
+  histDirty = false;
+  if (now === histBase) { updateHistoryButtons(); return; }
+  histUndo.push(histBase);
+  while (histUndo.length > HISTORY_MAX) histUndo.shift();
+  histBase = now;
+  histRedo = [];
+  updateHistoryButtons();
+}
+
+/** 每次內容變動都會進來：先等一下，連續輸入才不會變成一堆小步。 */
+function histTouch() {
+  if (histApplying) return;
+  histDirty = true;
+  clearTimeout(histTimer);
+  histTimer = setTimeout(histCommit, HISTORY_IDLE);
+  updateHistoryButtons();
+}
+
+function histCanUndo() { return histUndo.length > 0 || histDirty; }
+function histCanRedo() { return histRedo.length > 0 && !histDirty; }
+
+function updateHistoryButtons() {
+  var u = $("dr-undo"), r = $("dr-redo");
+  if (!u || !r) return;
+  u.disabled = !histCanUndo();
+  r.disabled = !histCanRedo();
+}
+
+function histUndoAction() {
+  if (histDirty) histCommit();
+  if (!histUndo.length) return;
+  var target = histUndo.pop();
+  histRedo.push(histBase);
+  histApply(target);
+}
+
+function histRedoAction() {
+  if (!histRedo.length) return;
+  var target = histRedo.pop();
+  histUndo.push(histBase);
+  histApply(target);
+}
+
+function histApply(snapshot) {
+  var before = histBase;
+  histApplying = true;
+  clearTimeout(histTimer);
+  histTimer = null;
+  histDirty = false;
+  state = JSON.parse(snapshot);
+  histBase = snapshot;
+  applyStateToForm();
+  render();
+  histApplying = false;
+  persistDraftNow();        // 草稿跟著回到同一步
+  updateHistoryButtons();
+  histShowChange(before, snapshot);
+}
+
+/** 捲到這一步改動的位置並閃一下，否則按了畫面沒動會以為沒生效。 */
+function histShowChange(beforeJson, afterJson) {
+  var a, b;
+  try { a = JSON.parse(beforeJson); b = JSON.parse(afterJson); } catch (e) { return; }
+
+  var target = null, i;
+  for (i = 0; i < SCALAR_FIELDS.length; i++) {
+    if (String(a[SCALAR_FIELDS[i][1]] || "") !== String(b[SCALAR_FIELDS[i][1]] || "")) {
+      target = $(SCALAR_FIELDS[i][0]);
+      break;
+    }
+  }
+  if (!target && String(a.audience || "") !== String(b.audience || "")) target = $("f-audience-group");
+  if (!target && JSON.stringify(a.refLinks || []) !== JSON.stringify(b.refLinks || [])) target = $("dr-links");
+
+  if (!target) {
+    var ai = a.items || [], bi = b.items || [];
+    for (i = 0; i < Math.max(ai.length, bi.length); i++) {
+      if (JSON.stringify(ai[i]) === JSON.stringify(bi[i])) continue;
+      var live = state.items[i];
+      if (live) {
+        // 收合的項目先展開，才看得到改了什麼
+        if (live.collapsed) { live.collapsed = false; renderItem(live); }
+        target = document.querySelectorAll("#dr-items .item-card")[i] || $("dr-items");
+      } else {
+        target = $("dr-items");
+      }
+      break;
+    }
+  }
+  if (!target) return;
+
+  var box = (target.closest && target.closest(".field")) || target;
+  box.classList.add("just-changed");
+  setTimeout(function () { box.classList.remove("just-changed"); }, 1200);
+  try { box.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) { }
+}
+
+/** 手機版不提供這個功能：按鈕在手機隱藏，快捷鍵也不綁。 */
+function historyAvailable() {
+  var box = $("dr-history");
+  return !!box && box.offsetParent !== null;
+}
+
+$("dr-undo").addEventListener("click", histUndoAction);
+$("dr-redo").addEventListener("click", histRedoAction);
+
+/* 按下按鈕、改選單、離開欄位，都代表上一段輸入結束 */
+["click", "change", "focusout"].forEach(function (evt) {
+  document.addEventListener(evt, function () {
+    if (histApplying) return;
+    setTimeout(function () { if (histDirty) histCommit(); }, 0);
+  }, false);
+});
+
+document.addEventListener("keydown", function (e) {
+  if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
+  var key = String(e.key || "").toLowerCase();
+  if (key !== "z" && key !== "y") return;
+  if (!historyAvailable()) return;
+  var t = e.target;
+  // 游標在輸入框裡時交給瀏覽器自己的文字復原，避免一次跳兩步
+  if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+  e.preventDefault();
+  if (key === "y" || e.shiftKey) histRedoAction(); else histUndoAction();
+});
+
+/* 快捷鍵提示跟著作業系統寫 */
+(function () {
+  var mac = /Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent || "");
+  $("dr-undo").title = mac ? "復原（⌘Z）" : "復原（Ctrl+Z）";
+  $("dr-redo").title = mac ? "重做（⇧⌘Z）" : "重做（Ctrl+Y）";
+})();
+
+/* ============================================================
    草稿
    ============================================================ */
 
@@ -1823,6 +2000,7 @@ function persistDraftNow() {
 }
 
 function saveDraft() {
+  histTouch();
   clearTimeout(draftTimer);
   draftTimer = setTimeout(persistDraftNow, 250);
 }
@@ -1865,6 +2043,7 @@ function offerDraft() {
     applyStateToForm();
     render();
     persistDraftNow();
+    histReset();        // 還原草稿後從這一份內容重新開始記錄
   };
 
   $("dr-draft-discard").onclick = function () {
