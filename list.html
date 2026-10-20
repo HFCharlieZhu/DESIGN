@@ -297,6 +297,56 @@ function el(tag, cls, text) {
   return e;
 }
 
+/* ============================================================
+   共用區塊 I：介面符號（兩頁完全相同，請一起更新）
+   ------------------------------------------------------------
+   叉叉與上下箭頭原本是文字符號，會因為裝置字型不同而變形；
+   改成畫出來的圖形，所有裝置長得一樣。
+   箭頭的外框直接取自 Noto Sans 的 ↑／↓，形狀與原本一致。
+   ============================================================ */
+
+var GLYPHS = {
+  up: { box: "0 0 466 925", w: ".466em", h: ".925em",
+    d: "M199 154V925H267V154C306 205 369 271 431 316L466 256C378 189 290 89 233 0C176 89 88 189 0 256L35 316C97 271 160 205 199 154Z" },
+  down: { box: "0 0 466 925", w: ".466em", h: ".925em",
+    d: "M267 771V0H199V771C160 720 97 654 35 609L0 669C88 736 176 836 233 925C290 836 378 736 466 669L431 609C369 654 306 720 267 771Z" },
+  right: { box: "0 0 925 466", w: ".925em", h: ".466em",
+    d: "M771 199H0V267H771C720 306 654 369 609 431L669 466C736 378 836 290 925 233C836 176 736 88 669 0L609 35C654 97 720 160 771 199Z" },
+  x: { box: "0 0 100 100", w: ".586em", h: ".586em", stroke: 14.6,
+    d: "M6.1 6.1L93.9 93.9M93.9 6.1L6.1 93.9" }
+};
+
+function glyph(name) {
+  var g = GLYPHS[name];
+  var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "gly");
+  svg.setAttribute("viewBox", g.box);
+  svg.setAttribute("aria-hidden", "true");
+  svg.style.width = g.w;
+  svg.style.height = g.h;
+  var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", g.d);
+  if (g.stroke) {
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", "currentColor");
+    path.setAttribute("stroke-width", String(g.stroke));
+  } else {
+    path.setAttribute("fill", "currentColor");
+  }
+  svg.appendChild(path);
+  return svg;
+}
+
+/** 把按鈕裡的文字符號換成圖形。 */
+function glyphButton(cls, name, label) {
+  var btn = el("button", cls, "");
+  btn.type = "button";
+  btn.setAttribute("aria-label", label);
+  btn.appendChild(glyph(name));
+  return btn;
+}
+
+
 function setLoginStatus(text, isError) {
   loginStatus.className = "g-status" + (isError ? " is-error" : "");
   loginStatus.textContent = text || "";
@@ -2432,7 +2482,7 @@ function buildDetail(record, container) {
       f2.appendChild(i2);
       group.appendChild(f2);
 
-      var open = el("button", "rm rm-half", "→");
+      var open = glyphButton("rm rm-half", "right", "開啟連結");
       open.type = "button";
       open.setAttribute("aria-label", "開啟這個連結");
       function syncOpen() {
@@ -2448,7 +2498,7 @@ function buildDetail(record, container) {
       syncOpen();
       group.appendChild(open);
 
-      var rm = el("button", "rm", "✕");
+      var rm = glyphButton("rm", "x", "刪除");
       rm.type = "button";
       rm.setAttribute("aria-label", "刪除此連結");
       rm.addEventListener("click", function () {
@@ -2759,9 +2809,7 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
         footer.appendChild(del);
 
         var order = el("div", "block-order");
-        var up = el("button", "", "↑");
-        up.type = "button";
-        up.setAttribute("aria-label", "上移區塊");
+        var up = glyphButton("", "up", "上移區塊");
         up.disabled = bi === 0;
         up.addEventListener("click", function () {
           if (bi === 0) return;
@@ -2770,9 +2818,7 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
           onStructuralChange();
           onChange();
         });
-        var down = el("button", "", "↓");
-        down.type = "button";
-        down.setAttribute("aria-label", "下移區塊");
+        var down = glyphButton("", "down", "下移區塊");
         down.disabled = bi === item.blocks.length - 1;
         down.addEventListener("click", function () {
           if (bi === item.blocks.length - 1) return;
@@ -2853,7 +2899,7 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
             ci.value = row.customText || "";
             ci.addEventListener("input", function () { row.customText = ci.value; onChange(); });
             cw.appendChild(ci);
-            var back = el("button", "inline-clear", "✕");
+            var back = glyphButton("inline-clear", "x", "清除自訂版位");
             back.type = "button";
             back.setAttribute("aria-label", "取消自訂版位");
             back.addEventListener("click", function () {
@@ -2903,7 +2949,7 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
 
           var group = el("div", "size-value-group");
           group.appendChild(pxField);
-          var rm = el("button", "rm", "✕");
+          var rm = glyphButton("rm", "x", "刪除");
           rm.type = "button";
           rm.setAttribute("aria-label", "刪除此版位");
           rm.disabled = item.sizeRows.length <= 1;

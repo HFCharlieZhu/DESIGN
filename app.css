@@ -1474,6 +1474,15 @@ html {
 #dr-app .schedule-note.urgent { color: var(--red); font-weight: var(--fw-medium); }
 #dr-app .statsbar .go { margin-left: auto; flex: 0 0 auto; }
 
+/* 介面符號（叉叉、上下箭頭）改用圖形，大小跟著按鈕的字級走 */
+#dr-app .gly { display: block; flex: 0 0 auto; }
+
+#dr-app .inline-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* 復原／重做：與區塊上下移動鈕同一套圓鈕樣式，字級對齊「張／區塊」 */
 #dr-app .statsbar .history {
   margin-left: auto;
@@ -1501,8 +1510,9 @@ html {
 }
 
 #dr-app .hist-btn svg {
-  width: var(--fs-body);
-  height: var(--fs-body);
+  /* 圖形在圓圈裡的佔比與上下箭頭相當；線條粗細維持 0.9px */
+  width: 11.5px;
+  height: 11.5px;
   display: block;
 }
 
