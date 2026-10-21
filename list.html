@@ -884,7 +884,16 @@ function recentCutoff() {
   return new Date(now.getFullYear(), now.getMonth() - (RECENT_MONTHS - 1), 1);
 }
 
+/* 已經結束、不會再有人動的狀態；只有這些才會按月份收進過往資料。
+   完稿還要交付驗收，所以不算結束；退回若要繼續，會改回設計中或已排程。 */
+function isArchivable(rec) {
+  return isDeleted(rec) || rec.status === "結案" || rec.status === "取消" ||
+    rec.status === "外包" || rec.status === "退回";
+}
+
+/* 還沒結束的案件一律留在案件區，不論多久以前送出：欠著的事情要看得到。 */
 function isRecent(rec, cutoff) {
+  if (!isArchivable(rec)) return true;
   var d = new Date(rec.submittedAt);
   return !isNaN(d.getTime()) && d >= cutoff;
 }
@@ -1526,7 +1535,7 @@ function renderAll() {
   var emptyEl = $("dr-empty");
   emptyEl.hidden = pageList.length > 0 || !!example;
   emptyEl.textContent = older.length
-    ? "近三個月沒有符合的案件，過往資料中有 " + older.length + " 筆。"
+    ? "案件區沒有符合的案件，過往資料中有 " + older.length + " 筆。"
     : "無符合條件的申請單。";
 
   var byMonth = groupByMonth(pageList);
