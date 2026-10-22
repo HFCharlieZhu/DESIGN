@@ -155,6 +155,7 @@
             <div class="date-wrap"><input id="f-deliverydate" type="date"></div>
             <div class="errmsg">請填寫總交付日。</div>
             <div class="hint" id="f-deliverydate-warn" hidden>部分項目交付日晚於總交付日。</div>
+            <div class="hint danger" id="f-deliverydate-past" hidden>交付日不能早於今天。</div>
           </div>
           <div class="field" id="f-meetingdate-field">
             <label for="f-meetingdate">會議日期<span class="opt">選填</span></label>
@@ -1136,9 +1137,19 @@ function makeField(kind, label, required, value, onChange, optText) {
     var dateInput = document.createElement("input");
     dateInput.type = "date";
     dateInput.value = value || "";
-    dateInput.addEventListener("input", function () { onChange(dateInput.value); });
+    // 交付日不能往回填：日曆直接鎖住今天以前，鍵盤硬打則在這裡標紅
+    dateInput.min = todayIsoLocal();
+    var pastHint = el("div", "hint danger", "交付日不能早於今天。");
+    function syncPast() {
+      var past = isPastDate(dateInput.value);
+      f.classList.toggle("past", past);
+      pastHint.hidden = !past;
+    }
+    dateInput.addEventListener("input", function () { onChange(dateInput.value); syncPast(); });
     wrap.appendChild(dateInput);
     f.appendChild(wrap);
+    f.appendChild(pastHint);
+    syncPast();
     return f;
   }
 
@@ -1639,6 +1650,32 @@ function itemUnitCount(item) {
   return Math.max(1, item.sizeRows.length);
 }
 
+/** 今天（本機時區）的 yyyy-mm-dd，給日期欄位當下限用。 */
+function todayIsoLocal() {
+  var d = new Date();
+  return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+}
+
+/** 交付日是否已經過了；今天不算過去。 */
+function isPastDate(value) {
+  var d = parseDate(value);
+  if (!d) return false;
+  var today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return d < today;
+}
+
+/** 總交付日已過：欄位變紅並顯示提示，送出時也會被擋。 */
+function checkDeliveryPast() {
+  var past = isPastDate(state.deliveryDate);
+  var field = $("f-deliverydate-field");
+  var hint = $("f-deliverydate-past");
+  var input = $("f-deliverydate");
+  if (input) input.min = todayIsoLocal();
+  if (field) field.classList.toggle("past", past);
+  if (hint) hint.hidden = !past;
+}
+
 function checkDeliveryWarn() {
   var total = parseDate(state.deliveryDate);
   var field = $("f-deliverydate-field");
@@ -1735,6 +1772,7 @@ function refreshStats() {
   $("f-schedulenote-row").hidden = !tight;
 
   checkDeliveryWarn();
+  checkDeliveryPast();
   checkMeetingWarn();
 }
 
@@ -1773,6 +1811,7 @@ SCALAR_FIELDS.forEach(function (pair) {
     // 總交付日會改變各項目的急件判斷，所以連項目上的標記一起更新
     if (pair[1] === "dept") updateDeptHint();
     if (pair[1] === "deliveryDate") { fillItemDates(); updateLiveBits(); }
+    if (pair[1] === "deliveryDate") checkDeliveryPast();
     if (pair[1] === "deliveryDate" || pair[1] === "meetingDate") checkMeetingWarn();
     saveDraft();
   }
@@ -2128,6 +2167,7 @@ function collectErrors() {
     var prefix = "項目 " + (idx + 1);
     var label = prefix + "（" + (item.name || "未命名") + "）";
     if (!String(item.name || "").trim()) errors.push({ msg: prefix + "：項目名稱未填寫", focus: null });
+    if (isPastDate(item.useDate)) errors.push({ msg: label + "：交付日已過，請改為今天以後的日期", focus: null });
     if (!item.typeId) { errors.push({ msg: label + "：需求類型未選擇", focus: null }); return; }
     var t = typeOf(item.typeId);
     if (t.mode === "notice" || t.mode === "structure") return;
@@ -2136,6 +2176,9 @@ function collectErrors() {
 
   // 總交付日在畫面上屬於第 5 區「時程」，排在設計項目之後才與閱讀順序一致
   if (!state.deliveryDate) errors.push({ msg: "總交付日未填寫", focus: "f-deliverydate", field: "f-deliverydate-field" });
+  else if (isPastDate(state.deliveryDate)) {
+    errors.push({ msg: "總交付日已過，請改為今天以後的日期", focus: "f-deliverydate", field: "f-deliverydate-field" });
+  }
   return errors;
 }
 

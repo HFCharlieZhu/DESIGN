@@ -524,6 +524,10 @@ html {
 #dr-app .field.err textarea,
 #dr-app .field.err select,
 #dr-app .field.warn input { border-color: var(--red); }
+
+/* 交付日填到今天以前：欄位標紅並顯示說明，送出時也會被擋 */
+#dr-app .field.past input { border-color: var(--red); }
+#dr-app .hint.danger { color: var(--red); }
 #dr-app .field.err .errmsg { display: block; }
 
 #dr-app input[type=text],
