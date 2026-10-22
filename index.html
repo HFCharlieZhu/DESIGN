@@ -80,10 +80,14 @@
             </select>
             <div class="hint" id="f-dept-hint">案件編號會帶入部門。</div>
           </div>
-          <div class="field">
-            <label>申請人<span class="req">*</span></label>
-            <div class="idblock" id="f-applicant"></div>
-            <div class="hint">由登入帳戶自動帶入。</div>
+          <div class="field" id="f-applicant-field">
+            <label for="f-initials">申請人<span class="req">*</span></label>
+            <div class="idblock" id="f-applicant">
+              <input id="f-initials" type="text" maxlength="3" autocomplete="off"
+                spellcheck="false" aria-label="代號，1 到 3 個英文字母" hidden>
+              <span id="f-applicant-text"></span>
+            </div>
+            <div class="hint" id="f-applicant-hint">由登入帳戶自動帶入。</div>
           </div>
         </div>
       </div>
@@ -975,16 +979,56 @@ function makeOperationId() {
 function applyUser(data) {
   if (!data || !data.email) throw new Error("帳戶資料未完整回傳，請重新登入。");
   rememberInitialsOverride(data);
+  var locked = data.initialsLocked === true && !!data.initials;
   currentUser = {
     name: data.name || data.email,
     email: data.email,
     isAdmin: data.isAdmin === true,
-    initials: initialsOf(data.name || data.email, data.email)
+    initials: locked ? data.initials : normalizeInitials(data.initialsSuggestion || ""),
+    initialsLocked: locked
   };
+  if (!locked && !state.initials) state.initials = currentUser.initials;
   $("dr-username").textContent = currentUser.name;
-  $("dr-avatar").textContent = currentUser.initials || "・";
-  $("f-applicant").textContent = currentUser.initials + "<" + currentUser.email + ">";
+  renderApplicant();
   updateDeptHint();
+}
+
+/** 代號：只留英文字母、一律大寫、最多五個。 */
+function normalizeInitials(value) {
+  return String(value || "").replace(/[^A-Za-z]/g, "").toUpperCase().slice(0, 3);
+}
+
+/** 目前畫面上的代號：已固定的人用登記值，還沒設定的人用他正在輸入的值。 */
+function currentInitials() {
+  return currentUser.initialsLocked ? currentUser.initials : normalizeInitials(state.initials);
+}
+
+var initialsTouched = false;
+
+/**
+ * 申請人欄位：已經登記過代號的人只顯示文字；還沒登記的人可以改前面的代號，
+ * 信箱固定在同一個框裡，不另外分成兩欄。送出之後代號就固定，不再開放更改。
+ */
+function renderApplicant() {
+  var input = $("f-initials");
+  var text = $("f-applicant-text");
+  var hint = $("f-applicant-hint");
+  var field = $("f-applicant-field");
+  if (!input || !text) return;
+  var locked = !!currentUser.initialsLocked;
+
+  input.hidden = locked;
+  if (locked) {
+    text.textContent = currentUser.initials + "<" + currentUser.email + ">";
+    hint.textContent = "由登入帳戶自動帶入。";
+  } else {
+    if (document.activeElement !== input) input.value = currentInitials();
+    text.textContent = "<" + currentUser.email + ">";
+    hint.textContent = "代號為 1 到 3 個英文字母，送出後固定不再更改。";
+  }
+  $("dr-avatar").textContent = currentInitials() || "・";
+  field.classList.toggle("err",
+    !locked && initialsTouched && !/^[A-Z]{1,3}$/.test(currentInitials()));
 }
 
 /** 編號範例跟著登入的人與選到的部門：Charlie 選 BAUI 看到的是 BAUI-CZ-0001。 */
@@ -992,20 +1036,25 @@ function updateDeptHint() {
   var hint = $("f-dept-hint");
   if (!hint) return;
   var dept = String(state.dept || "").trim();
-  if (!currentUser.initials) { hint.textContent = "案件編號會帶入部門。"; return; }
+  var code = currentInitials();
+  if (!code) { hint.textContent = "案件編號會帶入部門。"; return; }
   if (dept === NO_DEPT) {
-    hint.textContent = "選無部門時案件編號會省略部門，例如 " + currentUser.initials + "-0001。";
+    hint.textContent = "選無部門時案件編號會省略部門，例如 " + code + "-0001。";
     return;
   }
   hint.textContent = dept
-    ? "案件編號會帶入部門，例如 " + dept + "-" + currentUser.initials + "-0001。"
-    : "案件編號會帶入部門，例如 BAUI-" + currentUser.initials + "-0001。";
+    ? "案件編號會帶入部門，例如 " + dept + "-" + code + "-0001。"
+    : "案件編號會帶入部門，例如 BAUI-" + code + "-0001。";
 }
 
 function enterApp(data) {
   applyUser(data);
   AUTH.set(AUTH.token(), {
     name: currentUser.name, email: currentUser.email, isAdmin: currentUser.isAdmin,
+    // 代號一起記住：重新整理時不會先閃出輸入框再變回文字
+    initials: currentUser.initialsLocked ? currentUser.initials : "",
+    initialsLocked: !!currentUser.initialsLocked,
+    initialsSuggestion: currentUser.initials || "",
     initialsOverride: INITIALS_OVERRIDE
   });
   gate.hidden = true;
@@ -1827,6 +1876,17 @@ document.querySelectorAll("#f-audience-group .chip").forEach(function (b) {
   });
 });
 
+$("f-initials").addEventListener("input", function () {
+  initialsTouched = true;
+  var clean = normalizeInitials(this.value);
+  if (this.value !== clean) this.value = clean;   // 小寫自動轉大寫、超過五個不收
+  state.initials = clean;
+  currentUser.initials = clean;
+  renderApplicant();
+  updateDeptHint();
+  saveDraft();
+});
+
 $("dr-add-item").addEventListener("click", function () {
   state.items.push(newItem());
   render();
@@ -2158,6 +2218,10 @@ function deptValue() {
 
 function collectErrors() {
   var errors = [];
+  if (!currentUser.initialsLocked && !/^[A-Z]{1,3}$/.test(currentInitials())) {
+    initialsTouched = true;
+    errors.push({ msg: "申請人代號未設定（1 到 3 個英文字母）", focus: "f-initials", field: "f-applicant-field" });
+  }
   if (!String(state.dept || "").trim()) errors.push({ msg: "部門未選擇", focus: "f-dept", field: "f-dept-field" });
   if (!String(state.name || "").trim()) errors.push({ msg: "需求名稱未填寫", focus: "f-name", field: "f-name-field" });
   if (!String(state.purpose || "").trim()) errors.push({ msg: "需求背景／說明未填寫", focus: "f-purpose", field: "f-purpose-field" });
@@ -2221,7 +2285,7 @@ function renderPreview() {
 
   p.appendChild(el("h4", "", "基本資訊"));
   p.appendChild(kvNode("部門", deptValue() || "無部門"));
-  p.appendChild(kvNode("申請人", currentUser ? currentUser.initials + "<" + currentUser.email + ">" : "—"));
+  p.appendChild(kvNode("申請人", currentUser ? currentInitials() + "<" + currentUser.email + ">" : "—"));
   p.appendChild(kvNode("需求名稱", state.name || "—"));
   p.appendChild(kvNode("目標對象", state.audience || "未選擇"));
   // 總交付日只看它自己：項目自己比較趕的話，紅點標在下面那一項
@@ -2362,7 +2426,10 @@ $("dr-submit-btn").addEventListener("click", async function () {
     persistDraftNow();
 
     var data = await apiPost("createRequest",
-      { data: buildPayload(), meetingDate: state.meetingDate || "", operationId: pendingOperationId },
+      {
+        data: buildPayload(), meetingDate: state.meetingDate || "",
+        initials: currentInitials(), operationId: pendingOperationId
+      },
       { timeout: 60000 });
 
     submitted = true;

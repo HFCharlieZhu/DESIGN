@@ -1694,6 +1694,31 @@ html {
   justify-content: center;
 }
 
+/* 申請人欄位裡可改的代號：和信箱同一個框，用底線表示可以輸入 */
+#dr-app #f-initials {
+  width: 3.5ch;
+  min-width: 3.5ch;
+  padding: 0 2px;
+  border: 0;
+  border-bottom: 1.2px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+#dr-app #f-initials:focus {
+  outline: none;
+  border-bottom-color: var(--control-accent);
+}
+
+#dr-app .field.err #f-initials { border-bottom-color: var(--red); }
+
+#dr-app #f-applicant { gap: 0; }
+#dr-app #f-applicant-text { margin-left: 2px; }
+
 #dr-app .idblock {
   display: flex;
   align-items: center;
