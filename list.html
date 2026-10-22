@@ -1078,6 +1078,8 @@ function applyUser(user) {
 }
 
 function enterApp(user) {
+  // 上一次的登入訊息（例如「已在其他分頁登出。」）不要留到下一次
+  setLoginStatus("", false);
   applyUser(user);
   gate.hidden = true;
   app.hidden = false;
@@ -1150,12 +1152,13 @@ function startAuth() {
 
 AUTH.watch(
   function () {
-    if (app.hidden) return;
+    // 判斷依據是「有沒有在登入畫面」，與申請表同一套
+    if (!gate.hidden) return;
     saveAllOpenDrafts();
     showGate("已在其他分頁登出。");
   },
   function () {
-    if (!app.hidden || !AUTH.user()) return;
+    if (gate.hidden || !AUTH.user()) return;
     enterApp(AUTH.user());
     loadList(false).catch(function () { });
   }

@@ -1077,6 +1077,8 @@ function updateDeptHint() {
 }
 
 function enterApp(data) {
+  // 上一次的登入訊息（例如「已在其他分頁登出。」）不要留到下一次
+  setLoginStatus("", false);
   applyUser(data);
   AUTH.set(AUTH.token(), {
     name: currentUser.name, email: currentUser.email, isAdmin: currentUser.isAdmin,
@@ -1155,11 +1157,15 @@ function startAuth() {
 
 AUTH.watch(
   function () {
-    if (app.hidden) return;
+    // 判斷依據是「有沒有在登入畫面」，不是「表單有沒有顯示」：
+    // 被另一個分頁的提示擋住時表單也是隱藏的，那時候一樣要跟著登出
+    if (!gate.hidden) return;
+    flushDraft();
+    $("dr-tabgate").hidden = true;
     showGate("已在其他分頁登出。");
   },
   function () {
-    if (!app.hidden || !AUTH.user()) return;
+    if (gate.hidden || !AUTH.user()) return;
     enterApp(AUTH.user());
   }
 );
@@ -2336,7 +2342,7 @@ function tabBeat() {
 }
 
 function initTabGuard() {
-  if (tabTimer) return;
+  if (tabTimer) { tabBeat(); return; }   // 重新登入後再判斷一次佔用狀況
   if (tabOtherAlive(tabRead())) showTabGate();
   else tabClaim();
   tabTimer = setInterval(tabBeat, TAB_BEAT);
