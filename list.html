@@ -201,7 +201,7 @@ var googleCredential = "";
 var lastApiAt = Date.now();   // 頁面剛載入就算一次往來，避免開場的心跳與第一次請求重複
 
 function apiError(message, code) {
-  var err = new Error(message || "後端處理失敗。");
+  var err = new Error(message || "系統處理失敗，請稍後再試。");
   err.code = code || "API_ERROR";
   return err;
 }
@@ -226,17 +226,20 @@ function fetchJson(body, timeoutMs) {
     return res.text().then(function (text) {
       var trimmed = String(text || "").trim();
       if (!trimmed || trimmed.charAt(0) === "<") {
+        // 畫面上給同事看得懂的話＋一組代碼，同事只要把代碼唸出來就知道要查哪裡；
+        // DEPLOY-1 ＝ 部署的「誰可以存取」不是任何人，或部署被停用
         console.error("Apps Script 未以 JSON 回應，請確認部署為「執行身分：我」「誰可以存取：任何人」。");
-        throw apiError("系統暫時無法連線，請稍後再試。", "DEPLOYMENT_ACCESS");
+        throw apiError("系統設定異常，請聯絡設計端。（代碼 DEPLOY-1）", "DEPLOYMENT_ACCESS");
       }
       var json;
       try { json = JSON.parse(trimmed); }
       catch (e) {
+        // DEPLOY-2 ＝ 網址指到舊的部署，或後端程式出錯丟回錯誤頁
         console.error("Apps Script 回應不是有效 JSON，可能不是最新的部署網址。");
-        throw apiError("系統回應異常，請稍後再試。", "BAD_RESPONSE");
+        throw apiError("系統設定異常，請聯絡設計端。（代碼 DEPLOY-2）", "BAD_RESPONSE");
       }
       if (!json || typeof json !== "object") throw apiError("系統回應異常，請稍後再試。", "BAD_RESPONSE");
-      if (!json.ok) throw apiError(json.error || "後端處理失敗。", json.code || "API_ERROR");
+      if (!json.ok) throw apiError(json.error || "系統處理失敗，請稍後再試。", json.code || "API_ERROR");
       return json;
     });
   }).catch(function (err) {
@@ -1054,7 +1057,7 @@ function applyCardVisual(card, rec) {
    ============================================================ */
 
 function applyUser(user) {
-  if (!user || !user.email) throw new Error("帳戶資料未完整回傳。");
+  if (!user || !user.email) throw new Error("帳戶資料未完整回傳，請重新登入。");
   rememberInitialsOverride(user);
   currentUser = {
     name: user.name || user.email,
@@ -1066,6 +1069,10 @@ function applyUser(user) {
   $("dr-avatar").textContent = currentUser.initials || "・";
   AUTH.set(AUTH.token(), {
     name: currentUser.name, email: currentUser.email, isAdmin: currentUser.isAdmin,
+    // 代號狀態一起記住：切到申請表時不會先閃出輸入框，兩頁用同一份登入資料
+    initials: user.initials || "",
+    initialsLocked: user.initialsLocked === true,
+    initialsSuggestion: user.initialsSuggestion || "",
     initialsOverride: INITIALS_OVERRIDE
   });
 }
@@ -1296,7 +1303,7 @@ function paintFromCache(email) {
 function describeError(err) {
   if (!err) return "案件資料暫時無法載入。";
   if (err.code === "TIMEOUT") return "系統回應逾時，請重新載入。";
-  if (err.code === "OFFLINE") return "目前沒有網路連線。";
+  if (err.code === "OFFLINE") return "目前沒有網路連線，請連線後再試。";
   return err.message || "案件資料暫時無法載入。";
 }
 
@@ -1993,6 +2000,8 @@ function makeField(kind, label, required, value, onChange, optText) {
     var dateInput = document.createElement("input");
     dateInput.type = "date";
     dateInput.value = value || "";
+    // 標題是另外畫的 label，沒有綁定關係，螢幕閱讀器要靠這裡才念得出欄位名稱
+    dateInput.setAttribute("aria-label", label);
     dateInput.addEventListener("input", function () { onChange(dateInput.value); });
     wrap.appendChild(dateInput);
     f.appendChild(wrap);
@@ -2004,12 +2013,14 @@ function makeField(kind, label, required, value, onChange, optText) {
     numInput.type = "number";
     numInput.min = "0";
     numInput.value = value || "";
+    numInput.setAttribute("aria-label", label);
     numInput.addEventListener("input", function () { onChange(numInput.value); });
     f.appendChild(numInput);
     return collapseIfEmpty(f, label, required);
   }
 
   var entry = textEntry(value, onChange, kind === "textarea" ? "" : "h1");
+  entry.setAttribute("aria-label", label);
   if (kind === "url") entry.inputMode = "url";
   f.appendChild(entry);
   return collapseIfEmpty(f, label, required);
@@ -2068,16 +2079,21 @@ function itemBadgeNodes(item, fromDay, mainDelivery) {
 /* 重畫明細後要顯示的提示（重畫會換掉原本的提示節點，所以先寄放在這裡）。 */
 var pendingDetailFlash = "";
 
-function buildDetail(record, container) {
+/**
+ * serverBase 只有合併他人修改之後才會傳：
+ * 這時畫面上的內容是「合併後、還沒存」的版本，比對基準必須是對方已經存進去的那一版，
+ * 否則系統會以為沒有東西要存。平常不傳，基準就是傳進來的這份資料。
+ */
+function buildDetail(record, container, serverBase) {
   var work = JSON.parse(JSON.stringify(record));
   if (typeof work.meetingDate !== "string") work.meetingDate = "";
   /* 整份重畫＝回到「有內容展開、沒內容收起」的規則，先忘掉上一輪手動打開的紀錄 */
   resetFieldOpened(record.id);
   (work.data.items || []).forEach(normalizeItem);
 
-  var serverData = JSON.stringify(work.data);
-  var serverStatus = work.status;
-  var serverMeeting = work.meetingDate;
+  var serverData = serverBase ? JSON.stringify(serverBase.data) : JSON.stringify(work.data);
+  var serverStatus = serverBase ? serverBase.status : work.status;
+  var serverMeeting = serverBase ? (serverBase.meetingDate || "") : work.meetingDate;
 
   // 還原本機未儲存的編輯（重整、切頁、重新登入都會回到原本的編輯內容）
   var draft = readDetailDraft(work.id);
@@ -2151,6 +2167,16 @@ function buildDetail(record, container) {
     if (logBox.firstChild) logBox.insertBefore(node, logBox.firstChild);
     else logBox.appendChild(node);
     if (logPanel) logPanel.hidden = false;
+  }
+
+  /**
+   * 儲存後在背景催一下雲端文件，讓它幾秒內就是最新的，而不是等每分鐘的排程。
+   * 不擋操作、不報錯：失敗的話排隊標記還在，排程照樣會處理。
+   */
+  function nudgeDoc(requestId) {
+    apiPost("processDocNow", { requestId: requestId }, { timeout: 30000 })
+      .then(function (res) { if (res && res.done) flash("Google 文件已更新。"); })
+      .catch(function () { /* 交回排程，不打擾使用者 */ });
   }
 
   function flash(msg) {
@@ -2249,6 +2275,8 @@ function buildDetail(record, container) {
 
   function buildPayload(labels, operationId) {
     var payload = { requestId: work.id, status: work.status, labels: labels, operationId: operationId };
+    // 告訴後端這份是以哪個版本為基礎改的，別人先存過就會被擋下，不會無聲蓋掉對方
+    if (work.updatedAt) payload.baseUpdatedAt = work.updatedAt;
     if (JSON.stringify(work.data) !== serverData) payload.data = work.data;
     if (work.meetingDate !== serverMeeting) payload.meetingDate = work.meetingDate || "";
     return payload;
@@ -2497,7 +2525,7 @@ function buildDetail(record, container) {
       function syncOpen() {
         var href = safeHref(i1.value);
         open.disabled = !href;
-        open.title = href ? "開啟 " + href : "請先填入完整網址";
+        open.title = href ? "開啟 " + href : "請先填入完整網址。";
       }
       open.addEventListener("click", function () {
         var href = safeHref(i1.value);
@@ -2572,13 +2600,14 @@ function buildDetail(record, container) {
   var btnSave = makeActionButton("primary", "儲存");
   btnSave.addEventListener("click", async function () {
     if (!guardRequired() || actionBusy) return;
+    var labels = [];
+    if (work.status !== serverStatus) labels.push(work.status);
+    if (JSON.stringify(work.data) !== serverData || work.meetingDate !== serverMeeting) labels.push("內容更新");
+    // 沒有任何變更就不送，否則重複按儲存會在異動紀錄留下一串沒有內容的「內容更新」
+    if (!labels.length) { flash("目前沒有需要儲存的變更。"); return; }
     actionBusy = true;
     setActionLoading(btnSave, true);
     try {
-      var labels = [];
-      if (work.status !== serverStatus) labels.push(work.status);
-      if (JSON.stringify(work.data) !== serverData || work.meetingDate !== serverMeeting) labels.push("內容更新");
-      if (!labels.length) labels.push("內容更新");
       if (!saveOpId) saveOpId = makeOperationId();
 
       // 先在本機套用與後端相同的文字校正，送出的就是最終版本
@@ -2594,8 +2623,9 @@ function buildDetail(record, container) {
       var savedMsg = work.isExample && !currentUser.isAdmin
         ? "已儲存。範例案件會在每天凌晨復原。"
         : "已儲存。";
-      // 雲端的 Google 文件由後端在背景重做，這裡先告知，避免有人馬上去 Drive 看到舊版本。
-      var docMsg = result.documentUpdated ? "Google 文件更新中，約一分鐘內完成。" : "";
+      // 雲端的 Google 文件由後端重做，這裡先告知，避免有人馬上去 Drive 看到舊版本。
+      var docMsg = result.documentUpdated ? "Google 文件更新中。" : "";
+      if (result.documentUpdated) nudgeDoc(work.id);
       // 儲存後一律用伺服器回傳的內容重畫，畫面才等於實際存下來的版本，
       // 欄位的展開／收合也回到「有內容展開、沒內容收起」的規則。
       pendingDetailFlash = ((typoChanged || (result.request && JSON.stringify(result.request.data) !== sent))
@@ -2604,12 +2634,129 @@ function buildDetail(record, container) {
       buildDetail(work, container);
       return;
     } catch (err) {
-      if (!handleAuthError(err)) flash("儲存失敗：" + err.message);
+      if (err && err.code === "CONFLICT") await handleConflict();
+      else if (!handleAuthError(err)) flash("儲存失敗：" + err.message);
     } finally {
       actionBusy = false;
       setActionLoading(btnSave, false);
     }
   });
+
+  /**
+   * 別人先存過的時候：把兩邊的更動合起來，不是二選一。
+   * 規則是三方比對（我載入時的版本／我改的／對方現在的）：
+   *   我沒動的欄位 → 用對方的（對方的修改保住）
+   *   對方沒動的欄位 → 用我的（我的修改保住）
+   *   兩邊都動了同一格 → 用我的，並且明講
+   * 合併完直接顯示在畫面上，讓人先看過再按儲存。
+   */
+  function mergeValue(base, mine, theirs) {
+    var b = JSON.stringify(base === undefined ? null : base);
+    var m = JSON.stringify(mine === undefined ? null : mine);
+    var t = JSON.stringify(theirs === undefined ? null : theirs);
+    if (m === b) return { value: theirs, collided: false };
+    if (t === b) return { value: mine, collided: false };
+    return { value: mine, collided: m !== t };
+  }
+
+  function allHaveIds(list) {
+    return (list || []).every(function (it) { return it && it._id; });
+  }
+
+  function mergeItems(base, mine, theirs) {
+    // 沒有項目編號就無法安全對齊，整個項目區塊以我這一版為準
+    if (!allHaveIds(base) || !allHaveIds(mine) || !allHaveIds(theirs)) {
+      var whole = mergeValue(base, mine, theirs);
+      return { items: whole.value || [], collided: whole.collided };
+    }
+    var index = function (list) {
+      var map = {};
+      (list || []).forEach(function (it) { map[it._id] = it; });
+      return map;
+    };
+    var B = index(base), M = index(mine), T = index(theirs);
+    var has = function (map, key) { return Object.prototype.hasOwnProperty.call(map, key); };
+    var out = [], seen = {}, collided = false;
+
+    (theirs || []).forEach(function (it) {
+      seen[it._id] = true;
+      if (has(B, it._id) && !has(M, it._id)) return;          // 我刪掉的項目
+      if (!has(M, it._id)) { out.push(it); return; }          // 對方新增的項目
+      if (!has(B, it._id)) { out.push(M[it._id]); return; }   // 兩邊各自新增、編號剛好相同
+      var keys = {};
+      [B[it._id], M[it._id], it].forEach(function (o) {
+        Object.keys(o || {}).forEach(function (k) { keys[k] = true; });
+      });
+      var merged = {};
+      Object.keys(keys).forEach(function (k) {
+        var r = mergeValue(B[it._id][k], M[it._id][k], it[k]);
+        merged[k] = r.value;
+        if (r.collided) collided = true;
+      });
+      out.push(merged);
+    });
+
+    (mine || []).forEach(function (it) {
+      if (seen[it._id]) return;
+      if (has(B, it._id)) return;                             // 對方刪掉的項目
+      out.push(it);                                           // 我新增的項目
+    });
+
+    return { items: out, collided: collided };
+  }
+
+  function mergeRequestData(base, mine, theirs) {
+    var merged = {}, collided = false, keys = {};
+    [base, mine, theirs].forEach(function (o) {
+      Object.keys(o || {}).forEach(function (k) { keys[k] = true; });
+    });
+    Object.keys(keys).forEach(function (k) {
+      if (k === "items") {
+        var r = mergeItems((base || {}).items, (mine || {}).items, (theirs || {}).items);
+        merged.items = r.items;
+        if (r.collided) collided = true;
+        return;
+      }
+      var v = mergeValue((base || {})[k], (mine || {})[k], (theirs || {})[k]);
+      merged[k] = v.value;
+      if (v.collided) collided = true;
+    });
+    return { data: merged, collided: collided };
+  }
+
+  async function handleConflict() {
+    var fresh = null;
+    try {
+      fresh = (await apiPost("getRequest", { requestId: work.id }, { timeout: 20000 })).request;
+    } catch (e) {
+      flash("這筆案件剛剛被其他人修改過，但目前讀不到最新版本，請稍後再試。");
+      return;
+    }
+    if (!fresh) { flash("這筆案件剛剛被其他人修改過，請重新整理後再試。"); return; }
+
+    var base = JSON.parse(serverData);
+    var result = mergeRequestData(base, work.data, fresh.data);
+    var statusPick = mergeValue(serverStatus, work.status, fresh.status);
+    var meetingPick = mergeValue(serverMeeting, work.meetingDate, fresh.meetingDate);
+
+    work.data = result.data;
+    (work.data.items || []).forEach(normalizeItem);
+    work.status = statusPick.value;
+    work.meetingDate = meetingPick.value || "";
+    work.updatedAt = fresh.updatedAt;
+    // 本機暫存也換成合併後的版本，否則重畫時會被合併前的內容蓋回去
+    writeDetailDraft(work.id, {
+      data: work.data, status: work.status, meetingDate: work.meetingDate
+    });
+
+    pendingDetailFlash = (result.collided || statusPick.collided || meetingPick.collided)
+      ? "這筆案件剛剛被其他人修改過，已合併兩邊的更動；兩邊都改過的地方保留此頁面的內容。再按一次儲存即可。"
+      : "這筆案件剛剛被其他人修改過，已合併兩邊的更動。再按一次儲存即可。";
+    // 基準換成對方現在的版本，再按一次儲存就會把合併後的內容存上去
+    buildDetail(work, container, {
+      data: fresh.data, status: fresh.status, meetingDate: fresh.meetingDate
+    });
+  }
 
   var btnResend = makeActionButton("", "重新發送需求");
   btnResend.addEventListener("click", async function () {
@@ -2627,10 +2774,13 @@ function buildDetail(record, container) {
       resendOpId = "";
       applyMutationResult(result);
       flash(result.mailOk === false
-        ? "需求內容已更新，但通知寄送失敗：" + (result.mailError || "未知原因")
+        ? (result.mailQueued
+          ? "需求內容已更新。系統寄信額度已滿，通知信已排程，額度恢復後將優先寄出。"
+          : "需求內容已更新，但通知寄送失敗：" + (result.mailError || "未知原因"))
         : "需求已重新發送。");
     } catch (err) {
-      if (!handleAuthError(err)) flash("重新發送失敗：" + err.message);
+      if (err && err.code === "CONFLICT") await handleConflict();
+      else if (!handleAuthError(err)) flash("重新發送失敗：" + err.message);
     } finally {
       actionBusy = false;
       setActionLoading(btnResend, false);
@@ -2757,6 +2907,7 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
   var typeField = el("div", "field item-type-field");
   typeField.appendChild(labelNode("需求類型", true));
   var sel = document.createElement("select");
+  sel.setAttribute("aria-label", "需求類型");
   sel.appendChild(el("option", "", "請選擇"));
   TYPES.forEach(function (t) {
     var o = el("option", "", t.label);
@@ -2892,7 +3043,7 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
       var options = sizeOptionsFor(item, t);
       if (options.length) {
         var sizeWrap = el("div", "field");
-        sizeWrap.appendChild(labelNode("尺寸", false, "選填，除印刷品外若留白將由設計端評估。"));
+        sizeWrap.appendChild(labelNode("尺寸", false, "選填，留白將由設計端評估。"));
         if (!item.sizeRows.length) item.sizeRows.push({ purpose: "", customText: "", px: "" });
 
         item.sizeRows.forEach(function (row) {

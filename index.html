@@ -44,6 +44,14 @@
   <div class="g-note">帳戶用於身分驗證與需求表寄送。</div>
 </div>
 
+<div id="dr-tabgate" hidden>
+  <div class="g-title">這台電腦已經有一份申請表正在填寫</div>
+  <div class="g-sub">草稿只會保留一份，兩邊同時填會互相覆蓋。</div>
+  <div class="tabgate-actions">
+    <a class="login-retry-btn" href="list.html">回到案件總覽</a>
+  </div>
+</div>
+
 <div id="dr-app" hidden>
   <div class="topbar">
     <div class="topbar-in">
@@ -83,6 +91,7 @@
           <div class="field" id="f-applicant-field">
             <label for="f-initials">申請人<span class="req">*</span></label>
             <div class="idblock" id="f-applicant">
+              <span class="avatar-spinner" id="f-applicant-spinner" hidden></span>
               <input id="f-initials" type="text" maxlength="3" autocomplete="off"
                 spellcheck="false" aria-label="代號，1 到 3 個英文字母" hidden>
               <span id="f-applicant-text"></span>
@@ -169,7 +178,7 @@
         </div>
         <div class="row c2" id="f-schedulenote-row" hidden>
           <div class="field">
-            <label for="f-schedulenote">時程備註<span class="opt">選填</span></label>
+            <label for="f-schedulenote">時程備註<span class="opt" id="f-schedulenote-opt">選填</span></label>
             <textarea id="f-schedulenote"></textarea>
           </div>
         </div>
@@ -313,7 +322,7 @@ var googleCredential = "";
 var lastApiAt = Date.now();   // 頁面剛載入就算一次往來，避免開場的心跳與第一次請求重複
 
 function apiError(message, code) {
-  var err = new Error(message || "後端處理失敗。");
+  var err = new Error(message || "系統處理失敗，請稍後再試。");
   err.code = code || "API_ERROR";
   return err;
 }
@@ -338,17 +347,20 @@ function fetchJson(body, timeoutMs) {
     return res.text().then(function (text) {
       var trimmed = String(text || "").trim();
       if (!trimmed || trimmed.charAt(0) === "<") {
+        // 畫面上給同事看得懂的話＋一組代碼，同事只要把代碼唸出來就知道要查哪裡；
+        // DEPLOY-1 ＝ 部署的「誰可以存取」不是任何人，或部署被停用
         console.error("Apps Script 未以 JSON 回應，請確認部署為「執行身分：我」「誰可以存取：任何人」。");
-        throw apiError("系統暫時無法連線，請稍後再試。", "DEPLOYMENT_ACCESS");
+        throw apiError("系統設定異常，請聯絡設計端。（代碼 DEPLOY-1）", "DEPLOYMENT_ACCESS");
       }
       var json;
       try { json = JSON.parse(trimmed); }
       catch (e) {
+        // DEPLOY-2 ＝ 網址指到舊的部署，或後端程式出錯丟回錯誤頁
         console.error("Apps Script 回應不是有效 JSON，可能不是最新的部署網址。");
-        throw apiError("系統回應異常，請稍後再試。", "BAD_RESPONSE");
+        throw apiError("系統設定異常，請聯絡設計端。（代碼 DEPLOY-2）", "BAD_RESPONSE");
       }
       if (!json || typeof json !== "object") throw apiError("系統回應異常，請稍後再試。", "BAD_RESPONSE");
-      if (!json.ok) throw apiError(json.error || "後端處理失敗。", json.code || "API_ERROR");
+      if (!json.ok) throw apiError(json.error || "系統處理失敗，請稍後再試。", json.code || "API_ERROR");
       return json;
     });
   }).catch(function (err) {
@@ -979,15 +991,18 @@ function makeOperationId() {
 function applyUser(data) {
   if (!data || !data.email) throw new Error("帳戶資料未完整回傳，請重新登入。");
   rememberInitialsOverride(data);
+  // 這份資料有沒有帶代號狀態：沒有就代表還在跟伺服器對，先不要顯示任何猜測
+  var known = Object.prototype.hasOwnProperty.call(data, "initialsLocked");
   var locked = data.initialsLocked === true && !!data.initials;
   currentUser = {
     name: data.name || data.email,
     email: data.email,
     isAdmin: data.isAdmin === true,
     initials: locked ? data.initials : normalizeInitials(data.initialsSuggestion || ""),
-    initialsLocked: locked
+    initialsLocked: locked,
+    initialsKnown: known
   };
-  if (!locked && !state.initials) state.initials = currentUser.initials;
+  if (known && !locked && !state.initials) state.initials = currentUser.initials;
   $("dr-username").textContent = currentUser.name;
   renderApplicant();
   updateDeptHint();
@@ -1014,8 +1029,22 @@ function renderApplicant() {
   var text = $("f-applicant-text");
   var hint = $("f-applicant-hint");
   var field = $("f-applicant-field");
+  var spin = $("f-applicant-spinner");
+  var avatar = $("dr-avatar");
   if (!input || !text) return;
   var locked = !!currentUser.initialsLocked;
+
+  // 還在跟伺服器確認代號時只轉圈，不顯示點點、也不讓人輸入
+  if (!currentUser.initialsKnown) {
+    input.hidden = true;
+    spin.hidden = false;
+    text.textContent = "<" + currentUser.email + ">";
+    hint.textContent = "正在取得帳戶資料…";
+    avatar.replaceChildren(el("span", "avatar-spinner"));
+    field.classList.remove("err");
+    return;
+  }
+  spin.hidden = true;
 
   input.hidden = locked;
   if (locked) {
@@ -1026,7 +1055,7 @@ function renderApplicant() {
     text.textContent = "<" + currentUser.email + ">";
     hint.textContent = "代號為 1 到 3 個英文字母，送出後固定不再更改。";
   }
-  $("dr-avatar").textContent = currentInitials() || "・";
+  avatar.textContent = currentInitials() || "・";
   field.classList.toggle("err",
     !locked && initialsTouched && !/^[A-Z]{1,3}$/.test(currentInitials()));
 }
@@ -1059,6 +1088,7 @@ function enterApp(data) {
   });
   gate.hidden = true;
   app.hidden = false;
+  initTabGuard();
   offerDraft();
   render();
   histReset();
@@ -1186,6 +1216,8 @@ function makeField(kind, label, required, value, onChange, optText) {
     var dateInput = document.createElement("input");
     dateInput.type = "date";
     dateInput.value = value || "";
+    // 標題是另外畫的 label，沒有綁定關係，螢幕閱讀器要靠這裡才念得出欄位名稱
+    dateInput.setAttribute("aria-label", label);
     // 交付日不能往回填：日曆直接鎖住今天以前，鍵盤硬打則在這裡標紅
     dateInput.min = todayIsoLocal();
     var pastHint = el("div", "hint danger", "交付日不能早於今天。");
@@ -1207,12 +1239,14 @@ function makeField(kind, label, required, value, onChange, optText) {
     numInput.type = "number";
     numInput.min = "0";
     numInput.value = value || "";
+    numInput.setAttribute("aria-label", label);
     numInput.addEventListener("input", function () { onChange(numInput.value); });
     f.appendChild(numInput);
     return f;
   }
 
   var entry = textEntry(value, onChange, kind === "textarea" ? "" : "h1");
+  entry.setAttribute("aria-label", label);
   if (kind === "url") entry.inputMode = "url";
   f.appendChild(entry);
   return f;
@@ -1340,6 +1374,7 @@ function buildItemBody(item) {
   var typeField = el("div", "field");
   typeField.appendChild(labelHtml("需求類型", true));
   var sel = document.createElement("select");
+  sel.setAttribute("aria-label", "需求類型");
   sel.appendChild(el("option", "", "請選擇"));
   TYPES.forEach(function (t) {
     var o = el("option", "", t.label);
@@ -1413,7 +1448,7 @@ function buildItemBody(item) {
   if (t.sizes && t.sizes.length) frag.appendChild(buildSizeSection(item, t));
 
   if (itemHasPrint(item)) {
-    frag.appendChild(makeField("number", "數量", false, item.printQty, function (v) {
+    frag.appendChild(makeField("number", "數量", true, item.printQty, function (v) {
       item.printQty = v; updateLiveBits(); saveDraft();
     }));
   }
@@ -1478,7 +1513,8 @@ function buildItemBody(item) {
 
 function buildSizeSection(item, type) {
   var wrap = el("div", "field");
-  wrap.appendChild(labelHtml("尺寸", false, "選填，除印刷品外若留白將由設計端評估。"));
+  // 尺寸一律選填：申請人也可能是希望由設計端決定版位
+  wrap.appendChild(labelHtml("尺寸", false, "選填，留白將由設計端評估。"));
   var options = sizeOptionsFor(item, type);
 
   item.sizeRows.forEach(function (row) {
@@ -1819,6 +1855,12 @@ function refreshStats() {
 
   // 提示文字統計列已經用紅字寫了，這裡不重複一次
   $("f-schedulenote-row").hidden = !tight;
+  // 來不及的案件要跟主管排程，時程備註是排程的依據，這時候是必填
+  var optTag = $("f-schedulenote-opt");
+  if (optTag) {
+    optTag.textContent = tight ? "必填" : "選填";
+    optTag.className = tight ? "req-tag" : "opt";
+  }
 
   checkDeliveryWarn();
   checkDeliveryPast();
@@ -2122,15 +2164,43 @@ document.addEventListener("keydown", function (e) {
    ============================================================ */
 
 var DRAFT_KEY = "dr_draft_v3";
-var DRAFT_MAX_AGE = 24 * 60 * 60 * 1000;
+var DRAFT_MAX_AGE = 3 * 24 * 60 * 60 * 1000;
 var draftTimer = null;
 var draftOffered = false;   // 草稿列還在等使用者決定，這段期間不可覆寫既有草稿
 
+/* 只要動過任何一個欄位就開始存草稿。
+   以前要有需求名稱或項目名稱才存，結果「先寫了一大段需求背景、名稱還沒想好」完全沒有保護。 */
 function draftEligible() {
-  return !submitted && !draftOffered &&
-    (String(state.name || "").trim() || state.items.some(function (it) {
-      return String(it.name || "").trim() || it.typeId;
-    }));
+  if (submitted || draftOffered) return false;
+  return stateHasContent(state);
+}
+
+function stateHasContent(s) {
+  if (!s) return false;
+  var plain = ["dept", "name", "purpose", "message", "audience", "note1", "note2",
+    "deliveryDate", "scheduleNote", "refNote", "meetingDate"];
+  for (var i = 0; i < plain.length; i++) if (String(s[plain[i]] || "").trim()) return true;
+  if ((s.refLinks || []).some(function (l) {
+    return String((l && l.url) || "").trim() || String((l && l.note) || "").trim();
+  })) return true;
+  return (s.items || []).some(function (it) {
+    if (!it) return false;
+    if (String(it.name || "").trim() || it.typeId || (it.output || []).length) return true;
+    if (String(it.printQty || "").trim() || String(it.exposure || "").trim()) return true;
+    if (String(it.channel || "").trim() || String(it.useDate || "").trim()) return true;
+    if (String(it.cta || "").trim() || String(it.note || "").trim() || String(it.page || "").trim()) return true;
+    var copy = it.copy || {};
+    if (["head", "sub", "small", "other"].some(function (k) { return String(copy[k] || "").trim(); })) return true;
+    if ((it.sizeRows || []).some(function (r) {
+      return String((r && r.purpose) || "").trim() || String((r && r.customText) || "").trim() ||
+        String((r && r.px) || "").trim();
+    })) return true;
+    return (it.blocks || []).some(function (b) {
+      return ["head", "sub", "small", "other", "imgNote", "link"].some(function (k) {
+        return String((b && b[k]) || "").trim();
+      });
+    });
+  });
 }
 
 function persistDraftNow() {
@@ -2144,7 +2214,18 @@ function persistDraftNow() {
   } catch (e) { }
 }
 
+/* 草稿列還開著時使用者就直接動手填：視為不要舊草稿。
+   提示列收起來，接下來打的內容照常存成草稿，不然這段期間打的字完全沒有保護。 */
+function takeOverDraftOffer() {
+  if (!draftOffered) return;
+  draftOffered = false;
+  pendingOperationId = "";
+  var bar = $("dr-draftbar");
+  if (bar) bar.hidden = true;
+}
+
 function saveDraft() {
+  takeOverDraftOffer();
   histTouch();
   clearTimeout(draftTimer);
   draftTimer = setTimeout(persistDraftNow, 250);
@@ -2200,6 +2281,73 @@ function offerDraft() {
 }
 
 function flushDraft() { if (draftEligible()) persistDraftNow(); }
+
+/* ============================================================
+   同一台電腦開兩張申請表的防呆
+   草稿只有一份，兩個分頁同時填會互相覆蓋，
+   所以同一時間只讓一個分頁能編輯，另一頁改成滿版提示。
+   ============================================================ */
+var TAB_KEY = "dr_form_tab_v1";
+var TAB_ID = "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+var TAB_BEAT = 3000;      // 每三秒告訴其他分頁「我還在」
+var TAB_STALE = 9000;     // 超過九秒沒動靜就當成那個分頁已經關了
+var tabTimer = null;
+var tabOwner = false;
+
+function tabRead() {
+  try {
+    var p = JSON.parse(localStorage.getItem(TAB_KEY) || "null");
+    return (p && p.id && p.at) ? p : null;
+  } catch (e) { return null; }
+}
+
+function tabWrite() {
+  try { localStorage.setItem(TAB_KEY, JSON.stringify({ id: TAB_ID, at: Date.now() })); } catch (e) { }
+}
+
+function tabOtherAlive(rec) {
+  return !!rec && rec.id !== TAB_ID && Date.now() - rec.at < TAB_STALE;
+}
+
+function showTabGate() {
+  // 登入畫面優先：逾時時先把人帶回登入，重新進來之後這個提示才接著出現
+  if (!gate.hidden) { $("dr-tabgate").hidden = true; return; }
+  app.hidden = true;
+  $("dr-tabgate").hidden = false;
+}
+
+function hideTabGate() {
+  $("dr-tabgate").hidden = true;
+  if (gate.hidden) app.hidden = false;
+}
+
+function tabClaim() {
+  tabOwner = true;
+  tabWrite();
+  hideTabGate();
+}
+
+function tabBeat() {
+  var rec = tabRead();
+  if (tabOwner) { tabWrite(); return; }
+  // 先開的那一頁關掉後，這一頁自己恢復，不用使用者做任何事
+  if (!tabOtherAlive(rec)) tabClaim();
+  else if ($("dr-tabgate").hidden) showTabGate();
+}
+
+function initTabGuard() {
+  if (tabTimer) return;
+  if (tabOtherAlive(tabRead())) showTabGate();
+  else tabClaim();
+  tabTimer = setInterval(tabBeat, TAB_BEAT);
+  // 正常關閉分頁時把佔用放掉，另一頁不用等九秒
+  window.addEventListener("pagehide", function () {
+    var cur = tabRead();
+    if (tabOwner && cur && cur.id === TAB_ID) {
+      try { localStorage.removeItem(TAB_KEY); } catch (e) { }
+    }
+  });
+}
 document.addEventListener("visibilitychange", function () { if (document.hidden) flushDraft(); }, { passive: true });
 window.addEventListener("pagehide", flushDraft, { passive: true });
 window.addEventListener("beforeunload", flushDraft);
@@ -2218,7 +2366,9 @@ function deptValue() {
 
 function collectErrors() {
   var errors = [];
-  if (!currentUser.initialsLocked && !/^[A-Z]{1,3}$/.test(currentInitials())) {
+  if (!currentUser.initialsKnown) {
+    errors.push({ msg: "正在取得帳戶資料，請稍候再送出", focus: null, field: "f-applicant-field" });
+  } else if (!currentUser.initialsLocked && !/^[A-Z]{1,3}$/.test(currentInitials())) {
     initialsTouched = true;
     errors.push({ msg: "申請人代號未設定（1 到 3 個英文字母）", focus: "f-initials", field: "f-applicant-field" });
   }
@@ -2236,7 +2386,26 @@ function collectErrors() {
     var t = typeOf(item.typeId);
     if (t.mode === "notice" || t.mode === "structure") return;
     if (!t.forcePrint && !item.output.length) errors.push({ msg: label + "：輸出形式未選擇", focus: null });
+
+    // 自訂版位選了卻沒寫名稱，等於沒有指定
+    (item.sizeRows || []).forEach(function (row, rowIdx) {
+      if (row.purpose === "__custom__" && !String(row.customText || "").trim()) {
+        errors.push({ msg: label + "：第 " + (rowIdx + 1) + " 個自訂版位未命名", focus: null });
+      }
+    });
+
+    // 印刷品沒有數量就無法估價下單；尺寸可以交給設計端決定，不強制
+    if (itemHasPrint(item)) {
+      if (!String(item.printQty || "").trim() || Number(item.printQty) <= 0) {
+        errors.push({ msg: label + "：印刷品未填數量", focus: null });
+      }
+    }
   });
+
+  var sched = scheduleState();
+  if ((sched.urgent || sched.itemUrgent) && !String(state.scheduleNote || "").trim()) {
+    errors.push({ msg: "時程備註未填寫（交付日工作天數不足，請說明時程安排）", focus: "f-schedulenote", field: "f-schedulenote-row" });
+  }
 
   // 總交付日在畫面上屬於第 5 區「時程」，排在設計項目之後才與閱讀順序一致
   if (!state.deliveryDate) errors.push({ msg: "總交付日未填寫", focus: "f-deliverydate", field: "f-deliverydate-field" });
@@ -2305,7 +2474,7 @@ function renderPreview() {
     var dot = null;
     if (isItemUrgent(item)) {
       dot = el("span", "urgent-dot");
-      dot.title = "這一項的交付日比總交付日早，時間不足";
+      dot.title = "這一項的交付日比總交付日早，工作天數不足";
       dot.setAttribute("aria-label", "急件");
     }
     p.appendChild(kvNode("項目 " + (idx + 1), line, dot));
@@ -2438,13 +2607,21 @@ $("dr-submit-btn").addEventListener("click", async function () {
 
     $("dr-success-code").textContent = data.requestId || "";
     $("dr-success-msg").textContent = data.mailOk === false
-      ? "申請已建立，但通知信寄送失敗：" + (data.mailError || "未知原因") + "。可於總覽重新發送。"
+      ? (data.mailQueued
+        // 額度滿不是失敗，案件已經成立，信會自動補寄，別讓人以為要重送
+        ? "申請已建立。系統寄信額度已滿，通知信已排程，額度恢復後將優先寄出。"
+        : "申請已建立，但通知信寄送失敗：" + (data.mailError || "未知原因") + "。可於總覽重新發送。")
       : "通知信與 Word 附件已寄送。";
 
     $("dr-confirm").hidden = true;
     $("dr-statsbar").hidden = true;
     $("dr-success").hidden = false;
     window.scrollTo({ top: 0, behavior: "smooth" });
+
+    // 在背景催一下雲端文件，不等每分鐘的排程；失敗也不影響案件，排程會接手
+    if (data.requestId) {
+      apiPost("processDocNow", { requestId: data.requestId }, { timeout: 30000 }).catch(function () { });
+    }
   } catch (error) {
     console.error(error);
     submitInFlight = false;
