@@ -245,6 +245,10 @@
    設定
    ============================================================ */
 
+/* 全站的「今天」以伺服器為準；後端回應一到就會被更新（共用區塊 B）。
+   還沒拿到之前先用本機時間頂著，拿到之後所有日期判斷都改看這一份。 */
+var serverNow = new Date();
+
 var API_URL = "https://script.google.com/macros/s/AKfycbyZgxQNyQuQCX_Vmp5tlrgQ6p_-pEugmehm9StOCbp3IC32WeDjYoST1iqiCuM7VZDN/exec";
 var GOOGLE_CLIENT_ID = "610204517549-khmef2c4ejmeg0jrceg53385ptu2ns03.apps.googleusercontent.com";
 var ALLOWED_DOMAIN = "harfunco.com";
@@ -361,6 +365,11 @@ function fetchJson(body, timeoutMs) {
       }
       if (!json || typeof json !== "object") throw apiError("系統回應異常，請稍後再試。", "BAD_RESPONSE");
       if (!json.ok) throw apiError(json.error || "系統處理失敗，請稍後再試。", json.code || "API_ERROR");
+      // 後端有附時間就更新：全站的「今天」以伺服器為準，不看這台電腦的時鐘
+      if (json.serverNow) {
+        var t = new Date(json.serverNow);
+        if (!isNaN(t.getTime())) serverNow = t;
+      }
       return json;
     });
   }).catch(function (err) {
@@ -1076,6 +1085,20 @@ function updateDeptHint() {
     : "案件編號會帶入部門，例如 BAUI-" + code + "-0001。";
 }
 
+/**
+ * 畫面可能先用本機時間畫好（從記住的登入直接進來），
+ * 等後端回應帶著伺服器時間到了，再把日期欄位的下限與提示重算一次。
+ */
+function refreshDateBounds() {
+  var min = todayIsoLocal();
+  var nodes = document.querySelectorAll('#dr-app input[type="date"]');
+  for (var i = 0; i < nodes.length; i++) {
+    if (nodes[i].id !== "f-meetingdate") nodes[i].min = min;
+  }
+  checkDeliveryPast();
+  refreshStats();
+}
+
 function enterApp(data) {
   // 上一次的登入訊息（例如「已在其他分頁登出。」）不要留到下一次
   setLoginStatus("", false);
@@ -1130,6 +1153,8 @@ function startAuth() {
     enterApp(AUTH.user());
     apiPost("whoAmI", {}, { timeout: 10000 }).then(function (data) {
       if (data.user) applyUser(data.user);
+      // 畫面是先用本機時間畫好的，伺服器時間一到就把日期的下限與提示重算
+      refreshDateBounds();
     }).catch(function (err) {
       if (err && err.code === "AUTH_REQUIRED") showGate("登入已逾時，請重新登入。");
     });
@@ -1265,7 +1290,7 @@ function isItemUrgent(item) {
   if (!d) return false;
   var main = parseDate(state.deliveryDate);
   if (main && d >= main) return false;
-  var today = new Date();
+  var today = new Date(serverNow.getTime());
   today.setHours(0, 0, 0, 0);
   var wd = workingDaysBetween(today, d);
   return wd !== null && wd < URGENT_WORKING_DAYS;
@@ -1742,16 +1767,17 @@ function itemUnitCount(item) {
 }
 
 /** 今天（本機時區）的 yyyy-mm-dd，給日期欄位當下限用。 */
+/** 今天（伺服器時間）。電腦時鐘設錯時，日曆的下限與紅字提示才不會跟著錯。 */
 function todayIsoLocal() {
-  var d = new Date();
+  var d = new Date(serverNow.getTime());
   return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
 }
 
-/** 交付日是否已經過了；今天不算過去。 */
+/** 交付日是否已經過了；今天不算過去。同樣以伺服器時間為準。 */
 function isPastDate(value) {
   var d = parseDate(value);
   if (!d) return false;
-  var today = new Date();
+  var today = new Date(serverNow.getTime());
   today.setHours(0, 0, 0, 0);
   return d < today;
 }
@@ -1818,7 +1844,7 @@ function fillItemDates() {
  *   note       統計列的提示；只要有任何一邊來不及就改成要跟主管排程。
  */
 function scheduleState() {
-  var today = new Date();
+  var today = new Date(serverNow.getTime());
   today.setHours(0, 0, 0, 0);
 
   var main = parseDate(state.deliveryDate);

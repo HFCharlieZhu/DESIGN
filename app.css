@@ -2372,3 +2372,144 @@ html {
     transition-duration: .01ms !important;
   }
 }
+
+/* ============================================================
+   狀態泡泡（總覽右下角）
+   這一整塊是獨立功能，連同 list.html 裡同名的兩段一起移除即可，
+   不會影響其他任何樣式。
+   ============================================================ */
+
+#dr-app .dock {
+  position: fixed;
+  right: calc(var(--space-5) + env(safe-area-inset-right, 0px));
+  bottom: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-3);
+  z-index: 45;
+}
+#dr-app .dock[hidden] { display: none; }
+
+#dr-app .bubble {
+  width: var(--icon-btn);
+  height: var(--icon-btn);
+  padding: 0;
+  border: 1.2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--veil);
+  -webkit-backdrop-filter: var(--veil-blur);
+  backdrop-filter: var(--veil-blur);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: border-color var(--ease);
+}
+#dr-app .bubble svg { display: block; width: .586em; height: .586em; font-size: 15px; }
+#dr-app .bubble svg path { fill: none; stroke: currentColor; stroke-width: 14.6; }
+/* 展開時那一豎往右轉 90 度與橫的重合＝減號；與全站收合箭頭同一組轉場值 */
+#dr-app .bubble .bar-v { transform-box: fill-box; transform-origin: center; transition: transform var(--ease); }
+#dr-app .bubble[aria-expanded="true"] .bar-v { transform: rotate(90deg); }
+#dr-app .bubble[aria-expanded="true"] { border-color: var(--brand); }
+
+@media (hover: hover) and (pointer: fine) {
+  #dr-app .bubble:hover { border-color: var(--brand); }
+}
+
+#dr-app .pop {
+  /* 右邊黏著泡泡，左邊用轉場跟上，視窗縮放時不會一格一格跳 */
+  width: min(300px, calc(100dvw - var(--space-5) - var(--space-4)));
+  max-height: calc(100dvh - 140px);
+  display: flex;
+  flex-direction: column;
+  border: 1.2px solid var(--line);
+  border-radius: var(--r);
+  background: var(--veil);
+  -webkit-backdrop-filter: var(--veil-blur);
+  backdrop-filter: var(--veil-blur);
+  padding: var(--space-4);
+  transform-origin: 100% 100%;
+  transition: width .24s cubic-bezier(.2, .9, .25, 1), max-height .24s cubic-bezier(.2, .9, .25, 1);
+}
+#dr-app .pop[hidden] { display: none; }
+/* will-change 只掛在動畫期間：長期掛著會讓整張卡停在合成圖層，字會糊 */
+#dr-app .pop.is-in { animation: dr-genie-in .38s cubic-bezier(.2, .9, .25, 1) both; will-change: transform, opacity; }
+#dr-app .pop.is-out { animation: dr-genie-out .24s cubic-bezier(.4, 0, .9, .3) both; will-change: transform, opacity; }
+
+@keyframes dr-genie-in {
+  0%   { transform: translate(14px, 46px) scale(.10, .04); opacity: 0; border-radius: 40px; }
+  55%  { transform: translate(0, 0) scale(1.015, 1.03); opacity: 1; border-radius: 10px; }
+  100% { transform: none; opacity: 1; border-radius: var(--r); }
+}
+@keyframes dr-genie-out {
+  0%   { transform: none; opacity: 1; border-radius: var(--r); }
+  100% { transform: translate(14px, 46px) scale(.10, .04); opacity: 0; border-radius: 40px; }
+}
+
+/* 標題列：分隔線拉到卡片邊緣，文字與線保持 space-3 */
+#dr-app .pop-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 calc(var(--space-4) * -1) var(--space-3);
+  padding: 0 var(--space-4) var(--space-3);
+  border-bottom: 1.2px solid var(--hair);
+}
+#dr-app .pop-head h2 { margin: 0; font-size: var(--fs-heading); font-weight: var(--fw-bold); line-height: 1.4; }
+#dr-app .pop-head .sub { font-size: var(--fs-meta); color: var(--muted); line-height: 1.6; }
+
+#dr-app .jobs { display: flex; flex-direction: column; gap: var(--space-2); overflow-y: auto; min-height: 0; }
+#dr-app .job {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-2) var(--space-3);
+  align-items: baseline;
+}
+#dr-app .job .id { font-size: var(--fs-meta); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+#dr-app .job .nm { font-size: var(--fs-body); min-width: 0; }
+#dr-app .job.more { font-size: var(--fs-meta); color: var(--muted); display: block; }
+
+#dr-app .pop-foot {
+  margin: var(--space-3) calc(var(--space-4) * -1) 0;
+  padding: var(--space-3) var(--space-4) 0;
+  border-top: 1.2px solid var(--hair);
+  font-size: var(--fs-meta);
+  color: var(--body);
+  font-variant-numeric: tabular-nums;
+}
+/* 逾期沿用系統既有的逾期色（徽章用的 --brand-dk），紅色是留給錯誤／退回／取消的 */
+#dr-app .pop-foot .late { color: var(--brand-dk); }
+
+/* 進行中的指示：五乘五的點陣，每顆各自從底色亮到深灰再暗回去，
+   延遲照離中心的距離算再加固定偏移，所以波是散的不是同心圓。 */
+#dr-app .ind { display: flex; align-items: center; justify-content: flex-end; min-height: 18px; }
+#dr-app .grid { display: grid; grid-template-columns: repeat(5, 2.9px); gap: 2.9px; }
+#dr-app .grid i {
+  display: block;
+  width: 2.9px;
+  height: 2.9px;
+  border-radius: 50%;
+  background: var(--hair);
+  animation: dr-dotwave 2.4s ease-in-out infinite;
+}
+@keyframes dr-dotwave {
+  0%, 100% { background: var(--hair); }
+  16% { background: var(--body); }
+  42% { background: var(--hair); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #dr-app .grid i { animation: none; background: var(--muted); }
+  #dr-app .pop.is-in, #dr-app .pop.is-out { animation-duration: .01s; }
+  #dr-app .bubble, #dr-app .bubble .bar-v { transition: none; }
+}
+/* ===== 狀態泡泡樣式結束 ===== */
+
+/* 泡泡浮在內容上面，所以底部要留出它的高度，
+   否則捲到最底時會蓋住分頁按鈕與過往資料的收合列。 */
+#dr-app.dock-on .wrap { padding-bottom: calc(var(--icon-btn) + var(--space-5) * 2); }
+
+/* 手機上沒有 hover，改用按下時的回饋，與其他按鈕同一套 */
+#dr-app .bubble.is-touch-hover { border-color: var(--brand); }
