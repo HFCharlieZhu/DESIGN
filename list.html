@@ -2088,14 +2088,88 @@ function bubbleStats() {
 }
 
 var BUBBLE_MAX_ROWS = 8;
-/* 視窗小到這個程度以下，卡片就擠不下了。與其讓它破版，
-   不如整個收起來——泡泡也一起藏，視窗變回來再出現。
-   數字與 app.css 的版面下限 --min-w 一致。 */
+/* 視窗窄到這個寬度以下就整組收起來。與 app.css 的版面下限 --min-w 一致。 */
 var BUBBLE_MIN_W = 320;
-var BUBBLE_MIN_H = 320;
+/* 卡片能用的最低高度（標題列＋一兩列案件＋底部那行）。
+   再矮就只剩一條縫，與其繼續壓扁不如整組漸出。 */
+var BUBBLE_MIN_POP_H = 180;
+/* 漸出要等透明度跑完才真的收起來，數字與 app.css 的 .dock 轉場一致 */
+var BUBBLE_FADE_MS = 220;
+
+/**
+ * 把表頭量到的高度寫進 --topbar-h。
+ * 卡片的天花板是表頭最底，不是畫面頂端——.dock 的上緣就貼在這個高度上，
+ * 卡片是它裡面的彈性項目，所以不可能跑到表頭後面。
+ */
+function syncDockBounds() {
+  var bar = document.querySelector("#dr-app .topbar");
+  if (!bar) return 0;
+  var h = Math.round(bar.getBoundingClientRect().height);
+  if (h) app.style.setProperty("--topbar-h", h + "px");
+  return h;
+}
+
+/** 表頭最底到泡泡上緣之間，卡片還剩多少高度可以用 */
+function popRoom() {
+  var dock = $("dr-dock");
+  var bar = document.querySelector("#dr-app .topbar");
+  if (!dock) return 0;
+  var cs = getComputedStyle(dock);
+  var top = bar ? bar.getBoundingClientRect().height : 0;
+  var bottom = parseFloat(cs.bottom) || 0;                 // 已含 safe-area
+  var gap = parseFloat(cs.rowGap || cs.gap) || 0;
+  var bubbleH = parseFloat(getComputedStyle($("dr-bubble")).height) || 44;
+  return window.innerHeight - top - bottom - gap - bubbleH;
+}
 
 function bubbleFits() {
-  return window.innerWidth >= BUBBLE_MIN_W && window.innerHeight >= BUBBLE_MIN_H;
+  return window.innerWidth >= BUBBLE_MIN_W && popRoom() >= BUBBLE_MIN_POP_H;
+}
+
+/* 最近一次算出來有沒有進行中的案件。拖視窗時每一幀都重算一次太貴，
+   顯示／隱藏只看這個旗標，內容另外用去抖動的方式重畫。 */
+var bubbleHasWork = false;
+var dockAwayTimer = 0;
+
+/** 卡片直接回到「收起」狀態，不跑收合動畫。 */
+function resetBubbleState() {
+  var pop = $("dr-pop");
+  pop.classList.remove("is-in", "is-out");
+  pop.hidden = true;
+  $("dr-bubble").setAttribute("aria-expanded", "false");
+}
+
+/** 整組（泡泡＋卡片）一起漸出。卡片不另外放收合動畫，整塊一起淡掉。 */
+function dockAway() {
+  var dock = $("dr-dock");
+  if (dock.hidden || dock.classList.contains("is-away")) return;
+  dock.classList.add("is-away");
+  app.classList.remove("dock-on");
+  clearTimeout(dockAwayTimer);
+  // 淡完才把卡片歸零：中途歸零會看到它在淡出的過程中跳一下
+  dockAwayTimer = setTimeout(resetBubbleState, BUBBLE_FADE_MS + 40);
+}
+
+/** 整組漸入，而且一定是收起的狀態（不補放上一次的收合動畫）。 */
+function dockBack() {
+  var dock = $("dr-dock");
+  clearTimeout(dockAwayTimer);
+  if (!dock.hidden && !dock.classList.contains("is-away")) return;
+  resetBubbleState();
+  if (dock.hidden) {
+    dock.classList.add("is-away");       // 先維持透明，才有得漸入
+    dock.hidden = false;
+  }
+  void dock.offsetWidth;
+  dock.classList.remove("is-away");
+  app.classList.add("dock-on");          // 內容底部留出泡泡的高度
+}
+
+/** 只決定要不要出現，不重畫內容：拖視窗時每一幀都可以呼叫。 */
+function applyDockVisibility() {
+  if (!BUBBLE_ON) return;
+  if (bubbleHasWork && bubbleFits()) dockBack();
+  else dockAway();
 }
 
 function renderStatusBubble() {
@@ -2103,16 +2177,12 @@ function renderStatusBubble() {
   if (!dock) return;
   if (!BUBBLE_ON) { dock.hidden = true; app.classList.remove("dock-on"); return; }
 
+  syncDockBounds();
   var s = bubbleStats();
-  // 沒有進行中的案件，或視窗已經小到放不下，都整個收起來
-  if (!s.active.length || !bubbleFits()) {
-    if (!$("dr-pop").hidden) closeBubble();
-    dock.hidden = true;
-    app.classList.remove("dock-on");
-    return;
-  }
-  dock.hidden = false;
-  app.classList.add("dock-on");          // 內容底部留出泡泡的高度
+  bubbleHasWork = s.active.length > 0;
+  // 沒有進行中的案件，或卡片已經沒有高度可用，都整組漸出
+  if (!bubbleHasWork || !bubbleFits()) { dockAway(); return; }
+  dockBack();
 
   $("dr-pop-time").textContent = "更新於 " + pad2(nowOnServer().getHours()) + ":" + pad2(nowOnServer().getMinutes());
 
@@ -2177,14 +2247,22 @@ function closeBubble() {
 
 function initStatusBubble() {
   if (!BUBBLE_ON) { $("dr-dock").hidden = true; return; }
-  /* 視窗縮到放不下就自己收起來，放得下再回來 */
-  var resizeTimer = 0;
+  syncDockBounds();
+
+  /* 拖視窗時每一幀都重量一次天花板、每一幀都判斷要不要在
+     ——所以「頂到表頭就漸出」是當下發生的，不會等到放開滑鼠。
+     內容（案件列、更新時間）比較貴，停手之後才重畫。 */
+  var resizeTimer = 0, boundsFrame = 0;
   window.addEventListener("resize", function () {
+    if (!boundsFrame) {
+      boundsFrame = requestAnimationFrame(function () {
+        boundsFrame = 0;
+        syncDockBounds();
+        applyDockVisibility();
+      });
+    }
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(function () {
-      if (!bubbleFits() && !$("dr-pop").hidden) closeBubble();
-      renderStatusBubble();
-    }, 120);
+    resizeTimer = setTimeout(renderStatusBubble, 160);
   }, { passive: true });
   $("dr-bubble").addEventListener("click", function (e) {
     e.stopPropagation();

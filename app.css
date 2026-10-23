@@ -86,6 +86,8 @@ html {
   --icon-btn: 44px;
   --round-btn: 28px;
   --ease: .18s;
+  /* 泡泡套件的進出曲線：慢出快收，與精靈效果同一條 */
+  --ease-pop: cubic-bezier(.2, .9, .25, 1);
 
   /* 文字欄位高度：預設 1／2／6 行，一律可往下拖曳到三倍 */
   --entry-h1: 44px;
@@ -2375,23 +2377,39 @@ html {
 /* 貼齊畫面邊緣，間距用版面同一個 --gutter。
    視窗夠寬時它就在畫面右下角；視窗縮到內容欄撐滿整個畫面時，
    內容欄的邊界本來就落在同一個 --gutter 上，兩者自然重合。
-   整條是透明的，只有泡泡與卡片本身接得到點擊。 */
+   整條是透明的，只有泡泡與卡片本身接得到點擊。
+
+   上緣頂在表頭最底（--topbar-h 由 JS 量表頭得來）：卡片是這個盒子裡的彈性項目，
+   盒子有多高它最多就多高，所以「不會跑到表頭後面」是版面保證的，不是算出來的。 */
 #dr-app .dock {
   position: fixed;
+  top: var(--topbar-h, 56px);
   left: calc(var(--gutter) + env(safe-area-inset-left, 0px));
   right: calc(var(--gutter) + env(safe-area-inset-right, 0px));
   bottom: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  justify-content: flex-end;      /* 內容靠下，上面那段高度是留給卡片長高用的 */
   gap: var(--space-3);
   pointer-events: none;
   z-index: 45;
+  transition: opacity .22s var(--ease-pop), visibility 0s;
 }
 #dr-app .dock[hidden] { display: none; }
 #dr-app .dock > * { pointer-events: auto; }
 
+/* 空間不夠時整組一起漸出。用 visibility 不用 display：
+   版面還在，量得到還剩多少高度，視窗拉回來才知道可以回來了。 */
+#dr-app .dock.is-away {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .22s var(--ease-pop), visibility 0s .22s;
+}
+
 #dr-app .bubble {
+  flex: 0 0 auto;                 /* 泡泡永遠是圓的，壓扁的只會是卡片 */
   width: var(--icon-btn);
   height: var(--icon-btn);
   padding: 0;
@@ -2421,8 +2439,12 @@ html {
   /* 上限是內容欄的寬度：窄螢幕時左右各自貼齊格線，不會比版面還寬。
      右邊黏著泡泡，左邊用轉場跟上，縮放時不會一格一格跳。 */
   width: min(300px, 100%);
-  /* 視窗壓得很矮時也保留最低可用高度，不會縮到剩一條縫 */
-  max-height: max(180px, calc(100dvh - 140px));
+  /* 高度交給彈性盒：視窗夠高就是內容的高度，視窗變矮就跟著被壓，
+     但永遠壓在 .dock 這個盒子裡——盒子的上緣就是表頭最底。
+     min-height: 0 是讓它真的壓得下去，max-height 只是再保一道。 */
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
   border: 1.2px solid var(--line);
@@ -2432,7 +2454,7 @@ html {
   backdrop-filter: var(--veil-blur);
   padding: var(--space-4);
   transform-origin: 100% 100%;
-  transition: width .24s cubic-bezier(.2, .9, .25, 1), max-height .24s cubic-bezier(.2, .9, .25, 1);
+  transition: width .24s var(--ease-pop);
 }
 #dr-app .pop[hidden] { display: none; }
 /* will-change 只掛在動畫期間：長期掛著會讓整張卡停在合成圖層，字會糊 */
@@ -2505,7 +2527,8 @@ html {
 @media (prefers-reduced-motion: reduce) {
   #dr-app .grid i { animation: none; background: var(--muted); }
   #dr-app .pop.is-in, #dr-app .pop.is-out { animation-duration: .01s; }
-  #dr-app .bubble, #dr-app .bubble .bar-v { transition: none; }
+  #dr-app .bubble, #dr-app .bubble .bar-v, #dr-app .pop { transition: none; }
+  #dr-app .dock, #dr-app .dock.is-away { transition: none; }
 }
 /* ===== 狀態泡泡樣式結束 ===== */
 
