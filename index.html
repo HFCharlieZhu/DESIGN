@@ -245,10 +245,6 @@
    設定
    ============================================================ */
 
-/* 全站的「今天」以伺服器為準；後端回應一到就會被更新（共用區塊 B）。
-   還沒拿到之前先用本機時間頂著，拿到之後所有日期判斷都改看這一份。 */
-var serverNow = new Date();
-
 var API_URL = "https://script.google.com/macros/s/AKfycbyZgxQNyQuQCX_Vmp5tlrgQ6p_-pEugmehm9StOCbp3IC32WeDjYoST1iqiCuM7VZDN/exec";
 var GOOGLE_CLIENT_ID = "610204517549-khmef2c4ejmeg0jrceg53385ptu2ns03.apps.googleusercontent.com";
 var ALLOWED_DOMAIN = "harfunco.com";
@@ -325,6 +321,12 @@ var AUTH = (function () {
 var googleCredential = "";
 var lastApiAt = Date.now();   // 頁面剛載入就算一次往來，避免開場的心跳與第一次請求重複
 
+/* 伺服器與這台電腦的時鐘差幾毫秒。每一次後端回應都會重新校正，
+   之後用「本機時鐘＋這個差」推算現在——所以頁面開一整天也不會停在剛載入那一刻，
+   而電腦時間設錯多少，這個差就會抵銷多少。全站所有「今天」都走 nowOnServer()。 */
+var serverSkew = 0;
+function nowOnServer() { return new Date(Date.now() + serverSkew); }
+
 function apiError(message, code) {
   var err = new Error(message || "系統處理失敗，請稍後再試。");
   err.code = code || "API_ERROR";
@@ -365,10 +367,10 @@ function fetchJson(body, timeoutMs) {
       }
       if (!json || typeof json !== "object") throw apiError("系統回應異常，請稍後再試。", "BAD_RESPONSE");
       if (!json.ok) throw apiError(json.error || "系統處理失敗，請稍後再試。", json.code || "API_ERROR");
-      // 後端有附時間就更新：全站的「今天」以伺服器為準，不看這台電腦的時鐘
+      // 後端有附時間就校正時差：全站的「今天」以伺服器為準，不看這台電腦的時鐘
       if (json.serverNow) {
         var t = new Date(json.serverNow);
-        if (!isNaN(t.getTime())) serverNow = t;
+        if (!isNaN(t.getTime())) serverSkew = t.getTime() - Date.now();
       }
       return json;
     });
@@ -548,7 +550,7 @@ function refreshSession() {
   }).catch(function (err) {
     if (err && err.code === "AUTH_REQUIRED") {
       saveAllOpenDrafts();
-      showGate("登入已逾時，請重新登入。未儲存的編輯會在重新登入後回到原位。");
+      showGate("登入已逾時，請重新登入。未儲存的內容已保留，重新登入後可以繼續。");
     }
   });
 }
@@ -1290,7 +1292,7 @@ function isItemUrgent(item) {
   if (!d) return false;
   var main = parseDate(state.deliveryDate);
   if (main && d >= main) return false;
-  var today = new Date(serverNow.getTime());
+  var today = nowOnServer();
   today.setHours(0, 0, 0, 0);
   var wd = workingDaysBetween(today, d);
   return wd !== null && wd < URGENT_WORKING_DAYS;
@@ -1360,12 +1362,7 @@ function renderItemCard(item, idx) {
   badges.appendChild(buildBadges(item));
   head.appendChild(badges);
 
-  var caret = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  caret.setAttribute("class", "caret");
-  caret.setAttribute("viewBox", "0 0 11 7");
-  caret.setAttribute("aria-hidden", "true");
-  caret.innerHTML = '<path d="M1 1l4.5 4.5L10 1" stroke="#111" stroke-width="1.6" fill="none"/>';
-  head.appendChild(caret);
+  head.appendChild(caretIcon());
 
   function toggle() { item.collapsed = !item.collapsed; renderItem(item); }
   head.addEventListener("click", toggle);
@@ -1766,10 +1763,10 @@ function itemUnitCount(item) {
   return Math.max(1, item.sizeRows.length);
 }
 
-/** 今天（本機時區）的 yyyy-mm-dd，給日期欄位當下限用。 */
-/** 今天（伺服器時間）。電腦時鐘設錯時，日曆的下限與紅字提示才不會跟著錯。 */
+/** 今天（伺服器時間）的 yyyy-mm-dd，給日期欄位當下限用。
+    電腦時鐘設錯時，日曆的下限與紅字提示才不會跟著錯。 */
 function todayIsoLocal() {
-  var d = new Date(serverNow.getTime());
+  var d = nowOnServer();
   return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
 }
 
@@ -1777,7 +1774,7 @@ function todayIsoLocal() {
 function isPastDate(value) {
   var d = parseDate(value);
   if (!d) return false;
-  var today = new Date(serverNow.getTime());
+  var today = nowOnServer();
   today.setHours(0, 0, 0, 0);
   return d < today;
 }
@@ -1844,7 +1841,7 @@ function fillItemDates() {
  *   note       統計列的提示；只要有任何一邊來不及就改成要跟主管排程。
  */
 function scheduleState() {
-  var today = new Date(serverNow.getTime());
+  var today = nowOnServer();
   today.setHours(0, 0, 0, 0);
 
   var main = parseDate(state.deliveryDate);
@@ -1890,8 +1887,9 @@ function refreshStats() {
   // 來不及的案件要跟主管排程，時程備註是排程的依據，這時候是必填
   var optTag = $("f-schedulenote-opt");
   if (optTag) {
-    optTag.textContent = tight ? "必填" : "選填";
-    optTag.className = tight ? "req-tag" : "opt";
+    // 必填就用全站同一個紅星，不另外造一種樣式
+    optTag.textContent = tight ? "*" : "選填";
+    optTag.className = tight ? "req" : "opt";
   }
 
   checkDeliveryWarn();
@@ -2014,6 +2012,16 @@ function glyph(name) {
   return svg;
 }
 
+/** 下拉箭頭：全系統只有這一個畫法，顏色跟著所在位置的文字。 */
+function caretIcon() {
+  var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "caret");
+  svg.setAttribute("viewBox", "0 0 11 7");
+  svg.setAttribute("aria-hidden", "true");
+  svg.innerHTML = '<path d="M1 1l4.5 4.5L10 1" stroke="currentColor" stroke-width="1.6" fill="none"/>';
+  return svg;
+}
+
 /** 把按鈕裡的文字符號換成圖形。 */
 function glyphButton(cls, name, label) {
   var btn = el("button", cls, "");
@@ -2117,7 +2125,7 @@ function histApply(snapshot) {
   histShowChange(before, snapshot);
 }
 
-/** 捲到這一步改動的位置並閃一下，否則按了畫面沒動會以為沒生效。 */
+/** 捲到這一步改動的位置，否則按了畫面沒動會以為沒生效。 */
 function histShowChange(beforeJson, afterJson) {
   var a, b;
   try { a = JSON.parse(beforeJson); b = JSON.parse(afterJson); } catch (e) { return; }
@@ -2150,8 +2158,6 @@ function histShowChange(beforeJson, afterJson) {
   if (!target) return;
 
   var box = (target.closest && target.closest(".field")) || target;
-  box.classList.add("just-changed");
-  setTimeout(function () { box.classList.remove("just-changed"); }, 1200);
   try { box.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) { }
 }
 
@@ -2314,15 +2320,21 @@ function offerDraft() {
 
 function flushDraft() { if (draftEligible()) persistDraftNow(); }
 
+/* 共用區塊 C 的登入逾時處理會呼叫這個名字：兩頁同名，各自存自己的未儲存內容，
+   共用區塊才能逐字相同。 */
+function saveAllOpenDrafts() { flushDraft(); }
+
 /* ============================================================
    同一台電腦開兩張申請表的防呆
    草稿只有一份，兩個分頁同時填會互相覆蓋，
    所以同一時間只讓一個分頁能編輯，另一頁改成滿版提示。
    ============================================================ */
 var TAB_KEY = "dr_form_tab_v1";
+var TAB_PING_KEY = "dr_form_ping_v1";
 var TAB_ID = "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 var TAB_BEAT = 3000;      // 每三秒告訴其他分頁「我還在」
-var TAB_STALE = 9000;     // 超過九秒沒動靜就當成那個分頁已經關了
+var TAB_STALE = 9000;     // 超過九秒沒動靜就當成那個分頁已經關了（只是保險，平常不會用到）
+var TAB_ANSWER = 450;     // 點名之後等多久；沒人回應就直接接手
 var tabTimer = null;
 var tabOwner = false;
 
@@ -2357,6 +2369,29 @@ function tabClaim() {
   tabOwner = true;
   tabWrite();
   hideTabGate();
+  /* 兩個分頁同一瞬間都搶的話，稍後看看鍵上是不是自己，不是就讓出去 */
+  setTimeout(function () {
+    var rec = tabRead();
+    if (tabOwner && rec && rec.id !== TAB_ID) { tabOwner = false; showTabGate(); }
+  }, 200);
+}
+
+/**
+ * 點名：先前那個分頁可能是被直接關掉、當掉、或系統把它收走的，
+ * 這時鍵還留著但其實沒有人在。所以不要光看時間戳就擋人，
+ * 先喊一聲——真的還在的分頁會立刻回一個心跳；
+ * 等不到回應就表示那邊已經沒人了，直接接手。
+ */
+function tabChallenge() {
+  var before = tabRead();
+  try { localStorage.setItem(TAB_PING_KEY, String(Date.now())); } catch (e) { }
+  setTimeout(function () {
+    if (tabOwner) return;
+    var after = tabRead();
+    var answered = !!(after && before && after.id === before.id && after.at > before.at);
+    if (answered) showTabGate();        // 真的有人在，才擋
+    else tabClaim();
+  }, TAB_ANSWER);
 }
 
 function tabBeat() {
@@ -2369,9 +2404,13 @@ function tabBeat() {
 
 function initTabGuard() {
   if (tabTimer) { tabBeat(); return; }   // 重新登入後再判斷一次佔用狀況
-  if (tabOtherAlive(tabRead())) showTabGate();
+  if (tabOtherAlive(tabRead())) tabChallenge();   // 先點名，確定真的有人才擋
   else tabClaim();
   tabTimer = setInterval(tabBeat, TAB_BEAT);
+  /* 被別的分頁點名時立刻回一個心跳，讓對方知道這裡還有人 */
+  window.addEventListener("storage", function (e) {
+    if (e.key === TAB_PING_KEY && tabOwner) tabWrite();
+  });
   // 正常關閉分頁時把佔用放掉，另一頁不用等九秒
   window.addEventListener("pagehide", function () {
     var cur = tabRead();
@@ -2488,7 +2527,7 @@ function renderPreview() {
   p.appendChild(kvNode("部門", deptValue() || "無部門"));
   p.appendChild(kvNode("申請人", currentUser ? currentInitials() + "<" + currentUser.email + ">" : "—"));
   p.appendChild(kvNode("需求名稱", state.name || "—"));
-  p.appendChild(kvNode("目標對象", state.audience || "未選擇"));
+  p.appendChild(kvNode("目標對象", state.audience || "未填寫"));
   // 總交付日只看它自己：項目自己比較趕的話，紅點標在下面那一項
   p.appendChild(kvNode("總交付日", state.deliveryDate || "—",
     scheduleState().urgent ? el("span", "badge lv2 urgent", "急件") : null));
@@ -2501,7 +2540,7 @@ function renderPreview() {
     units += itemUnitCount(item);
     var line = (idx + 1) + ". " + (item.name || "未命名") + "　" + (t ? t.label : "—");
     if (t && !t.forcePrint && t.mode !== "notice" && t.mode !== "structure") {
-      line += "　" + (item.output.map(function (o) { return o === "print" ? "印刷" : "數位"; }).join("＋") || "未選擇");
+      line += "　" + (item.output.map(function (o) { return o === "print" ? "印刷" : "數位"; }).join("＋") || "未填寫");
     }
     var dot = null;
     if (isItemUrgent(item)) {
@@ -2650,7 +2689,7 @@ $("dr-submit-btn").addEventListener("click", async function () {
     $("dr-success").hidden = false;
     window.scrollTo({ top: 0, behavior: "smooth" });
 
-    // 在背景催一下雲端文件，不等每分鐘的排程；失敗也不影響案件，排程會接手
+    // 在背景催一下雲端文件，不等每小時的排程；失敗也不影響案件，排程會接手
     if (data.requestId) {
       apiPost("processDocNow", { requestId: data.requestId }, { timeout: 30000 }).catch(function () { });
     }
@@ -2662,7 +2701,7 @@ $("dr-submit-btn").addEventListener("click", async function () {
     persistDraftNow();
 
     if (error && error.code === "AUTH_REQUIRED") {
-      showGate("登入已逾時，請重新登入。已填內容保留為草稿。");
+      showGate("登入已逾時，請重新登入。未儲存的內容已保留，重新登入後可以繼續。");
       return;
     }
     errBox.textContent = "送出失敗：" + (error.message || String(error)) + " 已填內容保留為草稿。";
@@ -2691,7 +2730,7 @@ function initTitleReload() {
 }
 
 initTitleReload();
-initTouchFeedback(".btn-topbar,.btn-primary,.btn-submit,.btn-ghost,.draftbar button,input,textarea,select,.chip,.item-card,.block,.rm,.add-line,.del-line,.inline-clear,.block-order button,.custom-purpose");
+initTouchFeedback(".btn-topbar,.btn-primary,.btn-submit,.btn-ghost,.draftbar button,input,textarea,select,.chip,.item-card,.hist-btn,.block,.rm,.add-line,.del-line,.inline-clear,.block-order button,.custom-purpose");
 startHeartbeat();
 startAuth();
 

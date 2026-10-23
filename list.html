@@ -92,7 +92,7 @@
 
     <div class="summarybar" id="dr-summary"></div>
     <div class="groups cardhost" id="dr-groups"></div>
-    <div class="empty" id="dr-empty" hidden>無符合條件的申請單。</div>
+    <div class="empty" id="dr-empty" hidden>無符合條件的案件。</div>
 
     <div class="pager" id="dr-pager" hidden>
       <button class="pgbtn" id="dr-prev" type="button">上一頁</button>
@@ -106,7 +106,7 @@
         <span class="archive-title">過往資料</span>
         <span class="archive-count" id="dr-archive-count"></span>
         <svg class="caret" viewBox="0 0 11 7" aria-hidden="true">
-          <path d="M1 1l4.5 4.5L10 1" stroke="#111" stroke-width="1.6" fill="none"></path>
+          <path d="M1 1l4.5 4.5L10 1" stroke="currentColor" stroke-width="1.6" fill="none"></path>
         </svg>
       </button>
       <div class="archive-body cardhost" id="dr-archive-body" hidden></div>
@@ -334,56 +334,6 @@ function el(tag, cls, text) {
   return e;
 }
 
-/* ============================================================
-   共用區塊 I：介面符號（兩頁完全相同，請一起更新）
-   ------------------------------------------------------------
-   叉叉與上下箭頭原本是文字符號，會因為裝置字型不同而變形；
-   改成畫出來的圖形，所有裝置長得一樣。
-   箭頭的外框直接取自 Noto Sans 的 ↑／↓，形狀與原本一致。
-   ============================================================ */
-
-var GLYPHS = {
-  up: { box: "0 0 466 925", w: ".466em", h: ".925em",
-    d: "M199 154V925H267V154C306 205 369 271 431 316L466 256C378 189 290 89 233 0C176 89 88 189 0 256L35 316C97 271 160 205 199 154Z" },
-  down: { box: "0 0 466 925", w: ".466em", h: ".925em",
-    d: "M267 771V0H199V771C160 720 97 654 35 609L0 669C88 736 176 836 233 925C290 836 378 736 466 669L431 609C369 654 306 720 267 771Z" },
-  right: { box: "0 0 925 466", w: ".925em", h: ".466em",
-    d: "M771 199H0V267H771C720 306 654 369 609 431L669 466C736 378 836 290 925 233C836 176 736 88 669 0L609 35C654 97 720 160 771 199Z" },
-  x: { box: "0 0 100 100", w: ".586em", h: ".586em", stroke: 14.6,
-    d: "M6.1 6.1L93.9 93.9M93.9 6.1L6.1 93.9" }
-};
-
-function glyph(name) {
-  var g = GLYPHS[name];
-  var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("class", "gly");
-  svg.setAttribute("viewBox", g.box);
-  svg.setAttribute("aria-hidden", "true");
-  svg.style.width = g.w;
-  svg.style.height = g.h;
-  var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  path.setAttribute("d", g.d);
-  if (g.stroke) {
-    path.setAttribute("fill", "none");
-    path.setAttribute("stroke", "currentColor");
-    path.setAttribute("stroke-width", String(g.stroke));
-  } else {
-    path.setAttribute("fill", "currentColor");
-  }
-  svg.appendChild(path);
-  return svg;
-}
-
-/** 把按鈕裡的文字符號換成圖形。 */
-function glyphButton(cls, name, label) {
-  var btn = el("button", cls, "");
-  btn.type = "button";
-  btn.setAttribute("aria-label", label);
-  btn.appendChild(glyph(name));
-  return btn;
-}
-
-
 function setLoginStatus(text, isError) {
   loginStatus.className = "g-status" + (isError ? " is-error" : "");
   loginStatus.textContent = text || "";
@@ -502,7 +452,7 @@ function refreshSession() {
   }).catch(function (err) {
     if (err && err.code === "AUTH_REQUIRED") {
       saveAllOpenDrafts();
-      showGate("登入已逾時，請重新登入。未儲存的編輯會在重新登入後回到原位。");
+      showGate("登入已逾時，請重新登入。未儲存的內容已保留，重新登入後可以繼續。");
     }
   });
 }
@@ -515,6 +465,65 @@ function startHeartbeat() {
   }, { passive: true });
   window.addEventListener("pageshow", refreshSession, { passive: true });
   window.addEventListener("online", refreshSession, { passive: true });
+}
+
+/* ============================================================
+   共用區塊 I：介面符號（兩頁完全相同，請一起更新）
+   ------------------------------------------------------------
+   叉叉與上下箭頭原本是文字符號，會因為裝置字型不同而變形；
+   改成畫出來的圖形，所有裝置長得一樣。
+   箭頭的外框直接取自 Noto Sans 的 ↑／↓，形狀與原本一致。
+   ============================================================ */
+
+var GLYPHS = {
+  up: { box: "0 0 466 925", w: ".466em", h: ".925em",
+    d: "M199 154V925H267V154C306 205 369 271 431 316L466 256C378 189 290 89 233 0C176 89 88 189 0 256L35 316C97 271 160 205 199 154Z" },
+  down: { box: "0 0 466 925", w: ".466em", h: ".925em",
+    d: "M267 771V0H199V771C160 720 97 654 35 609L0 669C88 736 176 836 233 925C290 836 378 736 466 669L431 609C369 654 306 720 267 771Z" },
+  right: { box: "0 0 925 466", w: ".925em", h: ".466em",
+    d: "M771 199H0V267H771C720 306 654 369 609 431L669 466C736 378 836 290 925 233C836 176 736 88 669 0L609 35C654 97 720 160 771 199Z" },
+  x: { box: "0 0 100 100", w: ".586em", h: ".586em", stroke: 14.6,
+    d: "M6.1 6.1L93.9 93.9M93.9 6.1L6.1 93.9" }
+};
+
+function glyph(name) {
+  var g = GLYPHS[name];
+  var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "gly");
+  svg.setAttribute("viewBox", g.box);
+  svg.setAttribute("aria-hidden", "true");
+  svg.style.width = g.w;
+  svg.style.height = g.h;
+  var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", g.d);
+  if (g.stroke) {
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", "currentColor");
+    path.setAttribute("stroke-width", String(g.stroke));
+  } else {
+    path.setAttribute("fill", "currentColor");
+  }
+  svg.appendChild(path);
+  return svg;
+}
+
+/** 下拉箭頭：全系統只有這一個畫法，顏色跟著所在位置的文字。 */
+function caretIcon() {
+  var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "caret");
+  svg.setAttribute("viewBox", "0 0 11 7");
+  svg.setAttribute("aria-hidden", "true");
+  svg.innerHTML = '<path d="M1 1l4.5 4.5L10 1" stroke="currentColor" stroke-width="1.6" fill="none"/>';
+  return svg;
+}
+
+/** 把按鈕裡的文字符號換成圖形。 */
+function glyphButton(cls, name, label) {
+  var btn = el("button", cls, "");
+  btn.type = "button";
+  btn.setAttribute("aria-label", label);
+  btn.appendChild(glyph(name));
+  return btn;
 }
 
 /* ============================================================
@@ -1581,7 +1590,7 @@ function renderAll() {
   emptyEl.hidden = pageList.length > 0 || !!example;
   emptyEl.textContent = older.length
     ? "案件區沒有符合的案件，過往資料中有 " + older.length + " 筆。"
-    : "無符合條件的申請單。";
+    : "無符合條件的案件。";
 
   var byMonth = groupByMonth(pageList);
   byMonth.order.forEach(function (key) {
@@ -1660,12 +1669,7 @@ function archRow(cls, title, count, open, onToggle) {
   row.setAttribute("aria-expanded", open ? "true" : "false");
   row.appendChild(el("span", "arch-label", title));
   row.appendChild(el("span", "arch-count", count));
-  var caret = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  caret.setAttribute("class", "caret");
-  caret.setAttribute("viewBox", "0 0 11 7");
-  caret.setAttribute("aria-hidden", "true");
-  caret.innerHTML = '<path d="M1 1l4.5 4.5L10 1" stroke="#111" stroke-width="1.6" fill="none"/>';
-  row.appendChild(caret);
+  row.appendChild(caretIcon());
   row.addEventListener("click", onToggle);
   return row;
 }
@@ -1734,7 +1738,7 @@ function renderCard(rec) {
 
   var top = el("div", "card-top");
   top.appendChild(el("div", "idcode", rec.id || ""));
-  top.appendChild(el("div", "cname", (rec.data && rec.data.name) || "未命名"));
+  top.appendChild(el("div", "cname", (rec.data && rec.data.name) || "未命名需求"));
 
   var meta = el("div", "cmeta");
   meta.appendChild(el("span", "meta-dept",
@@ -1745,12 +1749,7 @@ function renderCard(rec) {
   top.appendChild(buildCardMarks(rec));
 
   if (!deleted) {
-    var caret = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    caret.setAttribute("class", "caret");
-    caret.setAttribute("viewBox", "0 0 11 7");
-    caret.setAttribute("aria-hidden", "true");
-    caret.innerHTML = '<path d="M1 1l4.5 4.5L10 1" stroke="#111" stroke-width="1.6" fill="none"/>';
-    top.appendChild(caret);
+    top.appendChild(caretIcon());
   }
   card.appendChild(top);
 
@@ -1778,8 +1777,10 @@ function renderCard(rec) {
     }).catch(function (err) {
       built = false;
       if (err && err.code === "AUTH_REQUIRED") {
-        detail.replaceChildren(el("div", "detail-loading", "登入已逾時，重新登入後可繼續。"));
-        showGate("登入已逾時，請重新登入。");
+        detail.replaceChildren(el("div", "detail-loading", "登入已逾時，重新登入後可以繼續。"));
+        // 其他展開中的案件可能有還沒儲存的編輯，跟另一條逾時路徑一樣先存起來
+        saveAllOpenDrafts();
+        showGate("登入已逾時，請重新登入。未儲存的內容已保留，重新登入後可以繼續。");
         return;
       }
       detail.replaceChildren(el("div", "detail-loading", "載入失敗：" + err.message));
@@ -2087,6 +2088,15 @@ function bubbleStats() {
 }
 
 var BUBBLE_MAX_ROWS = 8;
+/* 視窗小到這個程度以下，卡片就擠不下了。與其讓它破版，
+   不如整個收起來——泡泡也一起藏，視窗變回來再出現。
+   數字與 app.css 的版面下限 --min-w 一致。 */
+var BUBBLE_MIN_W = 320;
+var BUBBLE_MIN_H = 320;
+
+function bubbleFits() {
+  return window.innerWidth >= BUBBLE_MIN_W && window.innerHeight >= BUBBLE_MIN_H;
+}
 
 function renderStatusBubble() {
   var dock = $("dr-dock");
@@ -2094,8 +2104,8 @@ function renderStatusBubble() {
   if (!BUBBLE_ON) { dock.hidden = true; app.classList.remove("dock-on"); return; }
 
   var s = bubbleStats();
-  // 沒有進行中的案件就整個收起來，不留一顆空泡泡讓人點開看空的
-  if (!s.active.length) {
+  // 沒有進行中的案件，或視窗已經小到放不下，都整個收起來
+  if (!s.active.length || !bubbleFits()) {
     if (!$("dr-pop").hidden) closeBubble();
     dock.hidden = true;
     app.classList.remove("dock-on");
@@ -2167,6 +2177,15 @@ function closeBubble() {
 
 function initStatusBubble() {
   if (!BUBBLE_ON) { $("dr-dock").hidden = true; return; }
+  /* 視窗縮到放不下就自己收起來，放得下再回來 */
+  var resizeTimer = 0;
+  window.addEventListener("resize", function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      if (!bubbleFits() && !$("dr-pop").hidden) closeBubble();
+      renderStatusBubble();
+    }, 120);
+  }, { passive: true });
   $("dr-bubble").addEventListener("click", function (e) {
     e.stopPropagation();
     $("dr-pop").hidden ? openBubble() : closeBubble();
@@ -2200,15 +2219,6 @@ function textEntry(value, onChange, cls) {
   input.value = value || "";
   input.addEventListener("input", function () { onChange(input.value); });
   return input;
-}
-
-function caretIcon() {
-  var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("class", "caret");
-  svg.setAttribute("viewBox", "0 0 11 7");
-  svg.setAttribute("aria-hidden", "true");
-  svg.innerHTML = '<path d="M1 1l4.5 4.5L10 1" stroke="currentColor" stroke-width="1.6" fill="none"/>';
-  return svg;
 }
 
 /* 目前這一輪被使用者打開過的收合欄位，key 開頭一律是案件編號，重畫該案件時清掉。 */
@@ -2511,12 +2521,12 @@ function buildDetail(record, container, serverBase, keepHistory) {
   }
 
   /**
-   * 儲存後在背景催一下雲端文件，讓它幾秒內就是最新的，而不是等每分鐘的排程。
-   * 不擋操作、不報錯：失敗的話排隊標記還在，排程照樣會處理。
+   * 儲存後在背景催一下雲端文件。
+   * 雲端那份是封存用的，沒有人在等它，所以成功或失敗都不告訴使用者：
+   * 失敗的話排隊標記還在，每小時的排程會接手。
    */
   function nudgeDoc(requestId) {
     apiPost("processDocNow", { requestId: requestId }, { timeout: 30000 })
-      .then(function (res) { if (res && res.done) flash("Google 文件已更新。"); })
       .catch(function () { /* 交回排程，不打擾使用者 */ });
   }
 
@@ -2537,7 +2547,7 @@ function buildDetail(record, container, serverBase, keepHistory) {
     var oldMarks = top.querySelector(".card-marks");
     if (oldMarks) top.replaceChild(buildCardMarks(work), oldMarks);
     var cname = top.querySelector(".cname");
-    if (cname) cname.textContent = work.data.name || "未命名";
+    if (cname) cname.textContent = work.data.name || "未命名需求";
   }
 
   function applyMutationResult(result) {
@@ -2633,7 +2643,7 @@ function buildDetail(record, container, serverBase, keepHistory) {
   function handleAuthError(err) {
     if (err && err.code === "AUTH_REQUIRED") {
       persist();
-      showGate("登入已逾時，請重新登入。未儲存的編輯會在重新登入後回到原位。");
+      showGate("登入已逾時，請重新登入。未儲存的內容已保留，重新登入後可以繼續。");
       return true;
     }
     return false;
@@ -2680,7 +2690,7 @@ function buildDetail(record, container, serverBase, keepHistory) {
   var nameField = makeField("text", "需求名稱", true, work.data.name, function (v) {
     work.data.name = v;
     var cname = container.closest(".card") && container.closest(".card").querySelector(".cname");
-    if (cname) cname.textContent = v || "未命名";
+    if (cname) cname.textContent = v || "未命名需求";
     markDirty();
   });
   nameField.classList.add("request-name-field");
@@ -2964,14 +2974,13 @@ function buildDetail(record, container, serverBase, keepHistory) {
       var savedMsg = work.isExample && !currentUser.isAdmin
         ? "已儲存。範例案件會在每天凌晨復原。"
         : "已儲存。";
-      // 雲端的 Google 文件由後端重做，這裡先告知，避免有人馬上去 Drive 看到舊版本。
-      var docMsg = result.documentUpdated ? "Google 文件更新中。" : "";
+      // 雲端的 Google 文件在背景重做，不在畫面上提，使用者也不需要等它。
       if (result.documentUpdated) nudgeDoc(work.id);
       // 儲存後一律用伺服器回傳的內容重畫，畫面才等於實際存下來的版本，
       // 欄位的展開／收合也回到「有內容展開、沒內容收起」的規則。
-      pendingDetailFlash = ((typoChanged || (result.request && JSON.stringify(result.request.data) !== sent))
+      pendingDetailFlash = (typoChanged || (result.request && JSON.stringify(result.request.data) !== sent))
         ? savedMsg + "文字已套用校正。"
-        : savedMsg) + docMsg;
+        : savedMsg;
       buildDetail(work, container);
       return;
     } catch (err) {
@@ -3117,7 +3126,7 @@ function buildDetail(record, container, serverBase, keepHistory) {
       flash(result.mailOk === false
         ? (result.mailQueued
           ? "需求內容已更新。系統寄信額度已滿，通知信已排程，額度恢復後將優先寄出。"
-          : "需求內容已更新，但通知寄送失敗：" + (result.mailError || "未知原因"))
+          : "需求內容已更新，但通知信寄送失敗：" + (result.mailError || "未知原因"))
         : "需求已重新發送。");
     } catch (err) {
       if (err && err.code === "CONFLICT") await handleConflict();

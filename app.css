@@ -329,7 +329,7 @@ html {
   height: 20px;
   border-radius: 50%;
   border: 2.4px solid rgba(17, 17, 17, .25);
-  border-top-color: #111111;
+  border-top-color: var(--ink);
   animation: dr-spin .7s linear infinite;
 }
 
@@ -489,12 +489,6 @@ html {
   color: var(--muted);
 }
 
-/* 時程備註這類「平常選填、來不及時必填」的欄位 */
-#dr-app .field > label .req-tag {
-  margin-left: 4px;
-  font-weight: var(--fw-regular);
-  color: var(--red);
-}
 
 #dr-app .hint,
 #dr-app .errmsg {
@@ -1232,7 +1226,7 @@ html {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  #dr-app .item-card:hover { border-color: var(--brand); }
+  #dr-app .item-card:hover { border-color: var(--control-accent, var(--brand)); }
 }
 
 #dr-app .item-head {
@@ -1283,11 +1277,12 @@ html {
   justify-content: flex-end;
 }
 
+/* 圖形固定 11×7，與全站其他箭頭完全一致；40×40 只是點擊範圍 */
 #dr-app .item-head .caret {
   justify-self: end;
   width: 40px;
   height: 40px;
-  padding: 15px 13px;
+  padding: 16.5px 14.5px;
   transition: transform var(--ease);
 }
 
@@ -1550,18 +1545,6 @@ html {
 
 @media (hover: hover) and (pointer: fine) {
   #dr-app .hist-btn:not([disabled]):hover { border-color: var(--control-accent, var(--brand)); }
-}
-
-/* 復原／重做之後，被改動的地方閃一下，讓人看得到變化 */
-#dr-app .just-changed {
-  animation: dr-changed 1.2s var(--ease);
-  border-radius: var(--r);
-}
-
-@keyframes dr-changed {
-  0% { background: var(--brand-l); }
-  70% { background: var(--brand-l); }
-  100% { background: transparent; }
 }
 
 #dr-app .checklist {
@@ -2126,7 +2109,7 @@ html {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 2px solid rgba(17, 17, 17, .22);
+  border: 2px solid rgba(17, 17, 17, .25);
   border-top-color: currentColor;
   animation: dr-spin .7s linear infinite;
 }
@@ -2354,6 +2337,7 @@ html {
   #dr-app .chip[aria-pressed="true"].is-touch-hover { border-color: transparent; filter: brightness(.95); }
 
   #dr-app .item-card.is-touch-hover,
+  #dr-app .hist-btn:not([disabled]).is-touch-hover,
   #dr-app .block.is-touch-hover,
   #dr-app .add-line.is-touch-hover,
   #dr-app .rm.is-touch-hover,
@@ -2388,13 +2372,14 @@ html {
    不會影響其他任何樣式。
    ============================================================ */
 
-/* 左右都貼齊「內容欄」的邊界（不是畫面邊界），
-   所以窄螢幕時卡片剛好落在版面格線內，寬螢幕時跟著內容欄一起置中。
+/* 貼齊畫面邊緣，間距用版面同一個 --gutter。
+   視窗夠寬時它就在畫面右下角；視窗縮到內容欄撐滿整個畫面時，
+   內容欄的邊界本來就落在同一個 --gutter 上，兩者自然重合。
    整條是透明的，只有泡泡與卡片本身接得到點擊。 */
 #dr-app .dock {
   position: fixed;
-  left: calc(max(var(--gutter), (100% - var(--wrap-max)) / 2 + var(--gutter)) + env(safe-area-inset-left, 0px));
-  right: calc(max(var(--gutter), (100% - var(--wrap-max)) / 2 + var(--gutter)) + env(safe-area-inset-right, 0px));
+  left: calc(var(--gutter) + env(safe-area-inset-left, 0px));
+  right: calc(var(--gutter) + env(safe-area-inset-right, 0px));
   bottom: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
