@@ -2093,8 +2093,10 @@ var BUBBLE_MIN_W = 320;
 /* 卡片能用的最低高度（標題列＋一兩列案件＋底部那行）。
    再矮就只剩一條縫，與其繼續壓扁不如整組漸出。 */
 var BUBBLE_MIN_POP_H = 180;
-/* 漸出要等透明度跑完才真的收起來，數字與 app.css 的 .dock 轉場一致 */
-var BUBBLE_FADE_MS = 220;
+/* 進出場的長度。拖視窗的時候畫面一直在重排，太短的話整段會被跳過去，
+   所以比一般轉場長一點，而且離場比入場慢，看得出來是「走掉」不是「不見」。 */
+var BUBBLE_FADE_OUT = 340;
+var BUBBLE_FADE_IN = 280;
 
 /**
  * 把表頭量到的高度寫進 --topbar-h。
@@ -2139,30 +2141,83 @@ function resetBubbleState() {
   $("dr-bubble").setAttribute("aria-expanded", "false");
 }
 
+var dockAnim = null;
+
+/**
+ * 直接放進出場動畫，不靠 CSS transition。
+ * 拖視窗時瀏覽器常常把轉場的中間影格省掉，看起來就像瞬間出現或消失；
+ * 自己放動畫就一定會跑完。淡的同時往泡泡的方向沉一點，
+ * 只有透明度在變的話在拖動的過程中太容易被忽略。
+ * 回傳 false 代表這個環境不放動畫（瀏覽器太舊，或系統設定要求減少動態效果）。
+ */
+function playDockFade(show, from) {
+  var dock = $("dr-dock");
+  if (dockAnim) { dockAnim.cancel(); dockAnim = null; }
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!dock.animate || reduce) return false;
+
+  if (typeof from !== "number" || isNaN(from)) from = show ? 0 : 1;
+  var to = show ? 1 : 0;
+  if (Math.abs(to - from) < 0.02) from = show ? 0 : 1;   // 起點與終點一樣就看不到動畫
+  dockAnim = dock.animate(
+    [{ opacity: from, translate: show ? "0 10px" : "0 0" },
+     { opacity: to, translate: show ? "0 0" : "0 10px" }],
+    { duration: show ? BUBBLE_FADE_IN : BUBBLE_FADE_OUT,
+      easing: "cubic-bezier(.2, .9, .25, 1)", fill: "both" }
+  );
+  return true;
+}
+
+/** 現在實際的透明度：動畫跑到一半時讀到的是當下那一格，來回切換才接得上。 */
+function dockOpacityNow(dock) {
+  if (dock.hidden || dock.classList.contains("is-away")) {
+    if (dock.hidden) return 0;
+  }
+  var v = parseFloat(getComputedStyle(dock).opacity);
+  return isNaN(v) ? 1 : v;
+}
+
 /** 整組（泡泡＋卡片）一起漸出。卡片不另外放收合動畫，整塊一起淡掉。 */
 function dockAway() {
   var dock = $("dr-dock");
-  if (dock.hidden || dock.classList.contains("is-away")) return;
-  dock.classList.add("is-away");
+  if (dock.hidden || dock.dataset.state === "away") return;
+  var from = dockOpacityNow(dock);            // 先讀，等一下取消動畫就讀不到了
+  dock.dataset.state = "away";
+  dock.style.pointerEvents = "none";          // 淡出中就不該再點得到
   app.classList.remove("dock-on");
   clearTimeout(dockAwayTimer);
-  // 淡完才把卡片歸零：中途歸零會看到它在淡出的過程中跳一下
-  dockAwayTimer = setTimeout(resetBubbleState, BUBBLE_FADE_MS + 40);
+
+  var settle = function () {
+    if (dock.dataset.state !== "away") return;   // 中途又回來了就不收
+    if (dockAnim) { dockAnim.cancel(); dockAnim = null; }
+    dock.classList.add("is-away");
+    // 淡完才把卡片歸零：中途歸零會看到它在淡出的過程中跳一下
+    resetBubbleState();
+  };
+  if (!playDockFade(false, from)) { settle(); return; }
+  dockAnim.onfinish = settle;
+  dockAwayTimer = setTimeout(settle, BUBBLE_FADE_OUT + 160);   // 動畫沒回報時的保險
 }
 
 /** 整組漸入，而且一定是收起的狀態（不補放上一次的收合動畫）。 */
 function dockBack() {
   var dock = $("dr-dock");
+  if (dock.dataset.state === "in" && !dock.hidden) return;
+  var from = dockOpacityNow(dock);       // 先讀：拿掉 is-away 之後就變成 1 了
   clearTimeout(dockAwayTimer);
-  if (!dock.hidden && !dock.classList.contains("is-away")) return;
+  dock.dataset.state = "in";
   resetBubbleState();
-  if (dock.hidden) {
-    dock.classList.add("is-away");       // 先維持透明，才有得漸入
-    dock.hidden = false;
-  }
-  void dock.offsetWidth;
+  dock.hidden = false;
   dock.classList.remove("is-away");
+  dock.style.pointerEvents = "";
   app.classList.add("dock-on");          // 內容底部留出泡泡的高度
+  if (playDockFade(true, from)) {
+    /* 跑完就把動畫收掉。留著的話這一層會一直帶著位移值，
+       底下的霧面玻璃（backdrop-filter）會被算在另一個圖層上，字會糊。 */
+    dockAnim.onfinish = function () {
+      if (dockAnim) { dockAnim.cancel(); dockAnim = null; }
+    };
+  }
 }
 
 /** 只決定要不要出現，不重畫內容：拖視窗時每一幀都可以呼叫。 */

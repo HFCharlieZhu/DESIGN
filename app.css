@@ -2394,18 +2394,18 @@ html {
   gap: var(--space-3);
   pointer-events: none;
   z-index: 45;
-  transition: opacity .22s var(--ease-pop), visibility 0s;
 }
 #dr-app .dock[hidden] { display: none; }
 #dr-app .dock > * { pointer-events: auto; }
 
-/* 空間不夠時整組一起漸出。用 visibility 不用 display：
-   版面還在，量得到還剩多少高度，視窗拉回來才知道可以回來了。 */
+/* 收起來之後的靜止狀態。進出場的動畫由 JS 直接放（見 list.html 的 playDockFade），
+   不用 CSS transition：拖視窗的時候瀏覽器常常把轉場的中間影格跳掉，
+   直接放動畫才一定看得到。用 visibility 不用 display：版面還在，
+   量得到還剩多少高度，視窗拉回來才知道可以回來了。 */
 #dr-app .dock.is-away {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition: opacity .22s var(--ease-pop), visibility 0s .22s;
 }
 
 #dr-app .bubble {
@@ -2528,7 +2528,6 @@ html {
   #dr-app .grid i { animation: none; background: var(--muted); }
   #dr-app .pop.is-in, #dr-app .pop.is-out { animation-duration: .01s; }
   #dr-app .bubble, #dr-app .bubble .bar-v, #dr-app .pop { transition: none; }
-  #dr-app .dock, #dr-app .dock.is-away { transition: none; }
 }
 /* ===== 狀態泡泡樣式結束 ===== */
 
