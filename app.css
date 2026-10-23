@@ -70,6 +70,12 @@ html {
   /* 次要方塊鈕的寬度：桌機為方塊鈕的二分之一，手機放寬到三分之二較好按 */
   --half-btn: calc(var(--icon-btn) / 2);
   --gutter: 24px;
+  /* 內容欄的最大寬度。右下角的泡泡要對齊這一欄的邊界，所以收成變數 */
+  --wrap-max: 1040px;
+  /* 版面寬度的下限。比這個再窄，任何排版都會壞，所以不再跟著壓縮，
+     改由視窗自己出現橫向捲軸、直接吃掉超出的部分。
+     320px 是目前還在服役的手機裡最窄的一種（iPhone SE 第一代）。 */
+  --min-w: 320px;
 
   /* 元件尺寸 */
   --r: 8px;
@@ -132,8 +138,11 @@ html {
 
 /* ---------- 2. 版面骨架 ---------- */
 
+/* 到了下限就停止響應：內容維持最小可用寬度，剩下交給視窗捲動 */
+#dr-app, #dr-gate { min-width: var(--min-w); }
+
 #dr-app .wrap {
-  max-width: 1040px;
+  max-width: var(--wrap-max);
   margin: 0 auto;
   padding: 0 var(--gutter) var(--space-6);
 }
@@ -2379,17 +2388,23 @@ html {
    不會影響其他任何樣式。
    ============================================================ */
 
+/* 左右都貼齊「內容欄」的邊界（不是畫面邊界），
+   所以窄螢幕時卡片剛好落在版面格線內，寬螢幕時跟著內容欄一起置中。
+   整條是透明的，只有泡泡與卡片本身接得到點擊。 */
 #dr-app .dock {
   position: fixed;
-  right: calc(var(--space-5) + env(safe-area-inset-right, 0px));
+  left: calc(max(var(--gutter), (100% - var(--wrap-max)) / 2 + var(--gutter)) + env(safe-area-inset-left, 0px));
+  right: calc(max(var(--gutter), (100% - var(--wrap-max)) / 2 + var(--gutter)) + env(safe-area-inset-right, 0px));
   bottom: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: var(--space-3);
+  pointer-events: none;
   z-index: 45;
 }
 #dr-app .dock[hidden] { display: none; }
+#dr-app .dock > * { pointer-events: auto; }
 
 #dr-app .bubble {
   width: var(--icon-btn);
@@ -2418,9 +2433,11 @@ html {
 }
 
 #dr-app .pop {
-  /* 右邊黏著泡泡，左邊用轉場跟上，視窗縮放時不會一格一格跳 */
-  width: min(300px, calc(100dvw - var(--space-5) - var(--space-4)));
-  max-height: calc(100dvh - 140px);
+  /* 上限是內容欄的寬度：窄螢幕時左右各自貼齊格線，不會比版面還寬。
+     右邊黏著泡泡，左邊用轉場跟上，縮放時不會一格一格跳。 */
+  width: min(300px, 100%);
+  /* 視窗壓得很矮時也保留最低可用高度，不會縮到剩一條縫 */
+  max-height: max(180px, calc(100dvh - 140px));
   display: flex;
   flex-direction: column;
   border: 1.2px solid var(--line);
