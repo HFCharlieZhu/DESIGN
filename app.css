@@ -45,14 +45,6 @@ html {
   --red: #ef8585;
   --red-l: #fbe3e3;
 
-  /* 狀態色當文字用的加深版本 —— 全系統唯一的例外，只給「設計項目」那顆合計膠囊。
-     輔助色本身都很淺，直接當小字會看不清楚（對比 1.8～2.5）；
-     這四個把亮度壓到與既有的範例綠同一個水準（對比 3.5～3.8），色相不變。
-     其他地方一律還是用上面那組原色，不要拿這幾個去塗別的東西。 */
-  --ink-brand: #af7f00;
-  --ink-blue: #0189fb;
-  --ink-green: #4f8f7b;
-  --ink-red: #e95656;
 
   /* 互動色：預設為品牌色，卡片內改由該案件狀態色接手 */
   --control-accent: var(--brand);
@@ -352,10 +344,10 @@ html {
   align-items: center;
   justify-content: center;
   text-decoration: none;
-  border: 1.2px solid #bababa;
+  border: 1.2px solid var(--line);
   border-radius: 999px;
-  background: #ffffff;
-  color: #111111;
+  background: var(--paper);
+  color: var(--ink);
   font-family: inherit;
   font-size: 12px;
   font-weight: 500;
@@ -365,7 +357,7 @@ html {
 
 @media (hover: hover) and (pointer: fine) {
   #dr-gate .login-retry-btn:hover,
-  #dr-tabgate .login-retry-btn:hover { border-color: #f8b500; }
+  #dr-tabgate .login-retry-btn:hover { border-color: var(--brand); }
 }
 
 /* 找不到頁面時的「為什麼？」展開說明 */
@@ -986,16 +978,13 @@ html {
 #dr-app .badge.lv2.ready { color: var(--body); }
 #dr-app .badge.lv2.digital { color: var(--blue); }
 #dr-app .badge.lv2.print { color: var(--brown); }
-#dr-app .badge.lv2.example { color: var(--ink-green); border-color: var(--green); }
+#dr-app .badge.lv2.example { color: #4f8f7b; border-color: var(--green); }
 #dr-app .badge.lv2.urgent { color: var(--red); }
 #dr-app .badge.lv2.overdue { color: var(--brand-dk); }
 
-/* 設計項目的合計：外框用該案件的狀態色，字用同一個狀態的加深版（--card-ink）。
-   加深版是全系統唯一的例外，原因與色值都寫在 :root 的 --ink-* 那一段。 */
-#dr-app .badge.lv2.unit-count {
-  color: var(--card-ink, var(--ink));
-  border-color: var(--control-accent, var(--brand));
-}
+/* 設計項目的合計：整顆跟著該案件的狀態色（卡片內 --control-accent 就是狀態色）。
+   外框由 .badge.lv2 的 currentColor 自動跟上，與其他第二級膠囊同一套做法。 */
+#dr-app .badge.lv2.unit-count { color: var(--control-accent, var(--brand)); }
 
 /* 只有真正的手機不顯示（直式手機最寬約 430）：
    那裡沒有空間放完整內容，縮寫又等於看不到數字。
@@ -2528,9 +2517,9 @@ html {
 #dr-app .job .id { font-size: var(--fs-meta); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 #dr-app .job .nm { font-size: var(--fs-body); min-width: 0; }
 #dr-app .job.more { font-size: var(--fs-meta); color: var(--muted); display: block; }
-/* 這一週結案的：整列轉成加深的綠（與合計膠囊同一組 --ink-*），看得出來是結束了 */
+/* 這一週結案的：整列轉成輔助綠（與結案膠囊同一個色），看得出來是結束了 */
 #dr-app .job.done .id,
-#dr-app .job.done .nm { color: var(--ink-green); }
+#dr-app .job.done .nm { color: var(--green); }
 
 #dr-app .pop-foot {
   margin: var(--space-3) calc(var(--space-4) * -1) 0;

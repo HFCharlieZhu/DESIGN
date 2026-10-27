@@ -905,17 +905,15 @@ initSelectCaret();
 
 var $ = function (id) { return document.getElementById(id); };
 
-/* bg／fg 是膠囊的底色與字色；ink 是「同一個狀態色，但深到可以當小字」，
-   目前只有設計項目那顆合計膠囊在用，色值與原因寫在 app.css 的 --ink-* 那一段。 */
 var STATUS_META = {
-  "待確認": { bg: "var(--body)", fg: "#ffffff", ink: "var(--body)" },
-  "已排程": { bg: "var(--blue)", fg: "var(--ink)", ink: "var(--ink-blue)" },
-  "設計中": { bg: "var(--brand)", fg: "var(--ink)", ink: "var(--ink-brand)" },
-  "外包": { bg: "var(--green)", fg: "var(--ink)", ink: "var(--ink-green)" },
-  "完稿": { bg: "var(--brand)", fg: "var(--ink)", ink: "var(--ink-brand)" },
-  "結案": { bg: "var(--green)", fg: "var(--ink)", ink: "var(--ink-green)" },
-  "退回": { bg: "var(--red)", fg: "var(--ink)", ink: "var(--ink-red)" },
-  "取消": { bg: "var(--red)", fg: "var(--ink)", ink: "var(--ink-red)" }
+  "待確認": { bg: "var(--body)", fg: "#ffffff" },
+  "已排程": { bg: "var(--blue)", fg: "var(--ink)" },
+  "設計中": { bg: "var(--brand)", fg: "var(--ink)" },
+  "外包": { bg: "var(--green)", fg: "var(--ink)" },
+  "完稿": { bg: "var(--brand)", fg: "var(--ink)" },
+  "結案": { bg: "var(--green)", fg: "var(--ink)" },
+  "退回": { bg: "var(--red)", fg: "var(--ink)" },
+  "取消": { bg: "var(--red)", fg: "var(--ink)" }
 };
 var STATUSES = Object.keys(STATUS_META);
 
@@ -1090,15 +1088,12 @@ function isGrey(rec) {
 
 /** 卡片底色與互動色：錯誤／退回／取消 > 逾期 > 狀態色。 */
 function cardVisualState(rec) {
-  if (isDeleted(rec)) return { bgClass: "bg-normal", hover: "var(--line)", ink: "var(--muted)" };
-  if (rec.isExample) return { bgClass: "bg-example", hover: "var(--green)", ink: "var(--ink-green)" };
-  if (hasError(rec)) return { bgClass: "bg-error", hover: "var(--red)", ink: "var(--ink-red)" };
-  if (rec.status === "退回" || rec.status === "取消") {
-    return { bgClass: "bg-error", hover: "var(--red)", ink: "var(--ink-red)" };
-  }
-  if (isOverdue(rec)) return { bgClass: "bg-overdue", hover: "var(--brand)", ink: "var(--ink-brand)" };
-  var meta = STATUS_META[rec.status] || STATUS_META["待確認"];
-  return { bgClass: "bg-normal", hover: meta.bg, ink: meta.ink };
+  if (isDeleted(rec)) return { bgClass: "bg-normal", hover: "var(--line)" };
+  if (rec.isExample) return { bgClass: "bg-example", hover: "var(--green)" };
+  if (hasError(rec)) return { bgClass: "bg-error", hover: "var(--red)" };
+  if (rec.status === "退回" || rec.status === "取消") return { bgClass: "bg-error", hover: "var(--red)" };
+  if (isOverdue(rec)) return { bgClass: "bg-overdue", hover: "var(--brand)" };
+  return { bgClass: "bg-normal", hover: (STATUS_META[rec.status] || STATUS_META["待確認"]).bg };
 }
 
 function applyCardVisual(card, rec) {
@@ -1108,7 +1103,6 @@ function applyCardVisual(card, rec) {
   card.classList.toggle("is-grey", isGrey(rec));
   card.classList.toggle("is-deleted", isDeleted(rec));
   card.style.setProperty("--card-hover", visual.hover);
-  card.style.setProperty("--card-ink", visual.ink || "var(--ink)");
 }
 
 /* ============================================================
