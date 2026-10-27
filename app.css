@@ -997,8 +997,10 @@ html {
   border-color: var(--control-accent, var(--brand));
 }
 
-/* 手機版不顯示：那裡沒有空間放完整內容，縮寫又等於看不到數字 */
-@media (max-width: 700px) {
+/* 只有真正的手機不顯示（直式手機最寬約 430）：
+   那裡沒有空間放完整內容，縮寫又等於看不到數字。
+   筆電把視窗拉窄、或分割畫面時仍然看得到，所以這裡不跟版面的 700 斷點共用。 */
+@media (max-width: 430px) {
   #dr-app .unit-count { display: none; }
 }
 
