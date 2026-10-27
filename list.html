@@ -2608,9 +2608,14 @@ var pendingDetailFlash = "";
 function buildDetail(record, container, serverBase, keepHistory) {
   var work = JSON.parse(JSON.stringify(record));
   if (typeof work.meetingDate !== "string") work.meetingDate = "";
+  if (!work.data || typeof work.data !== "object") work.data = {};
+  /* 很舊的案件可能沒有設計項目、或是存成了別的型別。
+     這裡先補成陣列，後面整張卡才不會在繪製到一半時中斷
+     （那會連需求、異動紀錄一起看不到，不只是設計項目）。 */
+  if (!Array.isArray(work.data.items)) work.data.items = [];
   /* 整份重畫＝回到「有內容展開、沒內容收起」的規則，先忘掉上一輪手動打開的紀錄 */
   resetFieldOpened(record.id);
-  (work.data.items || []).forEach(normalizeItem);
+  work.data.items.forEach(normalizeItem);
 
   var serverData = serverBase ? JSON.stringify(serverBase.data) : JSON.stringify(work.data);
   var serverStatus = serverBase ? serverBase.status : work.status;
@@ -2621,10 +2626,11 @@ function buildDetail(record, container, serverBase, keepHistory) {
   var restoredFromDraft = false;
   if (draft && canEditRecord(work)) {
     if (JSON.stringify(draft.data) !== serverData || draft.status !== serverStatus || draft.meetingDate !== serverMeeting) {
-      work.data = draft.data;
+      work.data = draft.data || {};
       work.status = draft.status;
       work.meetingDate = draft.meetingDate;
-      (work.data.items || []).forEach(normalizeItem);
+      if (!Array.isArray(work.data.items)) work.data.items = [];
+      work.data.items.forEach(normalizeItem);
       restoredFromDraft = true;
     } else {
       clearDetailDraft(work.id);
@@ -3010,12 +3016,14 @@ function buildDetail(record, container, serverBase, keepHistory) {
 
   function renderItems() {
     itemsWrap.replaceChildren();
+    if (!Array.isArray(work.data.items)) work.data.items = [];
     work.data.items.forEach(function (item, idx) {
       itemsWrap.appendChild(makeItemBlock(item, idx));
     });
     if (!canEdit) disableInputs(itemsWrap);
     syncUnitPill();
   }
+  syncUnitPill();        // 先算一次：就算下面繪製出問題，膠囊也不會是空的
   renderItems();
 
   var addItem = el("button", "add-line", "＋ 新增項目");
