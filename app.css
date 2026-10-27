@@ -45,6 +45,15 @@ html {
   --red: #ef8585;
   --red-l: #fbe3e3;
 
+  /* 狀態色當文字用的加深版本 —— 全系統唯一的例外，只給「設計項目」那顆合計膠囊。
+     輔助色本身都很淺，直接當小字會看不清楚（對比 1.8～2.5）；
+     這四個把亮度壓到與既有的範例綠同一個水準（對比 3.5～3.8），色相不變。
+     其他地方一律還是用上面那組原色，不要拿這幾個去塗別的東西。 */
+  --ink-brand: #af7f00;
+  --ink-blue: #0189fb;
+  --ink-green: #4f8f7b;
+  --ink-red: #e95656;
+
   /* 互動色：預設為品牌色，卡片內改由該案件狀態色接手 */
   --control-accent: var(--brand);
 
@@ -460,6 +469,17 @@ html {
   line-height: 1.4;
   font-weight: var(--fw-bold);
 }
+
+/* 區塊標題列：標題吃掉多餘空間，右邊掛統計膠囊。
+   間距用 space-3（標題列內部的那一級）；窄到放不下時膠囊自己換行。 */
+#dr-app .subpanel-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+#dr-app .subpanel-head > .subpanel-title { margin-bottom: 0; margin-right: auto; }
 
 /* ---------- 5. 欄位與輸入控制項 ---------- */
 
@@ -966,9 +986,21 @@ html {
 #dr-app .badge.lv2.ready { color: var(--body); }
 #dr-app .badge.lv2.digital { color: var(--blue); }
 #dr-app .badge.lv2.print { color: var(--brown); }
-#dr-app .badge.lv2.example { color: #4f8f7b; border-color: var(--green); }
+#dr-app .badge.lv2.example { color: var(--ink-green); border-color: var(--green); }
 #dr-app .badge.lv2.urgent { color: var(--red); }
 #dr-app .badge.lv2.overdue { color: var(--brand-dk); }
+
+/* 設計項目的合計：外框用該案件的狀態色，字用同一個狀態的加深版（--card-ink）。
+   加深版是全系統唯一的例外，原因與色值都寫在 :root 的 --ink-* 那一段。 */
+#dr-app .badge.lv2.unit-count {
+  color: var(--card-ink, var(--ink));
+  border-color: var(--control-accent, var(--brand));
+}
+
+/* 手機版不顯示：那裡沒有空間放完整內容，縮寫又等於看不到數字 */
+@media (max-width: 700px) {
+  #dr-app .unit-count { display: none; }
+}
 
 /* 申請單預覽裡的單項急件：一顆紅點就好，不佔空間也不搶膠囊的位置 */
 #dr-app .urgent-dot {
@@ -2494,6 +2526,9 @@ html {
 #dr-app .job .id { font-size: var(--fs-meta); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 #dr-app .job .nm { font-size: var(--fs-body); min-width: 0; }
 #dr-app .job.more { font-size: var(--fs-meta); color: var(--muted); display: block; }
+/* 這一週結案的：整列轉成加深的綠（與合計膠囊同一組 --ink-*），看得出來是結束了 */
+#dr-app .job.done .id,
+#dr-app .job.done .nm { color: var(--ink-green); }
 
 #dr-app .pop-foot {
   margin: var(--space-3) calc(var(--space-4) * -1) 0;
@@ -2522,6 +2557,13 @@ html {
   0%, 100% { background: var(--hair); }
   16% { background: var(--body); }
   42% { background: var(--hair); }
+}
+
+/* 清單上全部都結案了：點陣停下來，定在波動時本來就會用到的那個深灰
+   （--body，也就是動畫的高點），標題下面的小字同時變成「完成」。 */
+#dr-app .pop.is-done .grid i {
+  animation: none;
+  background: var(--body);
 }
 
 @media (prefers-reduced-motion: reduce) {

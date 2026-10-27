@@ -713,6 +713,16 @@ function itemHasCopy(item) {
 function itemHasPrint(item) { return (item.output || []).indexOf("print") >= 0; }
 function itemHasDigital(item) { return (item.output || []).indexOf("digital") >= 0; }
 
+/** 這一項等於幾張／幾個區塊：結構型看區塊數，公告型固定一個，其餘看尺寸列數。 */
+function itemUnitCount(item) {
+  var t = typeOf(item.typeId);
+  if (!t) return 0;
+  if (t.mode === "structure") return (item.blocks || []).length;
+  if (t.mode === "notice") return 1;
+  return Math.max(1, (item.sizeRows || []).length);
+}
+
+
 /* ============================================================
    共用區塊 F：日期工具（兩頁完全相同，請一起更新）
    ============================================================ */
@@ -895,15 +905,17 @@ initSelectCaret();
 
 var $ = function (id) { return document.getElementById(id); };
 
+/* bg／fg 是膠囊的底色與字色；ink 是「同一個狀態色，但深到可以當小字」，
+   目前只有設計項目那顆合計膠囊在用，色值與原因寫在 app.css 的 --ink-* 那一段。 */
 var STATUS_META = {
-  "待確認": { bg: "var(--body)", fg: "#ffffff" },
-  "已排程": { bg: "var(--blue)", fg: "var(--ink)" },
-  "設計中": { bg: "var(--brand)", fg: "var(--ink)" },
-  "外包": { bg: "var(--green)", fg: "var(--ink)" },
-  "完稿": { bg: "var(--brand)", fg: "var(--ink)" },
-  "結案": { bg: "var(--green)", fg: "var(--ink)" },
-  "退回": { bg: "var(--red)", fg: "var(--ink)" },
-  "取消": { bg: "var(--red)", fg: "var(--ink)" }
+  "待確認": { bg: "var(--body)", fg: "#ffffff", ink: "var(--body)" },
+  "已排程": { bg: "var(--blue)", fg: "var(--ink)", ink: "var(--ink-blue)" },
+  "設計中": { bg: "var(--brand)", fg: "var(--ink)", ink: "var(--ink-brand)" },
+  "外包": { bg: "var(--green)", fg: "var(--ink)", ink: "var(--ink-green)" },
+  "完稿": { bg: "var(--brand)", fg: "var(--ink)", ink: "var(--ink-brand)" },
+  "結案": { bg: "var(--green)", fg: "var(--ink)", ink: "var(--ink-green)" },
+  "退回": { bg: "var(--red)", fg: "var(--ink)", ink: "var(--ink-red)" },
+  "取消": { bg: "var(--red)", fg: "var(--ink)", ink: "var(--ink-red)" }
 };
 var STATUSES = Object.keys(STATUS_META);
 
@@ -1078,12 +1090,15 @@ function isGrey(rec) {
 
 /** 卡片底色與互動色：錯誤／退回／取消 > 逾期 > 狀態色。 */
 function cardVisualState(rec) {
-  if (isDeleted(rec)) return { bgClass: "bg-normal", hover: "var(--line)" };
-  if (rec.isExample) return { bgClass: "bg-example", hover: "var(--green)" };
-  if (hasError(rec)) return { bgClass: "bg-error", hover: "var(--red)" };
-  if (rec.status === "退回" || rec.status === "取消") return { bgClass: "bg-error", hover: "var(--red)" };
-  if (isOverdue(rec)) return { bgClass: "bg-overdue", hover: "var(--brand)" };
-  return { bgClass: "bg-normal", hover: (STATUS_META[rec.status] || STATUS_META["待確認"]).bg };
+  if (isDeleted(rec)) return { bgClass: "bg-normal", hover: "var(--line)", ink: "var(--muted)" };
+  if (rec.isExample) return { bgClass: "bg-example", hover: "var(--green)", ink: "var(--ink-green)" };
+  if (hasError(rec)) return { bgClass: "bg-error", hover: "var(--red)", ink: "var(--ink-red)" };
+  if (rec.status === "退回" || rec.status === "取消") {
+    return { bgClass: "bg-error", hover: "var(--red)", ink: "var(--ink-red)" };
+  }
+  if (isOverdue(rec)) return { bgClass: "bg-overdue", hover: "var(--brand)", ink: "var(--ink-brand)" };
+  var meta = STATUS_META[rec.status] || STATUS_META["待確認"];
+  return { bgClass: "bg-normal", hover: meta.bg, ink: meta.ink };
 }
 
 function applyCardVisual(card, rec) {
@@ -1093,6 +1108,7 @@ function applyCardVisual(card, rec) {
   card.classList.toggle("is-grey", isGrey(rec));
   card.classList.toggle("is-deleted", isDeleted(rec));
   card.style.setProperty("--card-hover", visual.hover);
+  card.style.setProperty("--card-ink", visual.ink || "var(--ink)");
 }
 
 /* ============================================================
@@ -2071,16 +2087,30 @@ var BUBBLE_DUE_STATUSES = ["設計中", "已排程", "完稿", "結案"];
 
 function bubbleStats() {
   var live = records.filter(function (r) { return !r.isExample && !isDeleted(r); });
-  var active = live.filter(function (r) {
-    return r.status === "設計中" || r.status === "已排程";
-  });
   var week = bubbleWeek();
+  /* 清單收兩種：還沒結束的（已排程、設計中、完稿，三種長得一樣），
+     以及這一週才結案的（轉綠，下一週就走）。
+     結案的留到週末是為了看得到成果，不是提醒還有事沒做，所以靠的是
+     「什麼時候結案的」那一刻，不是交付日——排程在很久以後、提前結掉的，
+     一樣會在這一週裡亮著。 */
+  var active = live.filter(function (r) {
+    if (r.status === "設計中" || r.status === "已排程" || r.status === "完稿") return true;
+    if (r.status !== "結案") return false;
+    var at = r.closedAt ? new Date(r.closedAt) : null;
+    return !!at && !isNaN(at.getTime()) && at >= week.start && at <= week.end;
+  });
   var due = live.filter(function (r) {
     if (BUBBLE_DUE_STATUSES.indexOf(r.status) < 0) return false;
     var d = parseDate(r.data && r.data.deliveryDate);
     return !!d && d >= week.start && d <= week.end;
   });
+  /* 還沒結束的排前面、先交的在上；這一週結案的沉到最後，依結案先後排。
+     清單最多只顯示 BUBBLE_MAX_ROWS 列，結掉的沉底才不會把還沒做的擠出畫面。 */
   active.sort(function (a, b) {
+    var fa = a.status === "結案" ? 1 : 0;
+    var fb = b.status === "結案" ? 1 : 0;
+    if (fa !== fb) return fa - fb;
+    if (fa === 1) return new Date(a.closedAt || 0) - new Date(b.closedAt || 0);
     var da = parseDate(a.data && a.data.deliveryDate);
     var db = parseDate(b.data && b.data.deliveryDate);
     if (da && db) return da - db;                        // 先交的排前面
@@ -2246,7 +2276,14 @@ function renderStatusBubble() {
   if (!bubbleHasWork || !bubbleFits()) { dockAway(); return; }
   dockBack();
 
-  $("dr-pop-time").textContent = "更新於 " + pad2(nowOnServer().getHours()) + ":" + pad2(nowOnServer().getMinutes());
+  /* 清單上全部都結案了＝這一週的東西都交完了。
+     這時候標題下面的小字直接寫「完成」，點陣也停下來（CSS 的 .pop.is-done）；
+     還有沒做完的才顯示更新時間。 */
+  var allDone = s.active.length > 0 && s.active.every(function (r) { return r.status === "結案"; });
+  $("dr-pop").classList.toggle("is-done", allDone);
+  $("dr-pop-time").textContent = allDone
+    ? "完成"
+    : "更新於 " + pad2(nowOnServer().getHours()) + ":" + pad2(nowOnServer().getMinutes());
 
   var ind = $("dr-pop-ind");
   if (!ind.firstChild) {
@@ -2266,7 +2303,8 @@ function renderStatusBubble() {
   var jobs = $("dr-pop-jobs");
   jobs.replaceChildren();
   s.active.slice(0, BUBBLE_MAX_ROWS).forEach(function (r) {
-    var row = el("div", "job");
+    // 這一週結案的整列轉綠，看得出來是成果，不是待辦
+    var row = el("div", "job" + (r.status === "結案" ? " done" : ""));
     row.appendChild(el("span", "id", r.id));
     row.appendChild(el("span", "nm", (r.data && r.data.name) || "未命名需求"));
     jobs.appendChild(row);
@@ -2922,11 +2960,28 @@ function buildDetail(record, container, serverBase, keepHistory) {
   primary.appendChild(noteRow);
   frag.appendChild(primary);
 
-  /* 設計項目 */
+  /* 設計項目：標題列右邊掛一顆合計膠囊，算法與申請表確認頁共用同一個函式 */
   var itemsPanel = el("div", "subpanel");
-  itemsPanel.appendChild(el("div", "subpanel-title", "設計項目"));
+  var itemsHead = el("div", "subpanel-head");
+  itemsHead.appendChild(el("div", "subpanel-title", "設計項目"));
+  var unitPill = el("span", "badge lv2 unit-count");
+  var unitFull = el("span", "u-full");
+  unitPill.appendChild(unitFull);
+  itemsHead.appendChild(unitPill);
+  itemsPanel.appendChild(itemsHead);
   var itemsWrap = el("div");
   itemsPanel.appendChild(itemsWrap);
+
+  /** 重算合計。手機版這顆膠囊整個不顯示（空間放不下完整內容）。 */
+  function syncUnitPill() {
+    if (!unitFull) return;
+    var items = (work.data && work.data.items) || [];
+    var units = items.reduce(function (sum, it) { return sum + itemUnitCount(it); }, 0);
+    var text = "合計：" + items.length + " 個項目・" + units + " 張／區塊";
+    unitFull.textContent = text;
+    unitPill.title = text;
+    unitPill.setAttribute("aria-label", text);
+  }
 
   /** 項目內部的結構變動只重繪該一個項目，其餘項目的輸入狀態不受影響。 */
   function makeItemBlock(item, idx) {
@@ -2938,6 +2993,7 @@ function buildDetail(record, container, serverBase, keepHistory) {
         var next = makeItemBlock(item, idx);
         itemsWrap.replaceChild(next, current);
         if (!canEdit) disableInputs(next);
+        syncUnitPill();          // 尺寸列、區塊、需求類型變了，張數就不一樣
       },
       function () {
         if (work.data.items.length <= 1) return;
@@ -2958,6 +3014,7 @@ function buildDetail(record, container, serverBase, keepHistory) {
       itemsWrap.appendChild(makeItemBlock(item, idx));
     });
     if (!canEdit) disableInputs(itemsWrap);
+    syncUnitPill();
   }
   renderItems();
 

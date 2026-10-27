@@ -752,6 +752,16 @@ function itemHasCopy(item) {
 function itemHasPrint(item) { return (item.output || []).indexOf("print") >= 0; }
 function itemHasDigital(item) { return (item.output || []).indexOf("digital") >= 0; }
 
+/** 這一項等於幾張／幾個區塊：結構型看區塊數，公告型固定一個，其餘看尺寸列數。 */
+function itemUnitCount(item) {
+  var t = typeOf(item.typeId);
+  if (!t) return 0;
+  if (t.mode === "structure") return (item.blocks || []).length;
+  if (t.mode === "notice") return 1;
+  return Math.max(1, (item.sizeRows || []).length);
+}
+
+
 /* ============================================================
    共用區塊 F：日期工具（兩頁完全相同，請一起更新）
    ============================================================ */
@@ -1753,14 +1763,6 @@ function syncAudienceChips() {
   document.querySelectorAll("#f-audience-group .chip").forEach(function (b) {
     b.setAttribute("aria-pressed", b.dataset.val === state.audience ? "true" : "false");
   });
-}
-
-function itemUnitCount(item) {
-  var t = typeOf(item.typeId);
-  if (!t) return 0;
-  if (t.mode === "structure") return (item.blocks || []).length;
-  if (t.mode === "notice") return 1;
-  return Math.max(1, item.sizeRows.length);
 }
 
 /** 今天（伺服器時間）的 yyyy-mm-dd，給日期欄位當下限用。
