@@ -2062,6 +2062,13 @@ function bubbleWeek() {
   return { start: start, end: end, label: (dow === 0 || dow === 6) ? "下週" : "本週" };
 }
 
+/* 本週交付統計只算已經進到設計流程的狀態。
+   待確認還沒排進來，多半會再排一次時間，現在的日期不算數；
+   外包、取消、退回不會由設計端交件。
+   完稿與結案雖然已經結束，但它們正是「這一週交出去的東西」，要算進去。
+   這一組只給泡泡的統計用，不影響總覽的篩選與逾期判定（那兩個另有規則）。 */
+var BUBBLE_DUE_STATUSES = ["設計中", "已排程", "完稿", "結案"];
+
 function bubbleStats() {
   var live = records.filter(function (r) { return !r.isExample && !isDeleted(r); });
   var active = live.filter(function (r) {
@@ -2069,7 +2076,7 @@ function bubbleStats() {
   });
   var week = bubbleWeek();
   var due = live.filter(function (r) {
-    if (isClosedStatus(r.status)) return false;          // 已經結束的不算「還要交」
+    if (BUBBLE_DUE_STATUSES.indexOf(r.status) < 0) return false;
     var d = parseDate(r.data && r.data.deliveryDate);
     return !!d && d >= week.start && d <= week.end;
   });

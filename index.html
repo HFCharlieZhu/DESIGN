@@ -2170,11 +2170,19 @@ function historyAvailable() {
 $("dr-undo").addEventListener("click", histUndoAction);
 $("dr-redo").addEventListener("click", histRedoAction);
 
-/* 按下按鈕、改選單、離開欄位，都代表上一段輸入結束 */
+/* 按下按鈕、改選單、離開欄位，都代表上一段輸入結束。
+   但如果這一拍結束時游標還在輸入框裡，就代表人還在打字（例如點一下欄位再接著打），
+   這時候封口會把一個詞切成兩步，復原要按兩次才回得去。
+   正在打字就讓停手 HISTORY_IDLE 之後的那一拍去記，這裡放過。 */
 ["click", "change", "focusout"].forEach(function (evt) {
   document.addEventListener(evt, function () {
     if (histApplying) return;
-    setTimeout(function () { if (histDirty) histCommit(); }, 0);
+    setTimeout(function () {
+      if (!histDirty) return;
+      var a = document.activeElement;
+      if (a && (a.tagName === "TEXTAREA" || a.tagName === "INPUT")) return;
+      histCommit();
+    }, 0);
   }, false);
 });
 
