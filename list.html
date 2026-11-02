@@ -1087,6 +1087,30 @@ function isGrey(rec) {
 }
 
 /** 卡片底色與互動色：錯誤／退回／取消 > 逾期 > 狀態色。 */
+/* ------------------------------------------------------------
+   Google 文件連結的限制（與 index.html、後端 guardDocLinks_ 同一條規則）
+   ------------------------------------------------------------
+   除了管理員以外，整張表都不接受 Google 文件／試算表／簡報的連結。
+   貼進去的當下那一格的字就變紅，不另外出現說明；真的要存檔時後端再擋一次。
+   雲端硬碟的檔案與資料夾不擋，那正是「素材連結」本來的用途。 */
+var DOC_LINK_PATTERN = /(docs\.google\.com\/(document|spreadsheets|presentation)|\bdocs\.google\.com\/d\/)/i;
+
+/** 目前登入的人是不是管理員（管理員不受連結限制） */
+function isAdminUser() { return !!(currentUser && currentUser.isAdmin); }
+
+/** 這一格的內容有不被接受的連結就標紅，沒有就恢復。不說明，紅了就知道。 */
+function markBlockedLink(node) {
+  if (!node || !node.classList) return;
+  var block = !isAdminUser() && DOC_LINK_PATTERN.test(String(node.value || ""));
+  node.classList.toggle("link-blocked", block);
+}
+
+/** 整個區域重掃一次（展開案件、回復草稿、復原重做之後都要叫） */
+function syncBlockedLinks(root) {
+  if (!root) return;
+  root.querySelectorAll("input, textarea").forEach(markBlockedLink);
+}
+
 function cardVisualState(rec) {
   if (isDeleted(rec)) return { bgClass: "bg-normal", hover: "var(--line)" };
   if (rec.isExample) return { bgClass: "bg-example", hover: "var(--green)" };
@@ -2101,10 +2125,20 @@ function bubbleStats() {
     var at = r.closedAt ? new Date(r.closedAt) : null;
     return !!at && !isNaN(at.getTime()) && at >= week.start && at <= week.end;
   });
+  /* 「本週預計交付」＝這一週該交出去的東西，分兩種算法：
+       還沒結案的（設計中、已排程、完稿）看交付日——本週到期的算，
+         已經逾期的也算（債還在，不會因為拖過一週就消失）；
+         交付日在本週之後的不算，那是以後的事。
+       已經結案的看結案時間——這一週結掉的算（當週完成）；
+         更早就結掉的不算，提早做完的案子不必再年年月月提醒。 */
   var due = live.filter(function (r) {
     if (BUBBLE_DUE_STATUSES.indexOf(r.status) < 0) return false;
+    if (r.status === "結案") {
+      var at = r.closedAt ? new Date(r.closedAt) : null;
+      return !!at && !isNaN(at.getTime()) && at >= week.start && at <= week.end;
+    }
     var d = parseDate(r.data && r.data.deliveryDate);
-    return !!d && d >= week.start && d <= week.end;
+    return !!d && d <= week.end;
   });
   /* 還沒結束的排前面、先交的在上；這一週結案的沉到最後，依結案先後排。
      清單最多只顯示 BUBBLE_MAX_ROWS 列，結掉的沉底才不會把還沒做的擠出畫面。 */
@@ -2120,10 +2154,7 @@ function bubbleStats() {
     if (db) return 1;
     return 0;
   });
-  return {
-    active: active, due: due.length, label: week.label,
-    overdue: live.filter(isOverdue).length
-  };
+  return { active: active, due: due.length, label: week.label };
 }
 
 var BUBBLE_MAX_ROWS = 8;
@@ -2315,13 +2346,9 @@ function renderStatusBubble() {
     jobs.appendChild(el("div", "job more", "還有 " + (s.active.length - BUBBLE_MAX_ROWS) + " 件"));
   }
 
-  var foot = $("dr-pop-foot");
-  foot.replaceChildren();
-  foot.appendChild(document.createTextNode(s.label + "預計交付 " + s.due + " 件"));
-  if (s.overdue) {
-    foot.appendChild(document.createTextNode("・"));
-    foot.appendChild(el("span", "late", "逾期 " + s.overdue + " 件"));
-  }
+  /* 只講這一週要產出幾件。逾期不在這裡細分——總覽的統計列已經有了，
+     泡泡是給大家看工作量的，不是用來標記誰遲了。 */
+  $("dr-pop-foot").textContent = s.label + "預計交付 " + s.due + " 件";
 }
 
 function openBubble() {
@@ -3026,6 +3053,7 @@ function buildDetail(record, container, serverBase, keepHistory) {
     });
     if (!canEdit) disableInputs(itemsWrap);
     syncUnitPill();
+    syncBlockedLinks(itemsWrap);
   }
   syncUnitPill();        // 先算一次：就算下面繪製出問題，膠囊也不會是空的
   renderItems();
@@ -3411,6 +3439,7 @@ function buildDetail(record, container, serverBase, keepHistory) {
   frag.appendChild(actions);
 
   container.replaceChildren(frag);
+  syncBlockedLinks(container);
 
   if (!canEdit) {
     disableInputs(primary);
@@ -3862,6 +3891,12 @@ function initTitleReload() {
 initTitleReload();
 initStatusBubble();
 initDetailHistory();
+
+/* 打字或貼上的當下就標紅，不等到按儲存 */
+document.addEventListener("input", function (e) {
+  var n = e.target;
+  if (n && (n.tagName === "INPUT" || n.tagName === "TEXTAREA")) markBlockedLink(n);
+}, true);
 
 initTouchFeedback(".bubble,.btn-topbar,.btn-sm,.pgbtn,.chip,.filter-reset,.field-head,.archive-head,.arch-year-head,.arch-month-head,.card-top,.subpanel,.item-block,.block,.add-line,.del-line,.rm,.inline-clear,.block-order button,.custom-purpose,input,textarea,select,.data-retry button");
 startHeartbeat();

@@ -1430,6 +1430,11 @@ html {
   color: var(--body);
 }
 
+/* 貼了不被接受的連結：那一格的字變紅，不另外出現說明文字。
+   按下一步時確認頁會列出哪一欄，後端也會再擋一次。 */
+#dr-app input.link-blocked,
+#dr-app textarea.link-blocked { color: var(--red); }
+
 #dr-app .notice-box,
 #dr-gate .notice-box {
   padding: var(--space-4);
@@ -2529,8 +2534,6 @@ html {
   color: var(--body);
   font-variant-numeric: tabular-nums;
 }
-/* 逾期沿用系統既有的逾期色（徽章用的 --brand-dk），紅色是留給錯誤／退回／取消的 */
-#dr-app .pop-foot .late { color: var(--brand-dk); }
 
 /* 進行中的指示：五乘五的點陣，每顆各自從底色亮到深灰再暗回去，
    延遲照離中心的距離算再加固定偏移，所以波是散的不是同心圓。 */
