@@ -1904,6 +1904,7 @@ function render() {
   renderLinks();
   syncAudienceChips();
   refreshStats();
+  syncBlockedLinks($("dr-form-shell"));
 }
 
 /** 草稿還原後把純量欄位寫回畫面，否則畫面空白但資料仍會被送出。 */
@@ -2452,6 +2453,25 @@ function deptValue() {
    因為把整份規劃掛在文件裡會讓表單本身沒人好好填。
    雲端硬碟的檔案與資料夾不擋，那正是「素材連結」本來的用途。 */
 var DOC_LINK_PATTERN = /(docs\.google\.com\/(document|spreadsheets|presentation)|\bdocs\.google\.com\/d\/)/i;
+/* 確認頁的錯誤清單只點名是哪一欄，跟清單上其他條目一樣是短標籤、不加句號。
+   完整的說明留給真的按下儲存卻被擋下來的那一刻（後端 Code.gs 的 DOC_LINK_MESSAGE）。 */
+var DOC_LINK_SHORT = "不接受 Google 文件、試算表或簡報的連結";
+
+/** 目前登入的人是不是管理員（管理員不受連結限制） */
+function isAdminUser() { return !!(currentUser && currentUser.isAdmin); }
+
+/** 這一格的內容有不被接受的連結就標紅，沒有就恢復。不說明，紅了就知道。 */
+function markBlockedLink(node) {
+  if (!node || !node.classList) return;
+  var block = !isAdminUser() && DOC_LINK_PATTERN.test(String(node.value || ""));
+  node.classList.toggle("link-blocked", block);
+}
+
+/** 整個區域重掃一次（繪製完、回復草稿、復原重做之後都要叫） */
+function syncBlockedLinks(root) {
+  if (!root) return;
+  root.querySelectorAll("input, textarea").forEach(markBlockedLink);
+}
 
 /** 這一份內容裡有 Google 文件連結的欄位名稱 */
 function docLinkFields(data) {
@@ -2542,7 +2562,7 @@ function collectErrors() {
   if (!(currentUser && currentUser.isAdmin)) {
     var docFields = docLinkFields(state);
     docFields.slice(0, 5).forEach(function (f) {
-      errors.push({ msg: f + "：不接受 Google 文件連結，請把內容填進欄位", focus: null, field: null });
+      errors.push({ msg: f + "：" + DOC_LINK_SHORT, focus: null, field: null });
     });
     if (docFields.length > 5) {
       errors.push({ msg: "另外還有 " + (docFields.length - 5) + " 處有 Google 文件連結", focus: null, field: null });
@@ -2795,6 +2815,12 @@ function initTitleReload() {
 }
 
 initTitleReload();
+/* 打字或貼上的當下就標紅，不等到按下一步 */
+document.addEventListener("input", function (e) {
+  var n = e.target;
+  if (n && (n.tagName === "INPUT" || n.tagName === "TEXTAREA")) markBlockedLink(n);
+}, true);
+
 initTouchFeedback(".btn-topbar,.btn-primary,.btn-submit,.btn-ghost,.draftbar button,input,textarea,select,.chip,.item-card,.hist-btn,.block,.rm,.add-line,.del-line,.inline-clear,.block-order button,.custom-purpose");
 startHeartbeat();
 startAuth();
