@@ -867,7 +867,7 @@ function typoText(value) { return normalizeTypographyText(value); }
 
 /**
  * 依後端 normalizeRequestData_ 的同一份清單套用校正。
- * 連結類欄位（素材連結網址、CTA／連結）與尺寸一律不動。
+ * 連結類欄位（素材連結網址、CTA）與尺寸一律不動。
  */
 function normalizeRequestTypography(data) {
   if (!data || typeof data !== "object") return data;
@@ -1539,7 +1539,7 @@ function buildItemBody(item) {
   if (!t.showChannel) row2.appendChild(el("div", "field"));
   frag.appendChild(row2);
 
-  frag.appendChild(makeField("text", "CTA／連結", false, item.cta, function (v) {
+  frag.appendChild(makeField("text", "CTA", false, item.cta, function (v) {
     item.cta = v; saveDraft();
   }));
   frag.appendChild(makeField("textarea", "項目備註", false, item.note, function (v) {
@@ -1667,7 +1667,7 @@ function buildBlocks(item) {
     b.appendChild(makeField("text", "畫面需求備註", null, block.imgNote, function (v) {
       block.imgNote = v; saveDraft();
     }));
-    b.appendChild(makeField("text", "CTA／連結", null, block.link, function (v) {
+    b.appendChild(makeField("text", "CTA", null, block.link, function (v) {
       block.link = v; saveDraft();
     }));
 
@@ -2445,6 +2445,51 @@ function deptValue() {
   return dept === NO_DEPT ? "" : dept;
 }
 
+/* ------------------------------------------------------------
+   Google 文件連結的限制（與後端 Code.gs 的 guardDocLinks_ 同一條規則）
+   ------------------------------------------------------------
+   除了管理員以外，整張表都不接受 Google 文件／試算表／簡報的連結，
+   因為把整份規劃掛在文件裡會讓表單本身沒人好好填。
+   雲端硬碟的檔案與資料夾不擋，那正是「素材連結」本來的用途。 */
+var DOC_LINK_PATTERN = /(docs\.google\.com\/(document|spreadsheets|presentation)|\bdocs\.google\.com\/d\/)/i;
+
+/** 這一份內容裡有 Google 文件連結的欄位名稱 */
+function docLinkFields(data) {
+  var out = [];
+  var push = function (label, value) {
+    if (value && DOC_LINK_PATTERN.test(String(value))) out.push(label);
+  };
+  push("需求名稱", data.name);
+  push("需求背景／說明", data.purpose);
+  push("主要訊息／方向", data.message);
+  push("備註 1", data.note1);
+  push("備註 2", data.note2);
+  push("時程備註", data.scheduleNote);
+  push("參考說明", data.refNote);
+  (data.refLinks || []).forEach(function (link, i) {
+    push("素材連結 第 " + (i + 1) + " 列", link && link.url);
+    push("素材連結 第 " + (i + 1) + " 列說明", link && link.note);
+  });
+  var names = { head: "大標", sub: "副標", small: "小字", other: "其他",
+    imgNote: "畫面需求備註", link: "CTA" };
+  (data.items || []).forEach(function (item, idx) {
+    var prefix = "項目 " + (idx + 1) + " 的";
+    push(prefix + "項目名稱", item && item.name);
+    push(prefix + "CTA", item && item.cta);
+    push(prefix + "項目備註", item && item.note);
+    push(prefix + "素材應用處", item && item.page);
+    var copy = (item && item.copy) || {};
+    ["head", "sub", "small", "other"].forEach(function (k) { push(prefix + names[k], copy[k]); });
+    ((item && item.blocks) || []).forEach(function (block, bi) {
+      var bp = prefix + "區塊 " + (bi + 1) + " 的";
+      ["head", "sub", "small", "other", "imgNote", "link"].forEach(function (k) {
+        push(bp + names[k], block && block[k]);
+      });
+    });
+  });
+  return out;
+}
+
 function collectErrors() {
   var errors = [];
   if (!currentUser.initialsKnown) {
@@ -2492,6 +2537,16 @@ function collectErrors() {
   if (!state.deliveryDate) errors.push({ msg: "總交付日未填寫", focus: "f-deliverydate", field: "f-deliverydate-field" });
   else if (isPastDate(state.deliveryDate)) {
     errors.push({ msg: "總交付日已過，請改為今天以後的日期", focus: "f-deliverydate", field: "f-deliverydate-field" });
+  }
+
+  if (!(currentUser && currentUser.isAdmin)) {
+    var docFields = docLinkFields(state);
+    docFields.slice(0, 5).forEach(function (f) {
+      errors.push({ msg: f + "：不接受 Google 文件連結，請把內容填進欄位", focus: null, field: null });
+    });
+    if (docFields.length > 5) {
+      errors.push({ msg: "另外還有 " + (docFields.length - 5) + " 處有 Google 文件連結", focus: null, field: null });
+    }
   }
   return errors;
 }

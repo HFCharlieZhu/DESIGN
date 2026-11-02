@@ -828,7 +828,7 @@ function typoText(value) { return normalizeTypographyText(value); }
 
 /**
  * 依後端 normalizeRequestData_ 的同一份清單套用校正。
- * 連結類欄位（素材連結網址、CTA／連結）與尺寸一律不動。
+ * 連結類欄位（素材連結網址、CTA）與尺寸一律不動。
  */
 function normalizeRequestTypography(data) {
   if (!data || typeof data !== "object") return data;
@@ -1556,15 +1556,13 @@ function monthGroupNode(title, list) {
   return g;
 }
 
-function renderAll() {
-  syncFilterReset();
-  var example = hasActiveFilter()
-    ? null
-    : (records.find(function (r) { return r && r.isExample; }) || null);
+/**
+ * 統計列與泡泡。兩個都是「整份 records 的摘要」，所以存檔之後也要重算一次——
+ * 存檔只會更新那一張卡片，不會重畫整個清單，少了這一步數字就會停在存檔前。
+ * 統計數字代表全部案件，不受案件區／過往資料的切分影響。
+ */
+function renderAggregates() {
   var list = records.filter(function (r) { return !r.isExample; }).filter(matchesFilter);
-  list.sort(function (a, b) { return new Date(b.submittedAt) - new Date(a.submittedAt); });
-
-  /* 統計數字代表全部案件，不受案件區／過往資料的切分影響。 */
   var summary = $("dr-summary");
   summary.replaceChildren();
   [
@@ -1578,8 +1576,18 @@ function renderAll() {
     box.appendChild(document.createTextNode(" " + row[2]));
     summary.appendChild(box);
   });
-
   renderStatusBubble();
+}
+
+function renderAll() {
+  syncFilterReset();
+  var example = hasActiveFilter()
+    ? null
+    : (records.find(function (r) { return r && r.isExample; }) || null);
+  var list = records.filter(function (r) { return !r.isExample; }).filter(matchesFilter);
+  list.sort(function (a, b) { return new Date(b.submittedAt) - new Date(a.submittedAt); });
+
+  renderAggregates();
 
   var cutoff = recentCutoff();
   var recent = list.filter(function (r) { return isRecent(r, cutoff); });
@@ -2752,6 +2760,8 @@ function buildDetail(record, container, serverBase, keepHistory) {
     canOperate = canOperateRecord(work);
     canWord = canSendWord(work);
     updateCardChrome();
+    // 這張卡的內容變了，整份的統計與泡泡也要跟著重算
+    renderAggregates();
   }
 
   function collectErrors() {
@@ -3502,7 +3512,7 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
         b.appendChild(makeField("text", "畫面需求備註", null, block.imgNote, function (v) {
           block.imgNote = v; onChange();
         }));
-        b.appendChild(makeField("text", "CTA／連結", null, block.link, function (v) {
+        b.appendChild(makeField("text", "CTA", null, block.link, function (v) {
           block.link = v; onChange();
         }));
 
@@ -3763,7 +3773,7 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
       if (!t.showChannel) deliveryRow.appendChild(el("div", "field"));
       box.appendChild(deliveryRow);
 
-      box.appendChild(makeField("text", "CTA／連結", false, item.cta, function (v) {
+      box.appendChild(makeField("text", "CTA", false, item.cta, function (v) {
         item.cta = v; onChange();
       }));
     }
