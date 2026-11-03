@@ -552,15 +552,9 @@ html {
 
 #dr-app .field.can-collapse > label.field-head.is-touch-hover .opt { color: var(--ink); }
 
-/* 必填未完成：兩頁共用同一組紅框與紅字標籤 */
-#dr-app .field.err > label { color: var(--red); }
-#dr-app .field.err input,
-#dr-app .field.err textarea,
-#dr-app .field.err select,
-#dr-app .field.warn input { border-color: var(--red); }
-
-/* 交付日填到今天以前：欄位標紅並顯示說明，送出時也會被擋 */
-#dr-app .field.past input { border-color: var(--red); }
+/* 欄位有問題時全站只有一種表現：框紅、標籤字黑、註解字紅。
+   標籤不跟著變色，所以這裡沒有標籤的規則；紅框集中在下面的「欄位的紅框」那一組。
+   必填的 * 是常駐標記不是錯誤狀態，維持原本的紅色。 */
 #dr-app .hint.danger { color: var(--red); }
 #dr-app .field.err .errmsg { display: block; }
 
@@ -603,6 +597,26 @@ html {
   outline: none;
   box-shadow: none;
 }
+
+/* ---------- 欄位的紅框 ---------- */
+
+/* 全站的紅框集中在這一組，而且排在上面的 hover 與對焦之後：
+   欄位該是紅的時候紅色最大，滑過與對焦都不會蓋掉它；不紅的時候照原本的規則走。
+   日後新增紅框狀態，選擇器要加進這一組，不要散回各自的區塊。
+     .field.err            必填未完成
+     .field.warn           日期先後怪怪的（會議日期或項目使用日晚於總交付日）
+     .field.past           交付日已過
+     .link-blocked         貼了不被接受的連結 */
+#dr-app .field.err input:not([disabled]),
+#dr-app .field.err textarea:not([disabled]),
+#dr-app .field.err select:not([disabled]),
+#dr-app .field.warn input:not([disabled]),
+#dr-app .field.past input:not([disabled]),
+#dr-app input.link-blocked:not([disabled]),
+#dr-app textarea.link-blocked:not([disabled]) { border-color: var(--red); }
+
+/* 編號欄只有下緣一條線，所以單獨列出來 */
+#dr-app .field.err #f-initials:not([disabled]) { border-bottom-color: var(--red); }
 
 #dr-app input[disabled],
 #dr-app textarea[disabled],
@@ -1430,10 +1444,17 @@ html {
   color: var(--body);
 }
 
-/* 貼了不被接受的連結：那一格的字變紅，不另外出現說明文字。
+/* 貼了不被接受的連結：欄位框變紅，標籤的小字位置換成紅字註解。
+   輸入的文字本身不變色，中文與合規的網址才不會跟著紅。
    按下一步時確認頁會列出哪一欄，後端也會再擋一次。 */
-#dr-app input.link-blocked,
-#dr-app textarea.link-blocked { color: var(--red); }
+/* 註解佔用「選填／未填寫」原本的位置，所以那個小字先讓開 */
+#dr-app .field.has-blocked-link > label > .opt { display: none; }
+
+#dr-app .field > label > .link-flag {
+  margin-left: 4px;
+  font-weight: var(--fw-regular);
+  color: var(--red);
+}
 
 #dr-app .notice-box,
 #dr-gate .notice-box {
@@ -1768,8 +1789,6 @@ html {
   border-bottom-color: var(--control-accent);
 }
 
-#dr-app .field.err #f-initials { border-bottom-color: var(--red); }
-
 #dr-app #f-applicant { gap: 0; }
 #dr-app #f-applicant-text { margin-left: 2px; }
 
@@ -2095,6 +2114,9 @@ html {
   color: var(--muted);
 }
 
+/* 載入中與空清單是中性訊息，載入失敗才轉紅（與 .saved-hint 同一個 is-error） */
+#dr-app .detail-loading.is-error { color: var(--red); }
+
 #dr-app .empty { padding: 60px var(--gutter); }
 
 #dr-app .logbox {
@@ -2131,6 +2153,10 @@ html {
 }
 
 #dr-app .detail-actions .saved-hint.show { visibility: visible; opacity: 1; }
+
+/* 錯誤類的訊息一律紅字，與申請頁的 .submit-err 同一個顏色；
+   成功與中性的訊息維持內文灰。 */
+#dr-app .detail-actions .saved-hint.is-error { color: var(--red); }
 
 #dr-app .btn-sm.is-loading { pointer-events: none; opacity: .72; }
 
@@ -2234,13 +2260,6 @@ html {
 
 @media (hover: hover) and (pointer: fine) {
   #dr-app .data-retry button:hover { border-color: var(--brand); }
-}
-
-/* 文案待補時，指向該項目的第一個文案欄位 */
-#dr-app .copy-primary-field.copy-pending-target input { border-color: var(--red); }
-#dr-app .copy-primary-field.copy-pending-target input:focus {
-  border-color: var(--red);
-  box-shadow: 0 0 0 1px var(--red);
 }
 
 @media (max-width: 700px) {

@@ -1091,18 +1091,40 @@ function isGrey(rec) {
    Google 文件連結的限制（與 index.html、後端 guardDocLinks_ 同一條規則）
    ------------------------------------------------------------
    除了管理員以外，整張表都不接受 Google 文件／試算表／簡報的連結。
-   貼進去的當下那一格的字就變紅，不另外出現說明；真的要存檔時後端再擋一次。
+   貼進去的當下欄位框就變紅、標籤換成一句短註解；真的要存檔時後端再擋一次。
    雲端硬碟的檔案與資料夾不擋，那正是「素材連結」本來的用途。 */
 var DOC_LINK_PATTERN = /(docs\.google\.com\/(document|spreadsheets|presentation)|\bdocs\.google\.com\/d\/)/i;
+/* 欄位標籤上那一句，佔用「選填／未填寫」原本的位置，所以要夠短。 */
+var DOC_LINK_FLAG = "不接受文件連結";
 
 /** 目前登入的人是不是管理員（管理員不受連結限制） */
 function isAdminUser() { return !!(currentUser && currentUser.isAdmin); }
 
-/** 這一格的內容有不被接受的連結就標紅，沒有就恢復。不說明，紅了就知道。 */
+/** 這一格有不被接受的連結就讓欄位框變紅，輸入的文字不變色。 */
 function markBlockedLink(node) {
   if (!node || !node.classList) return;
   var block = !isAdminUser() && DOC_LINK_PATTERN.test(String(node.value || ""));
   node.classList.toggle("link-blocked", block);
+  paintBlockedField(node.closest ? node.closest(".field") : null);
+}
+
+/** 欄位層的紅字註解：只看這一層自己的輸入框，巢狀的內層欄位各自負責。 */
+function paintBlockedField(field) {
+  if (!field) return;
+  var label = field.querySelector(":scope > label");
+  if (!label) return;
+  var blocked = Array.prototype.some.call(
+    field.querySelectorAll(".link-blocked"),
+    function (n) { return n.closest(".field") === field; });
+  field.classList.toggle("has-blocked-link", blocked);
+  var flag = label.querySelector(":scope > .link-flag");
+  if (!blocked) { if (flag) flag.remove(); return; }
+  if (flag) return;
+  flag = el("span", "link-flag", DOC_LINK_FLAG);
+  /* 箭頭永遠排在最右邊，註解要插在它前面 */
+  var caret = label.querySelector(":scope > .caret");
+  if (caret) label.insertBefore(flag, caret);
+  else label.appendChild(flag);
 }
 
 /** 整個區域重掃一次（展開案件、回復草稿、復原重做之後都要叫） */
@@ -1191,7 +1213,7 @@ function onGoogleCredential(response) {
       return;
     }
     googleCredential = "";
-    setLoginStatus("登入失敗：" + (err && err.message ? err.message : "請重新登入。"), true);
+    setLoginStatus("登入失敗。" + (err && err.message ? err.message : "請重新登入。"), true);
     showGoogleButton(true);
   });
 }
@@ -1825,7 +1847,7 @@ function renderCard(rec) {
         showGate("登入已逾時，請重新登入。未儲存的內容已保留，重新登入後可以繼續。");
         return;
       }
-      detail.replaceChildren(el("div", "detail-loading", "載入失敗：" + err.message));
+      detail.replaceChildren(el("div", "detail-loading is-error", "載入失敗。" + err.message));
     });
   }
 
@@ -2689,6 +2711,7 @@ function buildDetail(record, container, serverBase, keepHistory) {
   /** 動作列只有一行狀態文字：平時顯示是否有未儲存變更，動作後暫時顯示結果。 */
   function renderStatus() {
     if (!statusEl) return;
+    statusEl.classList.remove("is-error");
     if (isDirty()) {
       statusEl.textContent = "有尚未儲存的變更。";
       statusEl.classList.add("show");
@@ -2743,10 +2766,12 @@ function buildDetail(record, container, serverBase, keepHistory) {
       .catch(function () { /* 交回排程，不打擾使用者 */ });
   }
 
-  function flash(msg) {
+  /** 第二個參數為真就是錯誤，整行轉紅字；成功與中性訊息維持內文灰。 */
+  function flash(msg, isError) {
     if (!statusEl) return;
     clearTimeout(flashTimer);
     statusEl.textContent = msg;
+    statusEl.classList.toggle("is-error", !!isError);
     statusEl.classList.add("show");
     flashTimer = setTimeout(renderStatus, 2600);
   }
@@ -2827,7 +2852,7 @@ function buildDetail(record, container, serverBase, keepHistory) {
       if (node) node.classList.add("err");
     });
     var labels = errors.map(function (e) { return e.label; });
-    flash("必填未完成：" + labels.slice(0, 3).join("、") + (labels.length > 3 ? "…" : ""));
+    flash("必填未完成：" + labels.slice(0, 3).join("、") + (labels.length > 3 ? "…" : ""), true);
     var first = container.querySelector(".field.err");
     if (first) first.scrollIntoView({ behavior: "smooth", block: "center" });
     return false;
@@ -3222,7 +3247,7 @@ function buildDetail(record, container, serverBase, keepHistory) {
       return;
     } catch (err) {
       if (err && err.code === "CONFLICT") await handleConflict();
-      else if (!handleAuthError(err)) flash("儲存失敗：" + err.message);
+      else if (!handleAuthError(err)) flash("儲存失敗。" + err.message, true);
     } finally {
       actionBusy = false;
       setActionLoading(btnSave, false);
@@ -3316,10 +3341,10 @@ function buildDetail(record, container, serverBase, keepHistory) {
     try {
       fresh = (await apiPost("getRequest", { requestId: work.id }, { timeout: 20000 })).request;
     } catch (e) {
-      flash("這筆案件剛剛被其他人修改過，但目前讀不到最新版本，請稍後再試。");
+      flash("這筆案件剛剛被其他人修改過，但目前讀不到最新版本，請稍後再試。", true);
       return;
     }
-    if (!fresh) { flash("這筆案件剛剛被其他人修改過，請重新整理後再試。"); return; }
+    if (!fresh) { flash("這筆案件剛剛被其他人修改過，請重新整理後再試。", true); return; }
 
     var base = JSON.parse(serverData);
     var result = mergeRequestData(base, work.data, fresh.data);
@@ -3367,7 +3392,7 @@ function buildDetail(record, container, serverBase, keepHistory) {
         : "需求已重新發送。");
     } catch (err) {
       if (err && err.code === "CONFLICT") await handleConflict();
-      else if (!handleAuthError(err)) flash("重新發送失敗：" + err.message);
+      else if (!handleAuthError(err)) flash("重新發送失敗。" + err.message, true);
     } finally {
       actionBusy = false;
       setActionLoading(btnResend, false);
@@ -3377,7 +3402,7 @@ function buildDetail(record, container, serverBase, keepHistory) {
   var btnWord = makeActionButton("", "寄送 Word 給自己");
   btnWord.addEventListener("click", async function () {
     var recipient = currentUser.email || "";
-    if (!recipient) { flash("未取得目前登入的信箱。"); return; }
+    if (!recipient) { flash("未取得目前登入的信箱。", true); return; }
     if (!confirm("確認寄送最新版 Word 給自己？\n\n收件人：" + recipient)) return;
     if (actionBusy) return;
     actionBusy = true;
@@ -3390,7 +3415,7 @@ function buildDetail(record, container, serverBase, keepHistory) {
       if (result.log) prependLog(result.log);
       flash("Word 附件已寄送至 " + result.recipient + "。");
     } catch (err) {
-      if (!handleAuthError(err)) flash("寄送失敗：" + err.message);
+      if (!handleAuthError(err)) flash("寄送失敗。" + err.message, true);
     } finally {
       actionBusy = false;
       setActionLoading(btnWord, false);
@@ -3420,7 +3445,7 @@ function buildDetail(record, container, serverBase, keepHistory) {
     } catch (err) {
       actionBusy = false;
       setActionLoading(btnDelete, false);
-      if (!handleAuthError(err)) flash("刪除失敗：" + err.message);
+      if (!handleAuthError(err)) flash("刪除失敗。" + err.message, true);
     }
   });
 
@@ -3481,9 +3506,6 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
 
   function refreshBadges() {
     badges.replaceChildren(urgentNow());
-    var primaries = box.querySelectorAll(".copy-primary-field");
-    primaries.forEach(function (f) { f.classList.remove("copy-pending-target"); });
-    if (!itemHasCopy(item) && primaries.length) primaries[0].classList.add("copy-pending-target");
   }
 
   var headRow = el("div", "row item-head-row");
@@ -3533,7 +3555,6 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
           var f = makeField("text", pair[1], null, block[pair[0]], function (v) {
             block[pair[0]] = v; refreshBadges(); onChange();
           });
-          if (i === 0) f.classList.add("copy-primary-field");
           c4.appendChild(f);
         });
         b.appendChild(c4);
@@ -3784,7 +3805,6 @@ function buildItemBlock(item, idx, onStructuralChange, onDelete, onChange, total
         var f = makeField("text", pair[1], null, item.copy[pair[0]], function (v) {
           item.copy[pair[0]] = v; refreshBadges(); onChange();
         });
-        if (i === 0) f.classList.add("copy-primary-field");
         c4b.appendChild(f);
       });
       copyWrap.appendChild(c4b);

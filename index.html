@@ -167,13 +167,13 @@
             <label for="f-deliverydate">總交付日<span class="req">*</span></label>
             <div class="date-wrap"><input id="f-deliverydate" type="date"></div>
             <div class="errmsg">請填寫總交付日。</div>
-            <div class="hint" id="f-deliverydate-warn" hidden>部分項目交付日晚於總交付日。</div>
+            <div class="hint danger" id="f-deliverydate-warn" hidden>部分項目交付日晚於總交付日。</div>
             <div class="hint danger" id="f-deliverydate-past" hidden>交付日不能早於今天。</div>
           </div>
           <div class="field" id="f-meetingdate-field">
             <label for="f-meetingdate">會議日期<span class="opt">選填</span></label>
             <div class="date-wrap"><input id="f-meetingdate" type="date"></div>
-            <div class="hint" id="f-meetingdate-warn" hidden>會議日期晚於總交付日。</div>
+            <div class="hint danger" id="f-meetingdate-warn" hidden>會議日期晚於總交付日。</div>
           </div>
         </div>
         <div class="row c2" id="f-schedulenote-row" hidden>
@@ -1152,7 +1152,7 @@ function onGoogleCredential(response) {
       return;
     }
     googleCredential = "";
-    setLoginStatus("登入失敗：" + (err && err.message ? err.message : "請重新登入。"), true);
+    setLoginStatus("登入失敗。" + (err && err.message ? err.message : "請重新登入。"), true);
     showGoogleButton(true);
   });
 }
@@ -2456,15 +2456,37 @@ var DOC_LINK_PATTERN = /(docs\.google\.com\/(document|spreadsheets|presentation)
 /* 確認頁的錯誤清單只點名是哪一欄，跟清單上其他條目一樣是短標籤、不加句號。
    完整的說明留給真的按下儲存卻被擋下來的那一刻（後端 Code.gs 的 DOC_LINK_MESSAGE）。 */
 var DOC_LINK_SHORT = "不接受 Google 文件、試算表或簡報的連結";
+/* 欄位標籤上那一句，佔用「選填／未填寫」原本的位置，所以要夠短。 */
+var DOC_LINK_FLAG = "不接受文件連結";
 
 /** 目前登入的人是不是管理員（管理員不受連結限制） */
 function isAdminUser() { return !!(currentUser && currentUser.isAdmin); }
 
-/** 這一格的內容有不被接受的連結就標紅，沒有就恢復。不說明，紅了就知道。 */
+/** 這一格有不被接受的連結就讓欄位框變紅，輸入的文字不變色。 */
 function markBlockedLink(node) {
   if (!node || !node.classList) return;
   var block = !isAdminUser() && DOC_LINK_PATTERN.test(String(node.value || ""));
   node.classList.toggle("link-blocked", block);
+  paintBlockedField(node.closest ? node.closest(".field") : null);
+}
+
+/** 欄位層的紅字註解：只看這一層自己的輸入框，巢狀的內層欄位各自負責。 */
+function paintBlockedField(field) {
+  if (!field) return;
+  var label = field.querySelector(":scope > label");
+  if (!label) return;
+  var blocked = Array.prototype.some.call(
+    field.querySelectorAll(".link-blocked"),
+    function (n) { return n.closest(".field") === field; });
+  field.classList.toggle("has-blocked-link", blocked);
+  var flag = label.querySelector(":scope > .link-flag");
+  if (!blocked) { if (flag) flag.remove(); return; }
+  if (flag) return;
+  flag = el("span", "link-flag", DOC_LINK_FLAG);
+  /* 箭頭永遠排在最右邊，註解要插在它前面 */
+  var caret = label.querySelector(":scope > .caret");
+  if (caret) label.insertBefore(flag, caret);
+  else label.appendChild(flag);
 }
 
 /** 整個區域重掃一次（繪製完、回復草稿、復原重做之後都要叫） */
@@ -2789,7 +2811,7 @@ $("dr-submit-btn").addEventListener("click", async function () {
       showGate("登入已逾時，請重新登入。未儲存的內容已保留，重新登入後可以繼續。");
       return;
     }
-    errBox.textContent = "送出失敗：" + (error.message || String(error)) + " 已填內容保留為草稿。";
+    errBox.textContent = "送出失敗。" + (error.message || String(error)) + " 已填內容保留為草稿。";
     errBox.style.display = "block";
   }
 });
